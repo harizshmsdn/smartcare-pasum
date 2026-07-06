@@ -1,3 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* apps/web/app/globals.css */
+@import "tailwindcss";
+
+/* You can add custom CSS variables below if needed */
