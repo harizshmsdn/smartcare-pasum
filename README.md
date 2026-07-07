@@ -2,64 +2,6 @@
 
 This Turborepo starter is maintained by the Turborepo core team.
 
-# Expected File Structure
-
-smartcare-pasum/
-├── .github/
-│   └── workflows/                # CI/CD pipelines (Vercel deployment, Docker builds)
-├── apps/
-│   ├── web/                      # React.js & Next.js 14+ Web Application[cite: 4]
-│   │   ├── app/                  # Next.js App Router (Tailwind v4 Optimized)[cite: 4]
-│   │   │   ├── dashboard/        
-│   │   │   │   └── page.tsx      # Bento Box metrics dashboard[cite: 4]
-│   │   │   ├── globals.css       # Tailwind `@import "tailwindcss";` layer[cite: 4]
-│   │   │   ├── layout.tsx        # Persistent shell injection layout[cite: 4]
-│   │   │   └── page.tsx          # Actionable landing/home view layout[cite: 4]
-│   │   ├── components/           
-│   │   │   └── sidebar.tsx       # Shared client side navigation layout[cite: 4]
-│   │   ├── package.json          # React, Next, PostCSS dependencies[cite: 4]
-│   │   └── postcss.config.mjs    # Tailwind v4 compiler link[cite: 4]
-│   │
-│   ├── mobile-android/           # Native Kotlin Mobile Sub-Workspace
-│   │   ├── app/                  # Jetpack Compose UI architecture views
-│   │   │   └── src/main/java/    # Attendance 3-factor location/camera services
-│   │   └── build.gradle.kts      
-│   │
-│   └── mobile-ios/               # Native Swift Mobile Sub-Workspace
-│       ├── SmartCarePASUM/       # SwiftUI presentation views & models
-│       └── SmartCarePASUM.xcodeproj
-│
-├── packages/                     # Turborepo Shared Packages[cite: 4]
-│   ├── ui/                       # Core shared cross-app design tokens[cite: 4]
-│   ├── config/                   # Centralized ESLint & Prettier matrices[cite: 4]
-│   └── types/                    # Shared TypeScript interfaces (Supabase mappings)[cite: 4]
-│
-├── services/                     
-│   ├── ai-engine/                # Python FastAPI Microservice[cite: 4]
-│   │   ├── api/                  # Core routes (risk clustering, anomaly triggers)[cite: 4]
-│   │   ├── core/                 # Rule-based processing scripts & LLM modules[cite: 4]
-│   │   ├── main.py               # FastAPI entrypoint initialization
-│   │   ├── requirements.txt      # Python library dependencies[cite: 4]
-│   │   └── Dockerfile            # Container definition script for Exabytes[cite: 4]
-│   │
-│   ├── automation/               # Workflow Automation Layer[cite: 4]
-│   │   ├── workflows/            # Exported n8n alert routine JSON maps[cite: 4]
-│   │   └── redis.conf            # Local configuration map cache mirror
-│   │
-│   └── cache/                    # Local Redis Environment Mirror
-│       └── Dockerfile            # Configured cluster image for authentication caching
-│
-├── supabase/                     # Backend-as-a-Service layer[cite: 4]
-│   ├── migrations/               # PostgreSQL schema structure files[cite: 4]
-│   ├── seed.sql                  # Evaluation risk tracking mockup data[cite: 4]
-│   └── config.toml               # Local DB engine configuration limits[cite: 4]
-│
-├── .env.example                  # Key structural templates (Upstash, Supabase, LLMs)[cite: 4]
-├── docker-compose.yml            # Multi-container operational stack mapper
-├── turbo.json                    # Turborepo caching execution model[cite: 4]
-├── package.json                  # Workspace monorepo root settings[cite: 4]
-└── README.md                     # Documentation for developers and UMSDC[cite: 4]
-
 ## Using this example
 
 Run the following command:
