@@ -32,9 +32,9 @@ export default function HomePage() {
               <h3 className="text-2xl font-bold text-slate-900 mt-3">Physics 101 - Mechanics</h3>
               <p className="text-slate-500">Group A • Lecture Hall 3</p>
             </div>
-            <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl font-semibold shadow-md shadow-blue-200 transition-all active:scale-95">
+            <Link href="/attendance/active" className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl font-semibold shadow-md shadow-blue-200 transition-all active:scale-95">
               <QrCode size={24} /> Generate Attendance QR
-            </button>
+            </Link>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-slate-100 pt-6">

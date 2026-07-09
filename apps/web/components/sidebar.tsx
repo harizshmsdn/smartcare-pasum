@@ -11,8 +11,8 @@ export function Sidebar() {
   const navItems = [
     { name: "Home", href: "/", icon: Home },
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Classes", href: "#", icon: Users },
-    { name: "Profile", href: "#", icon: UserCircle },
+    { name: "Classes", href: "/classes", icon: Users },
+    { name: "Profile", href: "/profile", icon: UserCircle },
   ];
 
   return (
@@ -40,7 +40,7 @@ export function Sidebar() {
         
         {/* Settings at the bottom */}
         <Link
-          href="#"
+          href="/settings"
           className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors w-full text-left mt-auto"
         >
           <Settings size={20} /> Settings
