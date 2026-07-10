@@ -13,7 +13,7 @@
 
 **SMART-CARE** is a centralized academic monitoring platform built to seamlessly track student progression, automate attendance verification, and preemptively flag students at risk of academic failure. By leveraging rule-based AI workflows and real-time data consolidation, the system shifts academic advising from reactive to proactive.
 
-### ✨ Core Features (SRS Mapped)
+### ✨ Core Features
 * **3-Factor Attendance (FR-01):** Secure check-ins utilizing Session QR Codes, Face Verification, and GPS Location boundaries.
 * **Bento-Box Analytics Dashboard:** Real-time cohort metrics mapping grade distributions against attendance drift.
 * **Tiered AI Early-Alerts (FR-04):** Automated tracking of <80% attendance breaches and sudden continuous assessment drops.
@@ -41,7 +41,7 @@ smartcare-pasum/
 ├── supabase/              # Database schemas, migrations, and seed data
 └── docker-compose.yml     # Local infrastructure orchestrator
 
-
+```
 
 # Turborepo starter
 
