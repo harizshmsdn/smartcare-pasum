@@ -25,7 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} flex h-screen bg-slate-50 text-slate-800 font-sans overflow-hidden`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} flex h-screen bg-[#FAF9F6] text-slate-800 font-sans overflow-hidden`}>
         {/* Persistent Sidebar */}
         <Sidebar />
         

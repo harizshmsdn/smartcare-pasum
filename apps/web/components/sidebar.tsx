@@ -3,49 +3,64 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, LayoutDashboard, Users, UserCircle, Settings } from "lucide-react";
+import { Settings, ChevronRight } from "lucide-react";
 
 export function Sidebar() {
   const pathname = usePathname();
 
+  // Route map
   const navItems = [
-    { name: "Home", href: "/", icon: Home },
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Classes", href: "/classes", icon: Users },
-    { name: "Profile", href: "/profile", icon: UserCircle },
+    { name: "Home", href: "/", bgColor: "bg-[#1e3a8a]" }, // Navy blue
+    { name: "Dashboard", href: "/dashboard", bgColor: "bg-[#ef4444]" }, // Red
+    { name: "Classes", href: "/classes", bgColor: "bg-[#eab308]" }, // Mustard yellow
+    { name: "Profile", href: "/profile", bgColor: "bg-[#38bdf8]" }, // Sky blue
   ];
 
   return (
-    <aside className="w-64 bg-slate-900 text-white flex flex-col p-6 shrink-0 h-screen overflow-y-auto">
-      <h1 className="text-2xl font-bold mb-10 tracking-tight">SMART-CARE</h1>
-      <nav className="flex flex-col gap-2 h-full">
+    
+    <aside className="w-55 bg-[#FAF9F6] flex flex-col p-6 shrink-0 h-screen overflow-hidden">
+      
+      {/* Centered Title */}
+      <h1 className="text-2xl font-bold mb-6 tracking-tight text-center text-slate-900">
+        SMART-CARE
+      </h1>
+      
+      {/* Main Navigation */}
+      <nav className="flex flex-col gap-4 flex-1 mb-6">
         {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href;
-
           return (
             <Link
               key={item.name}
               href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors w-full text-left ${
-                isActive
-                  ? "bg-blue-600 text-white"
-                  : "text-slate-400 hover:bg-slate-800 hover:text-white"
-              }`}
+              className={`group relative flex-1 w-full rounded-3xl transition-all duration-300 ${item.bgColor} shadow-sm hover:shadow-md block overflow-hidden`}
             >
-              <Icon size={20} /> {item.name}
+              {/* Chevron Icon - Top Right */}
+              <ChevronRight 
+                size={28} 
+                strokeWidth={2.5}
+                className="absolute top-5 right-5 text-black group-hover:text-white transition-all duration-300 -rotate-45 group-hover:rotate-0" 
+              />
+              
+              {/* Page Name - Bottom Left */}
+              <div className="absolute bottom-5 left-5 text-black group-hover:text-white transition-colors duration-300 font-bold text-xl tracking-wide">
+                {item.name}
+              </div>
             </Link>
           );
         })}
-        
-        {/* Settings at the bottom */}
-        <Link
-          href="/settings"
-          className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors w-full text-left mt-auto"
-        >
-          <Settings size={20} /> Settings
-        </Link>
       </nav>
+      
+      {/* Settings */}
+      <Link
+        href="/settings"
+        className={`flex items-center gap-3 px-5 py-4 rounded-2xl font-medium transition-colors w-full text-left mt-auto ${
+          pathname === "/settings"
+            ? "bg-slate-200 text-slate-900"
+            : "text-slate-500 hover:bg-slate-200 hover:text-slate-900"
+        }`}
+      >
+        <Settings size={20} /> Settings
+      </Link>
     </aside>
   );
 }
