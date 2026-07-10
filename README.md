@@ -1,3 +1,48 @@
+# 🎓 SMART-CARE @ PASUM
+
+> An AI-driven digital monitoring, 3-factor attendance, and early-alert ecosystem designed for the Centre for Foundation Studies in Science (PASUM) at Universiti Malaya.
+
+[![Next.js](https://img.shields.io/badge/Next.js-14+-black?style=flat&logo=next.js)](https://nextjs.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38B2AC?style=flat&logo=tailwind-css)](https://tailwindcss.com/)
+[![Supabase](https://img.shields.io/badge/Supabase-Backend-3ECF8E?style=flat&logo=supabase)](https://supabase.com/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-Python-009688?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![n8n](https://img.shields.io/badge/n8n-Automation-FF6D5A?style=flat&logo=n8n)](https://n8n.io/)
+[![Turborepo](https://img.shields.io/badge/Turborepo-Monorepo-EF4444?style=flat&logo=turborepo)](https://turbo.build/)
+
+## 📖 Overview
+
+**SMART-CARE** is a centralized academic monitoring platform built to seamlessly track student progression, automate attendance verification, and preemptively flag students at risk of academic failure. By leveraging rule-based AI workflows and real-time data consolidation, the system shifts academic advising from reactive to proactive.
+
+### ✨ Core Features (SRS Mapped)
+* **3-Factor Attendance (FR-01):** Secure check-ins utilizing Session QR Codes, Face Verification, and GPS Location boundaries.
+* **Bento-Box Analytics Dashboard:** Real-time cohort metrics mapping grade distributions against attendance drift.
+* **Tiered AI Early-Alerts (FR-04):** Automated tracking of <80% attendance breaches and sudden continuous assessment drops.
+* **Autonomous Routing:** Automated workflow pipelines (via n8n) to sync critical students directly with the UM Counselling Unit.
+* **Cross-Platform:** Web portal for lecturers/admins, native mobile applications for student check-ins.
+
+---
+
+## 🏗️ Monorepo Architecture
+
+This project utilizes [Turborepo](https://turbo.build/) to manage a scalable, multi-service environment encompassing the frontend, mobile, and backend microservices.
+
+```text
+smartcare-pasum/
+├── apps/
+│   ├── web/               # Next.js 14 App Router Web Portal (Lecturers)
+│   ├── mobile-android/    # Kotlin Jetpack Compose App (Students)
+│   └── mobile-ios/        # Swift UI App (Students)
+├── packages/              # Shared Turborepo dependencies
+│   ├── ui/                # Shared Tailwind/React components
+│   └── config/            # Centralized ESLint/TypeScript configurations
+├── services/              
+│   ├── ai-engine/         # Python FastAPI service for complex risk calculations
+│   └── automation/        # Self-hosted n8n instance & workflows
+├── supabase/              # Database schemas, migrations, and seed data
+└── docker-compose.yml     # Local infrastructure orchestrator
+
+
+
 # Turborepo starter
 
 This Turborepo starter is maintained by the Turborepo core team.
