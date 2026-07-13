@@ -31,7 +31,7 @@ export default function ClassesPage() {
   const router = useRouter();
 
   return (
-    <main className="flex-1 p-8 overflow-y-auto bg-slate-50">
+    <main className="flex-1 p-8 overflow-y-auto bg-[#FAF9F6]">
       
       {/* Header & Class Selector */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">

@@ -31,7 +31,7 @@ export default function LecturerProfilePage() {
   };
 
   return (
-    <main className="flex-1 p-8 overflow-y-auto bg-slate-50">
+    <main className="flex-1 p-8 overflow-y-auto bg-[#FAF9F6]">
       
       {/* Header */}
       <header className="mb-8">

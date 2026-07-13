@@ -1,139 +1,247 @@
 // apps/web/app/dashboard/page.tsx
 "use client";
 
-import { AlertTriangle, TrendingDown, TrendingUp, Award, GraduationCap, Clock } from "lucide-react";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, LineChart, Line, CartesianGrid } from "recharts";
+import { useState } from "react";
+import { 
+  TrendingUp, 
+  Award, 
+  BookOpen, 
+  AlertTriangle,
+  GraduationCap,
+  ChevronRight
+} from "lucide-react";
+import { 
+  ResponsiveContainer, 
+  LineChart, 
+  Line, 
+  BarChart, 
+  Bar, 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip,
+  Legend
+} from "recharts";
 
-const performanceData = [
-  { name: "Quiz 1", AvgScore: 78, Attendance: 94 },
-  { name: "Lab 1", AvgScore: 85, Attendance: 92 },
-  { name: "Test 1", AvgScore: 64, Attendance: 89 },
-  { name: "Quiz 2", AvgScore: 72, Attendance: 86 },
-  { name: "Lab 2", AvgScore: 81, Attendance: 88 },
+// Mock Data 1: Subject-Specific Timelines
+const subjectTimelines = {
+  "Physics 101": [
+    { week: "W1", attendance: 98, assessment: 85 },
+    { week: "W2", attendance: 97, assessment: 86 },
+    { week: "W3", attendance: 95, assessment: 82 },
+    { week: "W4", attendance: 91, assessment: 78 },
+    { week: "W5", attendance: 85, assessment: 70 },
+    { week: "W6", attendance: 82, assessment: 65 },
+    { week: "W7", attendance: 78, assessment: 60 },
+    { week: "W8", attendance: 85, assessment: 68 },
+  ],
+  "Physics 102": [
+    { week: "W1", attendance: 100, assessment: 90 },
+    { week: "W2", attendance: 98, assessment: 88 },
+    { week: "W3", attendance: 98, assessment: 89 },
+    { week: "W4", attendance: 95, assessment: 85 },
+    { week: "W5", attendance: 92, assessment: 84 },
+    { week: "W6", attendance: 90, assessment: 80 },
+    { week: "W7", attendance: 88, assessment: 78 },
+    { week: "W8", attendance: 90, assessment: 82 },
+  ]
+};
+
+// Mock Data 2: Raw Merit Score Points (0 - 500)
+const meritRawScores = [
+  { range: "0-100", students: 5 },
+  { range: "101-200", students: 18 },
+  { range: "201-300", students: 42 },
+  { range: "301-400", students: 65 },
+  { range: "401-500", students: 30 },
 ];
 
-const gradeDistribution = [
-  { grade: "A", count: 24 },
-  { grade: "B", count: 48 },
-  { grade: "C", count: 32 },
-  { grade: "D", count: 14 },
-  { grade: "F", count: 6 },
+// Mock Data 3: Merit Score CGPA Estimates
+const meritCGPA = [
+  { range: "< 2.0", students: 12 },
+  { range: "2.0-2.5", students: 25 },
+  { range: "2.5-3.0", students: 45 },
+  { range: "3.0-3.5", students: 80 },
+  { range: "3.5-4.0", students: 38 },
+];
+
+// Mock Data 4: Mid-Term vs Finals (Major Exams)
+const examPerformance = [
+  { subject: "Phy 101", midterm: 68, finals: 75 },
+  { subject: "Phy 102", midterm: 72, finals: 80 },
+  { subject: "Math 201", midterm: 65, finals: 70 },
+  { subject: "Comp 101", midterm: 82, finals: 85 },
 ];
 
 export default function DashboardPage() {
+  const [activeSubject, setActiveSubject] = useState<"Physics 101" | "Physics 102">("Physics 101");
+
   return (
-    <main className="flex-1 p-8 overflow-y-auto">
-      <header className="mb-8">
-        <h2 className="text-3xl font-semibold text-slate-900">Overall Metrics Dashboard</h2>
-        <p className="text-slate-500 mt-1">Aggregated analytics across all assigned cohorts</p>
+    <main className="flex-1 h-screen flex flex-col p-8 bg-transparent overflow-hidden">
+      
+      {/* Header (Fixed Height) */}
+      <header className="shrink-0 mb-6 flex justify-between items-end">
+        <div>
+          <h2 className="text-3xl font-semibold text-slate-900">Academic Overview</h2>
+          <p className="text-slate-500 mt-1">Cross-subject analytics, merit distributions, and exam trajectories</p>
+        </div>
+        <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-xl font-semibold text-sm">
+          <GraduationCap size={18} />
+          PASUM Semester 1
+        </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 auto-rows-[140px]">
+      {/* Grid Layout: 3 Columns, 2 Rows */}
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-3 grid-rows-2 gap-6 min-h-0 pb-2">
         
-        {/* Core Summary */}
-        <div className="md:col-span-2 row-span-1 bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-2xl text-white flex flex-col justify-between shadow-sm">
-          <div className="flex justify-between items-start">
+        {/* ROW 1, COL 1 & 2: Assessment vs Attendance (Subject Specific via Tabs) */}
+        <div className="md:col-span-2 bg-white rounded-3xl border border-slate-200 p-6 shadow-sm flex flex-col min-h-0 relative">
+          <div className="shrink-0 mb-4 flex justify-between items-center">
             <div>
-              <p className="text-blue-100 text-sm font-medium">Total Student Ecosystem</p>
-              <h3 className="text-4xl font-bold tracking-tight mt-1">124</h3>
+              <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2">
+                <TrendingUp className="text-blue-600" size={20} />
+                Attendance vs. Assessment Trajectory
+              </h3>
             </div>
-            <div className="bg-white/10 p-2 rounded-xl backdrop-blur-md">
-              <GraduationCap size={24} />
-            </div>
-          </div>
-          <p className="text-xs text-blue-200 flex items-center gap-1">
-            <TrendingUp size={14} /> +4% enrollment increase from previous cohort block
-          </p>
-        </div>
-
-        {/* Critical Alerts */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 flex flex-col justify-between shadow-sm group hover:border-red-300 transition-colors">
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-slate-500 font-medium">Critical Risk Tier</span>
-            <div className="bg-red-50 text-red-600 p-2 rounded-xl group-hover:animate-pulse">
-              <AlertTriangle size={20} />
-            </div>
-          </div>
-          <div>
-            <div className="text-3xl font-bold text-red-600">3</div>
-            <p className="text-xs text-slate-400 mt-1">Breached &lt;80% attendance/marks</p>
-          </div>
-        </div>
-
-        {/* At-Risk Students */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 flex flex-col justify-between shadow-sm">
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-slate-500 font-medium">Moderate At-Risk</span>
-            <div className="bg-orange-50 text-orange-600 p-2 rounded-xl">
-              <TrendingDown size={20} />
+            
+            {/* Subject Tabs */}
+            <div className="flex bg-slate-100 p-1 rounded-lg">
+              <button 
+                onClick={() => setActiveSubject("Physics 101")}
+                className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${activeSubject === "Physics 101" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+              >
+                Physics 101
+              </button>
+              <button 
+                onClick={() => setActiveSubject("Physics 102")}
+                className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${activeSubject === "Physics 102" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+              >
+                Physics 102
+              </button>
             </div>
           </div>
-          <div>
-            <div className="text-3xl font-bold text-orange-600">8</div>
-            <p className="text-xs text-slate-400 mt-1">Demonstrating continuous decline</p>
-          </div>
-        </div>
-
-        {/* Line Chart */}
-        <div className="md:col-span-2 row-span-2 bg-white p-6 rounded-2xl border border-slate-200 flex flex-col shadow-sm">
-          <div className="mb-4">
-            <h4 className="font-bold text-slate-900 text-base">Assessment vs Attendance Timeline</h4>
-            <p className="text-xs text-slate-500">Consolidated analytics stream metrics across intervals</p>
-          </div>
-          <div className="flex-1 min-h-[160px]">
+          
+          <div className="flex-1 min-h-0 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={performanceData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
-                <YAxis stroke="#94a3b8" fontSize={12} />
-                <Tooltip />
-                <Line type="monotone" dataKey="AvgScore" stroke="#3b82f6" strokeWidth={2} name="Avg Score %" />
-                <Line type="monotone" dataKey="Attendance" stroke="#10b981" strokeWidth={2} name="Attendance %" />
+              <LineChart data={subjectTimelines[activeSubject]} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="week" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }}/>
+                <Line type="monotone" dataKey="attendance" name="Avg Attendance %" stroke="#1e3a8a" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                <Line type="monotone" dataKey="assessment" name="Avg Assessment %" stroke="#ef4444" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Bar Chart */}
-        <div className="row-span-2 bg-white p-6 rounded-2xl border border-slate-200 flex flex-col shadow-sm">
-          <div className="mb-4">
-            <h4 className="font-bold text-slate-900 text-base">Cohort Grade Curve</h4>
-            <p className="text-xs text-slate-500">Distribution calculation array</p>
+        {/* ROW 1, COL 3: Condensed Risk Clusters */}
+        <div className="bg-slate-900 rounded-3xl border border-slate-800 p-6 shadow-sm flex flex-col relative overflow-hidden">
+          <div className="absolute -right-10 -top-10 w-40 h-40 bg-red-500/20 rounded-full blur-3xl pointer-events-none"></div>
+          
+          <h3 className="font-bold text-white text-lg flex items-center gap-2 mb-6 z-10 shrink-0">
+            <AlertTriangle className="text-red-400" size={20} />
+            Active Risk Clusters
+          </h3>
+          
+          <div className="flex-1 flex flex-col justify-center gap-4 z-10">
+            <div className="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl flex justify-between items-center">
+              <div>
+                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Absenteeism</p>
+                <p className="text-xs text-slate-500 mt-0.5">Students &lt; 80%</p>
+              </div>
+              <span className="text-3xl font-black text-white">14</span>
+            </div>
+            
+            <div className="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl flex justify-between items-center">
+              <div>
+                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Assessment Drop</p>
+                <p className="text-xs text-slate-500 mt-0.5">Sudden Decline</p>
+              </div>
+              <span className="text-3xl font-black text-red-400">8</span>
+            </div>
           </div>
-          <div className="flex-1 min-h-[160px]">
+
+          <button className="mt-4 w-full bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2">
+            Review Cases <ChevronRight size={16} />
+          </button>
+        </div>
+
+        {/* ROW 2, COL 1: Raw Merit Scores (0-500) */}
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm flex flex-col min-h-0">
+          <div className="shrink-0 mb-4">
+            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+              <Award className="text-amber-500" size={18} />
+              Merit Scores (Raw)
+            </h3>
+            <p className="text-[11px] text-slate-500">Distribution of total points (0-500)</p>
+          </div>
+          
+          <div className="flex-1 min-h-0 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={gradeDistribution} margin={{ top: 5, right: 5, left: -30, bottom: 5 }}>
-                <XAxis dataKey="grade" stroke="#94a3b8" fontSize={12} />
-                <YAxis stroke="#94a3b8" fontSize={12} />
-                <Tooltip />
-                <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} name="Students" />
+              <BarChart data={meritRawScores} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="range" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                <Bar dataKey="students" name="Students" fill="#f59e0b" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Logs */}
-        <div className="row-span-1 bg-white p-5 rounded-2xl border border-slate-200 flex flex-col justify-between shadow-sm">
-          <div className="flex items-center gap-2 text-slate-500 text-xs font-semibold uppercase tracking-wider">
-            <Clock size={14} className="text-slate-400" /> System Run Logs
+        {/* ROW 2, COL 2: Merit CGPA Estimates */}
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm flex flex-col min-h-0">
+          <div className="shrink-0 mb-4">
+            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+              <GraduationCap className="text-emerald-500" size={18} />
+              Merit Scores (CGPA)
+            </h3>
+            <p className="text-[11px] text-slate-500">Estimates for University Placement</p>
           </div>
-          <p className="text-sm font-medium text-slate-700 my-2 line-clamp-2">
-            n8n automation tier cleanly executed batch evaluation rules.
-          </p>
-          <span className="text-[11px] bg-slate-100 text-slate-600 py-0.5 px-2 rounded-md self-start font-mono">
-            5m execution window OK
-          </span>
+          
+          <div className="flex-1 min-h-0 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={meritCGPA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorCgpa" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="range" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                <Area type="monotone" dataKey="students" name="Students" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorCgpa)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
-        {/* Top Stream */}
-        <div className="row-span-1 bg-emerald-50 border border-emerald-100 p-5 rounded-2xl flex flex-col justify-between shadow-sm">
-          <div className="flex justify-between items-start text-emerald-800">
-            <span className="text-xs font-semibold uppercase tracking-wider">Top Stream</span>
-            <Award size={18} />
+        {/* ROW 2, COL 3: Mid-Terms vs Finals Matrix */}
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm flex flex-col min-h-0">
+          <div className="shrink-0 mb-4">
+            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+              <BookOpen className="text-sky-500" size={18} />
+              Major Exams Matrix
+            </h3>
+            <p className="text-[11px] text-slate-500">Mid-term actuals vs. Predicted Finals</p>
           </div>
-          <div>
-            <p className="text-2xl font-bold text-emerald-800">94%</p>
-            <p className="text-xs text-emerald-700/80 mt-0.5">Computer Science 101 Avg</p>
+          
+          <div className="flex-1 min-h-0 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={examPerformance} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="subject" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                <Bar dataKey="midterm" name="Mid-Term" fill="#94a3b8" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="finals" name="Finals" fill="#38bdf8" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
