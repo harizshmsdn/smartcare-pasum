@@ -10,15 +10,16 @@ export function Sidebar() {
 
   // Route map
   const navItems = [
-    { name: "Home", href: "/", bgColor: "bg-[#1e3a8a]" }, // Navy blue
-    { name: "Dashboard", href: "/dashboard", bgColor: "bg-[#ef4444]" }, // Red
-    { name: "Classes", href: "/classes", bgColor: "bg-[#eab308]" }, // Mustard yellow
-    { name: "Profile", href: "/profile", bgColor: "bg-[#38bdf8]" }, // Sky blue
+    { name: "Home", href: "/", bgColor: "bg-[#061930]" }, // Dark blue
+    { name: "Dashboard", href: "/dashboard", bgColor: "bg-[#0b2240]" }, // Blue
+    { name: "Classes", href: "/classes", bgColor: "bg-[#12253f]" }, // Lighter blue 
+    { name: "Alerts", href: "/alerts", bgColor: "bg-[#152c4c]" }, // Lightest blue
+    { name: "Profile", href: "/profile", bgColor: "bg-[#1d3456]" }, // Off-white blue?
   ];
 
   return (
     
-    <aside className="w-55 bg-[#FAF9F6] flex flex-col p-6 shrink-0 h-screen overflow-hidden">
+    <aside className="w-50 bg-[#FAF9F6] flex flex-col p-6 shrink-0 h-screen overflow-hidden">
       
       {/* Centered Title */}
       <h1 className="text-2xl font-bold mb-6 tracking-tight text-center text-slate-900">
@@ -38,11 +39,11 @@ export function Sidebar() {
               <ChevronRight 
                 size={28} 
                 strokeWidth={2.5}
-                className="absolute top-5 right-5 text-black group-hover:text-white transition-all duration-300 -rotate-45 group-hover:rotate-0" 
+                className="absolute top-5 right-5 text-white group-hover:text-white transition-all duration-300 -rotate-45 group-hover:rotate-0" 
               />
               
               {/* Page Name - Bottom Left */}
-              <div className="absolute bottom-5 left-5 text-black group-hover:text-white transition-colors duration-300 font-bold text-xl tracking-wide">
+              <div className="absolute bottom-5 left-5 text-white group-hover:text-white transition-colors duration-300 font-bold text-xl tracking-wide">
                 {item.name}
               </div>
             </Link>

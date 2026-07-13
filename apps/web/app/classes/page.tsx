@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { 
   Search, 
   ChevronDown, 
@@ -12,7 +13,8 @@ import {
   Users,
   Calendar,
   MoreVertical,
-  Filter
+  Filter,
+  ArrowRight
 } from "lucide-react";
 
 // Mock Data: Reflecting the risk tiers defined in the SRS
@@ -51,9 +53,9 @@ export default function ClassesPage() {
       </header>
 
       {/* Top Row: Mini-Bento Class Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="bg-blue-50 p-3 rounded-xl text-blue-600">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
+          <div className="bg-blue-50 p-3 rounded-2xl text-blue-600">
             <Users size={24} />
           </div>
           <div>
@@ -62,8 +64,8 @@ export default function ClassesPage() {
           </div>
         </div>
         
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="bg-emerald-50 p-3 rounded-xl text-emerald-600">
+        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
+          <div className="bg-emerald-50 p-3 rounded-2xl text-emerald-600">
             <CheckCircle2 size={24} />
           </div>
           <div>
@@ -72,8 +74,8 @@ export default function ClassesPage() {
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="bg-indigo-50 p-3 rounded-xl text-indigo-600">
+        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
+          <div className="bg-indigo-50 p-3 rounded-2xl text-indigo-600">
             <Calendar size={24} />
           </div>
           <div>
@@ -81,6 +83,17 @@ export default function ClassesPage() {
             <p className="text-lg font-bold text-slate-900">Wed, 10:00 AM</p>
           </div>
         </div>
+
+        {/* NEW: Intervention Board CTA */}
+        <Link href="/interventions" className="bg-slate-900 p-5 rounded-3xl shadow-md flex items-center justify-between group hover:bg-slate-800 transition-all cursor-pointer">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Action Required</p>
+            <p className="text-lg font-bold text-white leading-tight">Intervention<br/>Board</p>
+          </div>
+          <div className="bg-white/10 p-3 rounded-2xl text-white group-hover:scale-110 group-hover:bg-blue-600 transition-all">
+            <ArrowRight size={24} />
+          </div>
+        </Link>
       </div>
 
       {/* Roster Container */}

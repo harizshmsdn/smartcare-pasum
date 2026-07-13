@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import ExportReportModal from "../../components/ExportReportModal";
 import { 
   Bell, 
   Sliders, 
@@ -18,6 +19,7 @@ export default function SettingsPage() {
   const [gradeDropThreshold, setGradeDropThreshold] = useState(20);
   const [language, setLanguage] = useState("en"); // Support for EN and BM (Section 4.3)
   const [emailAlerts, setEmailAlerts] = useState(true);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   return (
     <main className="flex-1 p-8 overflow-y-auto bg-slate-50">
@@ -151,6 +153,27 @@ export default function SettingsPage() {
             Save Configuration Changes
           </button>
         </div>
+
+        {/* Compliance & Data Section */}
+      <section className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <h2 className="text-lg font-semibold mb-2">Compliance & Data</h2>
+        <p className="text-gray-600 text-sm mb-4">
+          Export course data, attendance records, and assessment correlations for university auditing purposes.
+        </p>
+        
+        <button 
+          onClick={() => setIsExportModalOpen(true)}
+          className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+        >
+          Export Official Report
+        </button>
+      </section>
+
+      {/* Render the Modal */}
+      <ExportReportModal 
+        isOpen={isExportModalOpen} 
+        onClose={() => setIsExportModalOpen(false)} 
+      />
 
       </div>
     </main>
