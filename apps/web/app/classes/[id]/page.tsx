@@ -1,6 +1,7 @@
 // apps/web/app/profile/page.tsx
 "use client";
 
+import { useState } from "react";
 import { 
   Mail, 
   MessageSquare, 
@@ -10,7 +11,10 @@ import {
   Clock,
   CheckCircle2,
   BookOpen,
-  ArrowLeft
+  ArrowLeft,
+  Award, 
+  History, 
+  X
 } from "lucide-react";
 import { 
   ResponsiveContainer, 
@@ -35,8 +39,10 @@ const studentHistory = [
 ];
 
 export default function ProfilePage() {
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+
   return (
-    <main className="flex-1 p-8 overflow-y-auto bg-slate-50">
+    <main className="flex-1 p-8 overflow-y-auto bg-slate-50 relative">
       
       {/* Navigation Breadcrumb */}
       <div className="mb-6">
@@ -75,6 +81,32 @@ export default function ProfilePage() {
           </button>
         </div>
       </header>
+
+      {/* --- MERIT SECTION --- */}
+      <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+        <div className="flex items-center gap-5">
+          <div className="p-4 bg-blue-50 rounded-2xl text-blue-600">
+            <Award size={36} strokeWidth={2.5} />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold tracking-wider text-slate-500 uppercase">
+              Accumulated Merits
+            </h2>
+            <div className="text-4xl font-extrabold text-slate-900 mt-1">
+              145
+            </div>
+          </div>
+        </div>
+
+        <button 
+          onClick={() => setIsHistoryModalOpen(true)}
+          className="flex items-center gap-2 px-5 py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl font-semibold transition-all duration-200 shadow-sm hover:shadow active:scale-95"
+        >
+          <History size={20} />
+          View Merit History
+        </button>
+      </section>
+      {/* --- END MERIT SECTION --- */}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
@@ -204,6 +236,58 @@ export default function ProfilePage() {
 
         </div>
       </div>
+
+      {/* Merit History Modal */}
+      {isHistoryModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-slate-100">
+              <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                <Award className="text-blue-600" size={24} />
+                Merit History
+              </h3>
+              <button 
+                onClick={() => setIsHistoryModalOpen(false)}
+                className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors"
+              >
+                <X size={20} strokeWidth={2.5} />
+              </button>
+            </div>
+
+            {/* Modal Body / History List */}
+            <div className="p-6 overflow-y-auto flex-1">
+              <ul className="space-y-4">
+                {/* Mock History Items */}
+                <li className="flex justify-between items-center pb-4 border-b border-slate-50 last:border-0 last:pb-0">
+                  <div>
+                    <p className="font-semibold text-slate-800">Perfect Attendance</p>
+                    <p className="text-sm text-slate-500">Week 4 - Mathematics</p>
+                  </div>
+                  <span className="font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">+20</span>
+                </li>
+                <li className="flex justify-between items-center pb-4 border-b border-slate-50 last:border-0 last:pb-0">
+                  <div>
+                    <p className="font-semibold text-slate-800">Top Quiz Scorer</p>
+                    <p className="text-sm text-slate-500">Physics Chapter 2</p>
+                  </div>
+                  <span className="font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">+50</span>
+                </li>
+                <li className="flex justify-between items-center pb-4 border-b border-slate-50 last:border-0 last:pb-0">
+                  <div>
+                    <p className="font-semibold text-slate-800">Class Participation</p>
+                    <p className="text-sm text-slate-500">Biology Lab</p>
+                  </div>
+                  <span className="font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">+15</span>
+                </li>
+              </ul>
+            </div>
+            
+          </div>
+        </div>
+      )}
+      
     </main>
   );
 }
