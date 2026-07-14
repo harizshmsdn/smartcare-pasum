@@ -1,7 +1,7 @@
 // apps/web/app/attendance/active/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   QrCode, 
@@ -13,7 +13,8 @@ import {
   AlertCircle,
   Clock,
   ArrowLeft,
-  UserPlus
+  UserPlus,
+  Laptop
 } from "lucide-react";
 
 // Mock Live Data: Demonstrating the 3-Factor Auth status
@@ -27,6 +28,29 @@ const liveAttendees = [
 export default function ActiveAttendancePage() {
   // Opens automatically when the page loads
   const [showQrModal, setShowQrModal] = useState(true);
+
+  const [onlineMode, setOnlineMode] = useState(false);
+  const [faceIdRequired, setFaceIdRequired] = useState(true);
+  const [locationRequired, setLocationRequired] = useState(true);
+
+  useEffect(() => {
+    const savedConfig = localStorage.getItem('activeSessionConfig');
+    if (savedConfig) {
+      try {
+        const config = JSON.parse(savedConfig);
+        setOnlineMode(!!config.onlineMode);
+        setFaceIdRequired(config.faceIdRequired !== false);
+        setLocationRequired(config.locationRequired !== false);
+      } catch (e) {
+        console.error(e);
+      }
+    } else if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      setOnlineMode(params.get('onlineMode') === 'true');
+      setFaceIdRequired(params.get('faceIdRequired') !== 'false');
+      setLocationRequired(params.get('locationRequired') !== 'false');
+    }
+  }, []);
 
   return (
     <main className="flex-1 p-8 overflow-y-auto bg-slate-50 relative">
@@ -86,9 +110,38 @@ export default function ActiveAttendancePage() {
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h2 className="text-3xl font-semibold text-slate-900">Physics 101 - Group A</h2>
-          <p className="text-slate-500 mt-1 flex items-center gap-2">
-            <Clock size={16} /> Session started at 10:00 AM
-          </p>
+          <div className="flex flex-col gap-2.5 mt-1">
+            <p className="text-slate-500 flex items-center gap-2 text-sm">
+              <Clock size={16} /> Session started at 10:00 AM
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {onlineMode ? (
+                <span className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                  <Laptop size={13} /> Online Mode
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                  <Users size={13} /> In-Person Mode
+                </span>
+              )}
+              
+              <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${
+                faceIdRequired 
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-250" 
+                  : "bg-slate-100 text-slate-500 border-slate-200"
+              }`}>
+                <ScanFace size={13} /> Face ID: {faceIdRequired ? "Required" : "Bypassed"}
+              </span>
+              
+              <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${
+                locationRequired 
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-250" 
+                  : "bg-slate-100 text-slate-500 border-slate-200"
+              }`}>
+                <MapPin size={13} /> GPS Location: {locationRequired ? "Required" : "Bypassed"}
+              </span>
+            </div>
+          </div>
         </div>
         <div className="flex gap-3 w-full md:w-auto">
           <button 
@@ -117,20 +170,36 @@ export default function ActiveAttendancePage() {
           </div>
         </div>
         
-        {/* Manual Check-in Override (FR-01 GPS Malfunction) */}
-        <div className="md:col-span-2 bg-slate-900 p-6 rounded-2xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-white">
-          <div>
-            <h3 className="font-bold text-lg flex items-center gap-2">
-              <AlertCircle size={20} className="text-blue-400" /> Location/GPS Malfunction?
-            </h3>
-            <p className="text-slate-400 text-sm mt-1 max-w-md">
-              Bypass 3-factor location protocols and manually check-in a student if their device is unable to retrieve GPS coordinates.
-            </p>
+        {/* Manual Check-in Override / Online Session Banner */}
+        {locationRequired ? (
+          <div className="md:col-span-2 bg-slate-900 p-6 rounded-2xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-white">
+            <div>
+              <h3 className="font-bold text-lg flex items-center gap-2">
+                <AlertCircle size={20} className="text-blue-400" /> Location/GPS Malfunction?
+              </h3>
+              <p className="text-slate-400 text-sm mt-1 max-w-md">
+                Bypass 3-factor location protocols and manually check-in a student if their device is unable to retrieve GPS coordinates.
+              </p>
+            </div>
+            <button className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-3 rounded-xl font-medium transition-colors flex items-center gap-2 whitespace-nowrap">
+              <UserPlus size={18} /> Manual Override
+            </button>
           </div>
-          <button className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-3 rounded-xl font-medium transition-colors flex items-center gap-2 whitespace-nowrap">
-            <UserPlus size={18} /> Manual Override
-          </button>
-        </div>
+        ) : (
+          <div className="md:col-span-2 bg-indigo-900 p-6 rounded-2xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-white">
+            <div>
+              <h3 className="font-bold text-lg flex items-center gap-2">
+                <Laptop size={20} className="text-indigo-300" /> Remote Session Active
+              </h3>
+              <p className="text-indigo-200 text-sm mt-1 max-w-md">
+                GPS Location validation is disabled for this session. Students can check in online from any location.
+              </p>
+            </div>
+            <div className="bg-indigo-800 text-indigo-100 border border-indigo-700 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap">
+              GPS Bypass Enabled
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Live Feed Table */}
@@ -160,14 +229,22 @@ export default function ActiveAttendancePage() {
                   </td>
                   <td className="p-4 font-medium text-slate-700">{student.time}</td>
                   <td className="p-4 text-center">
-                    {student.faceVerified ? (
+                    {!faceIdRequired ? (
+                      <span className="inline-flex items-center bg-slate-100 text-slate-500 px-2 py-0.5 rounded text-[11px] font-semibold mx-auto border border-slate-200">
+                        Bypassed
+                      </span>
+                    ) : student.faceVerified ? (
                       <CheckCircle2 size={20} className="text-emerald-500 mx-auto" />
                     ) : (
                       <AlertCircle size={20} className="text-slate-300 mx-auto" />
                     )}
                   </td>
                   <td className="p-4 text-center">
-                    {student.locationVerified ? (
+                    {!locationRequired ? (
+                      <span className="inline-flex items-center bg-slate-100 text-slate-500 px-2 py-0.5 rounded text-[11px] font-semibold mx-auto border border-slate-200">
+                        Bypassed
+                      </span>
+                    ) : student.locationVerified ? (
                       <CheckCircle2 size={20} className="text-emerald-500 mx-auto" />
                     ) : (
                       <AlertCircle size={20} className="text-red-500 mx-auto" />

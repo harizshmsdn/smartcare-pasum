@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { 
   QrCode, 
   AlertTriangle, 
@@ -12,7 +13,13 @@ import {
   BookOpen,
   MonitorPlay,
   Beaker,
-  Clock
+  Clock,
+  X,
+  ScanFace,
+  MapPin,
+  Laptop,
+  Users,
+  Check
 } from "lucide-react";
 
 //TypeScript interfaces to match Supabase schema
@@ -51,11 +58,28 @@ const getClassIcon = (type: string) => {
 };
 
 export default function HomePage() {
+  const router = useRouter();
   //Setup state to handle dynamic data fetching
   const [activeIndex, setActiveIndex] = useState(0);
   const [scheduleToday, setScheduleToday] = useState<ScheduleItem[]>([]);
   const [assignedClasses, setAssignedClasses] = useState<AssignedClass[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // States for the configuration modal
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [configuringClass, setConfiguringClass] = useState<ScheduleItem | null>(null);
+  const [onlineMode, setOnlineMode] = useState(false);
+  const [faceIdRequired, setFaceIdRequired] = useState(true);
+  const [locationRequired, setLocationRequired] = useState(true);
+
+  const handleStartSessionClick = (cls: ScheduleItem) => {
+    setConfiguringClass(cls);
+    // Reset configurations to default
+    setOnlineMode(false);
+    setFaceIdRequired(true);
+    setLocationRequired(true);
+    setShowConfigModal(true);
+  };
 
   //Dynamic date formatting
   const currentDateFormatted = new Intl.DateTimeFormat('en-GB', { 
@@ -175,10 +199,13 @@ export default function HomePage() {
                     </div>
                     
                     {isCenter && (
-                      <Link href="/attendance/active" className="flex flex-col items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-2xl font-semibold shadow-md shadow-blue-200 transition-all active:scale-95">
+                      <button 
+                        onClick={() => handleStartSessionClick(cls)}
+                        className="flex flex-col items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-2xl font-semibold shadow-md shadow-blue-200 transition-all active:scale-95 cursor-pointer border-none"
+                      >
                         <QrCode size={28} />
                         <span className="text-sm">Start Session</span>
-                      </Link>
+                      </button>
                     )}
                   </div>
 
@@ -263,6 +290,189 @@ export default function HomePage() {
           })}
         </div>
       </div>
+
+      {/* Session Configuration Modal */}
+      {showConfigModal && configuringClass && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="bg-slate-900 p-6 text-white relative">
+              <button 
+                onClick={() => setShowConfigModal(false)}
+                className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors border-none cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+              <span className="text-xs font-bold tracking-wider uppercase bg-blue-600 text-white px-3 py-1 rounded-full">
+                Session Setup
+              </span>
+              <h2 className="text-2xl font-bold mt-3">{configuringClass.title}</h2>
+              <p className="text-slate-400 mt-1">{configuringClass.group} • {configuringClass.location} • {configuringClass.time}</p>
+            </div>
+            
+            {/* Modal Body */}
+            <div className="p-8 space-y-6">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Choose Attendance Format</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Option 1: In-Person */}
+                  <div 
+                    onClick={() => {
+                      setOnlineMode(false);
+                      setFaceIdRequired(true);
+                      setLocationRequired(true);
+                    }}
+                    className={`flex flex-col p-5 rounded-2xl border-2 cursor-pointer transition-all ${
+                      !onlineMode 
+                        ? "border-blue-600 bg-blue-50/50" 
+                        : "border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="p-2.5 rounded-xl bg-blue-100 text-blue-600">
+                        <Users size={22} />
+                      </div>
+                      {!onlineMode && (
+                        <div className="bg-blue-600 text-white rounded-full p-1 flex items-center justify-center">
+                          <Check size={14} strokeWidth={3} />
+                        </div>
+                      )}
+                    </div>
+                    <span className="font-bold text-slate-900 text-lg">In-Person Class</span>
+                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                      Requires Face ID scanning and GPS location validation in class.
+                    </p>
+                  </div>
+                  
+                  {/* Option 2: Online */}
+                  <div 
+                    onClick={() => {
+                      setOnlineMode(true);
+                      setFaceIdRequired(false);
+                      setLocationRequired(false);
+                    }}
+                    className={`flex flex-col p-5 rounded-2xl border-2 cursor-pointer transition-all ${
+                      onlineMode 
+                        ? "border-blue-600 bg-blue-50/50" 
+                        : "border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="p-2.5 rounded-xl bg-indigo-100 text-indigo-600">
+                        <Laptop size={22} />
+                      </div>
+                      {onlineMode && (
+                        <div className="bg-blue-600 text-white rounded-full p-1 flex items-center justify-center">
+                          <Check size={14} strokeWidth={3} />
+                        </div>
+                      )}
+                    </div>
+                    <span className="font-bold text-slate-900 text-lg">Online Class</span>
+                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                      Bypasses Face ID and GPS location geofencing checks for all students.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Granular Authentication Overrides */}
+              <div className="border-t border-slate-100 pt-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">
+                    Fine-tune Requirements
+                  </h3>
+                  {onlineMode && (
+                    <span className="text-[10.5px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                      Overridden for Online Mode
+                    </span>
+                  )}
+                </div>
+                
+                <div className="space-y-4">
+                  {/* Face ID Switch */}
+                  <div className={`flex items-center justify-between p-4 rounded-xl border ${onlineMode ? 'bg-slate-50 border-slate-150 opacity-60' : 'border-slate-200'}`}>
+                    <div className="flex gap-3 items-start">
+                      <ScanFace className={`mt-0.5 ${faceIdRequired ? 'text-blue-600' : 'text-slate-400'}`} size={20} />
+                      <div>
+                        <div className="font-bold text-slate-900 text-sm">Face ID verification</div>
+                        <div className="text-xs text-slate-500 mt-0.5">Students must match facial features against saved profiles</div>
+                      </div>
+                    </div>
+                    <button 
+                      type="button"
+                      disabled={onlineMode}
+                      onClick={() => setFaceIdRequired(!faceIdRequired)}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        faceIdRequired ? "bg-blue-600" : "bg-slate-200"
+                      } ${onlineMode ? "cursor-not-allowed" : ""}`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          faceIdRequired ? "translate-x-5" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  
+                  {/* Location Switch */}
+                  <div className={`flex items-center justify-between p-4 rounded-xl border ${onlineMode ? 'bg-slate-50 border-slate-150 opacity-60' : 'border-slate-200'}`}>
+                    <div className="flex gap-3 items-start">
+                      <MapPin className={`mt-0.5 ${locationRequired ? 'text-blue-600' : 'text-slate-400'}`} size={20} />
+                      <div>
+                        <div className="font-bold text-slate-900 text-sm">Location / GPS matching</div>
+                        <div className="text-xs text-slate-500 mt-0.5">Verify students are physically present in the lecture hall</div>
+                      </div>
+                    </div>
+                    <button 
+                      type="button"
+                      disabled={onlineMode}
+                      onClick={() => setLocationRequired(!locationRequired)}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        locationRequired ? "bg-blue-600" : "bg-slate-200"
+                      } ${onlineMode ? "cursor-not-allowed" : ""}`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          locationRequired ? "translate-x-5" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Modal Footer */}
+            <div className="bg-slate-50 p-6 flex justify-end gap-3 border-t border-slate-150">
+              <button 
+                onClick={() => setShowConfigModal(false)}
+                className="bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 font-semibold px-5 py-3 rounded-xl transition-all cursor-pointer font-sans"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  // Save active session settings in localStorage
+                  const sessionSettings = {
+                    classId: configuringClass.id,
+                    onlineMode,
+                    faceIdRequired: !onlineMode && faceIdRequired,
+                    locationRequired: !onlineMode && locationRequired
+                  };
+                  localStorage.setItem('activeSessionConfig', JSON.stringify(sessionSettings));
+                  
+                  // Redirect to Active Attendance page with config query params
+                  router.push(`/attendance/active?classId=${configuringClass.id}&onlineMode=${onlineMode}&faceIdRequired=${sessionSettings.faceIdRequired}&locationRequired=${sessionSettings.locationRequired}`);
+                  setShowConfigModal(false);
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl shadow-md shadow-blue-200 hover:shadow-lg hover:shadow-blue-300 transition-all cursor-pointer border-none font-sans"
+              >
+                Start Active Session
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </main>
   );
