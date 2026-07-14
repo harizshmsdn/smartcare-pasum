@@ -8,8 +8,6 @@ import {
   MapPin, 
   BookOpen, 
   Award, 
-  Calendar,
-  Clock,
   Building
 } from "lucide-react";
 
@@ -23,7 +21,6 @@ export default function LecturerProfilePage() {
     phone: "+60 3-7967 4321",
     office: "Block B, Room 2.4, PASUM Main Building",
     department: "Physics Domain, Center for Foundation Studies in Science (PASUM)",
-    consultationHours: "Tue & Thu: 2:00 PM - 4:00 PM",
     classesTaught: [
       { code: "PAS0112", name: "Physics 101 - Mechanics", group: "Group A & B" },
       { code: "PAS0122", name: "Physics 102 - Waves & Optics", group: "Group A" },
@@ -39,13 +36,12 @@ export default function LecturerProfilePage() {
         <p className="text-slate-500 mt-1">Manage your academic profile and professional contact details</p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl">
+      {/* Grid wrapper - removed max-w-6xl so it flexes naturally to the screen width */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* Left Column: Summary Info Card */}
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center relative overflow-hidden">
-            {/* Design element */}
-            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 to-indigo-600"></div>
             
             <div className="w-24 h-24 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white mx-auto mb-4 font-bold text-3xl shadow-md">
               AM
@@ -69,16 +65,6 @@ export default function LecturerProfilePage() {
                 <span className="text-xs">{lecturerData.office}</span>
               </div>
             </div>
-          </div>
-
-          {/* Consultation Card */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
-              <Clock size={14} /> Consultation Hours
-            </h4>
-            <p className="text-sm font-medium text-slate-800 bg-slate-50 p-3 rounded-xl border border-slate-100">
-              {lecturerData.consultationHours}
-            </p>
           </div>
         </div>
 

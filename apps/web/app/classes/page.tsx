@@ -28,9 +28,36 @@ const mockStudents = [
   { id: "1720462", name: "Chong Wei Jie", status: "at-risk", attendance: 85, latestScore: 65, lastSeen: "2 days ago" },
 ];
 
+// Mock Classes for the dropdown
+const mockClasses = [
+  "Physics 101 - Group A",
+  "Mathematics 201 - Group B",
+  "Computer Science 101"
+];
+
 export default function ClassesPage() {
-  const [activeTab, setActiveTab] = useState("all");
   const router = useRouter();
+  
+  // 1. New States for UI functionality
+  const [activeTab, setActiveTab] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedClass, setSelectedClass] = useState(mockClasses[0]);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // 2. Filter Logic: Applies Tab selection AND Search Query
+  const filteredStudents = mockStudents.filter((student) => {
+    // Tab Filter
+    const matchesTab = activeTab === "all" || (activeTab === "alerts" && student.status !== "good");
+    
+    // Search Filter (matches name or ID)
+    const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          student.id.includes(searchQuery);
+
+    return matchesTab && matchesSearch;
+  });
+
+  // Calculate dynamic alerts count
+  const alertsCount = mockStudents.filter(s => s.status !== "good").length;
 
   return (
     <main className="flex-1 p-8 overflow-y-auto bg-[#FAF9F6]">
@@ -42,14 +69,37 @@ export default function ClassesPage() {
           <p className="text-slate-500 mt-1">Manage and monitor specific cohorts</p>
         </div>
         
-        {/* Dropdown for selecting classes */}
-        <button className="flex items-center gap-3 bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-medium shadow-sm hover:bg-slate-50 transition-colors">
-          <div className="flex flex-col text-left">
-            <span className="text-[10px] uppercase font-bold text-blue-600 tracking-wider leading-none mb-1">Current View</span>
-            <span className="leading-none">Physics 101 - Group A</span>
-          </div>
-          <ChevronDown size={18} className="text-slate-400 ml-2" />
-        </button>
+        {/* FIX 1: Functional Dropdown for selecting classes */}
+        <div className="relative">
+          <button 
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="flex items-center gap-3 bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-medium shadow-sm hover:bg-slate-50 transition-colors"
+          >
+            <div className="flex flex-col text-left">
+              <span className="text-[10px] uppercase font-bold text-blue-600 tracking-wider leading-none mb-1">Current View</span>
+              <span className="leading-none">{selectedClass}</span>
+            </div>
+            <ChevronDown size={18} className="text-slate-400 ml-2" />
+          </button>
+
+          {/* Dropdown Menu */}
+          {isDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-full min-w-[220px] bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
+              {mockClasses.map((cls) => (
+                <button
+                  key={cls}
+                  onClick={() => {
+                    setSelectedClass(cls);
+                    setIsDropdownOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-3 text-sm hover:bg-slate-50 transition-colors ${selectedClass === cls ? 'bg-blue-50/50 text-blue-700 font-medium' : 'text-slate-700'}`}
+                >
+                  {cls}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </header>
 
       {/* Top Row: Mini-Bento Class Metrics */}
@@ -84,7 +134,7 @@ export default function ClassesPage() {
           </div>
         </div>
 
-        {/* NEW: Intervention Board CTA */}
+        {/* Intervention Board CTA */}
         <Link href="/interventions" className="bg-slate-900 p-5 rounded-3xl shadow-md flex items-center justify-between group hover:bg-slate-800 transition-all cursor-pointer">
           <div>
             <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Action Required</p>
@@ -101,18 +151,30 @@ export default function ClassesPage() {
         
         {/* Table Toolbar */}
         <div className="p-5 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-white">
+          {/* FIX 2: Tabs now update activeTab state */}
           <div className="flex gap-2 w-full md:w-auto">
-            <button onClick={() => setActiveTab("all")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === "all" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>All Students</button>
-            <button onClick={() => setActiveTab("alerts")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === "alerts" ? "bg-red-50 text-red-700 border border-red-200" : "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-transparent"}`}>
-              Alerts Only <span className="bg-red-100 text-red-700 px-1.5 py-0.5 rounded text-xs">4</span>
+            <button 
+              onClick={() => setActiveTab("all")} 
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === "all" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+            >
+              All Students
+            </button>
+            <button 
+              onClick={() => setActiveTab("alerts")} 
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === "alerts" ? "bg-red-50 text-red-700 border border-red-200" : "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-transparent"}`}
+            >
+              Alerts Only <span className={`px-1.5 py-0.5 rounded text-xs ${activeTab === "alerts" ? "bg-red-200 text-red-800" : "bg-red-100 text-red-700"}`}>{alertsCount}</span>
             </button>
           </div>
 
           <div className="flex gap-3 w-full md:w-auto">
+            {/* FIX 3: Search Input tied to searchQuery state */}
             <div className="relative flex-1 md:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input 
                 type="text" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search matric ID or name..." 
                 className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
               />
@@ -136,55 +198,64 @@ export default function ClassesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {mockStudents.map((student) => (
-                <tr key={student.id} onClick={() => router.push(`/classes/${student.id}`)} className="hover:bg-slate-50 transition-colors group cursor-pointer">
-                  <td className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
-                        {student.name.charAt(0)}
+              {/* NOW RENDERING filteredStudents instead of mockStudents */}
+              {filteredStudents.length > 0 ? (
+                filteredStudents.map((student) => (
+                  <tr key={student.id} onClick={() => router.push(`/classes/${student.id}`)} className="hover:bg-slate-50 transition-colors group cursor-pointer">
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
+                          {student.name.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">{student.name}</p>
+                          <p className="text-xs text-slate-500">{student.id} • Last seen {student.lastSeen}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">{student.name}</p>
-                        <p className="text-xs text-slate-500">{student.id} • Last seen {student.lastSeen}</p>
+                    </td>
+                    <td className="p-4">
+                      {student.status === "critical" && (
+                        <span className="inline-flex items-center gap-1.5 bg-red-50 text-red-700 border border-red-200 px-2.5 py-1 rounded-md text-xs font-semibold">
+                          <AlertTriangle size={14} /> Critical
+                        </span>
+                      )}
+                      {student.status === "at-risk" && (
+                        <span className="inline-flex items-center gap-1.5 bg-orange-50 text-orange-700 border border-orange-200 px-2.5 py-1 rounded-md text-xs font-semibold">
+                          <TrendingDown size={14} /> At Risk
+                        </span>
+                      )}
+                      {student.status === "good" && (
+                        <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-md text-xs font-semibold">
+                          <CheckCircle2 size={14} /> On Track
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-2">
+                        <span className={`font-semibold ${student.attendance < 80 ? "text-red-600" : "text-slate-700"}`}>
+                          {student.attendance}%
+                        </span>
                       </div>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    {student.status === "critical" && (
-                      <span className="inline-flex items-center gap-1.5 bg-red-50 text-red-700 border border-red-200 px-2.5 py-1 rounded-md text-xs font-semibold">
-                        <AlertTriangle size={14} /> Critical
+                    </td>
+                    <td className="p-4">
+                      <span className={`font-semibold ${student.latestScore < 50 ? "text-red-600" : "text-slate-700"}`}>
+                        {student.latestScore}%
                       </span>
-                    )}
-                    {student.status === "at-risk" && (
-                      <span className="inline-flex items-center gap-1.5 bg-orange-50 text-orange-700 border border-orange-200 px-2.5 py-1 rounded-md text-xs font-semibold">
-                        <TrendingDown size={14} /> At Risk
-                      </span>
-                    )}
-                    {student.status === "good" && (
-                      <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-md text-xs font-semibold">
-                        <CheckCircle2 size={14} /> On Track
-                      </span>
-                    )}
-                  </td>
-                  <td className="p-4">
-                    <div className="flex items-center gap-2">
-                      <span className={`font-semibold ${student.attendance < 80 ? "text-red-600" : "text-slate-700"}`}>
-                        {student.attendance}%
-                      </span>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <span className={`font-semibold ${student.latestScore < 50 ? "text-red-600" : "text-slate-700"}`}>
-                      {student.latestScore}%
-                    </span>
-                  </td>
-                  <td className="p-4 text-right">
-                    <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                      <MoreVertical size={18} />
-                    </button>
+                    </td>
+                    <td className="p-4 text-right">
+                      <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                        <MoreVertical size={18} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center text-slate-500">
+                    No students found matching your criteria.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

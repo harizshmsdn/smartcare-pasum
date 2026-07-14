@@ -1,7 +1,7 @@
 // apps/web/app/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   QrCode, 
@@ -15,55 +15,92 @@ import {
   Clock
 } from "lucide-react";
 
-// Mock Data: Today's Schedule for the Carousel
-const scheduleToday = [
-  { 
-    id: 1, 
-    title: "Physics 101 - Mechanics", 
-    group: "Group A", 
-    time: "10:00 AM - 12:00 PM", 
-    location: "Lecture Hall 3", 
-    status: "Upcoming", 
-    critical: 2, 
-    atRisk: 5, 
-    attendance: 88 
-  },
-  { 
-    id: 2, 
-    title: "Mathematics 201 - Calculus", 
-    group: "Group B", 
-    time: "2:00 PM - 3:00 PM", 
-    location: "Tutorial Room 1", 
-    status: "Scheduled", 
-    critical: 0, 
-    atRisk: 1, 
-    attendance: 95 
-  },
-  { 
-    id: 3, 
-    title: "Computer Science 101", 
-    group: "Group A", 
-    time: "4:00 PM - 6:00 PM", 
-    location: "Computer Lab 2", 
-    status: "Scheduled", 
-    critical: 1, 
-    atRisk: 3, 
-    attendance: 92 
-  },
-];
+//TypeScript interfaces to match Supabase schema
+interface ScheduleItem {
+  id: number | string;
+  title: string;
+  group: string;
+  time: string;
+  location: string;
+  status: string;
+  critical: number;
+  atRisk: number;
+  attendance: number;
+}
 
-// Mock Data: All Assigned Classes for the bottom grid
-const allAssignedClasses = [
-  { id: 101, title: "Physics 101 - Mechanics", type: "Lecture", time: "Mon 10:00 AM", attendance: 88, icon: MonitorPlay },
-  { id: 102, title: "Mathematics 201 - Calculus", type: "Tutorial", time: "Mon 2:00 PM", attendance: 95, icon: BookOpen },
-  { id: 103, title: "Computer Science 101", type: "Lab", time: "Mon 4:00 PM", attendance: 92, icon: Beaker },
-  { id: 104, title: "Physics 102 - Waves & Optics", type: "Lecture", time: "Wed 9:00 AM", attendance: 91, icon: MonitorPlay },
-  { id: 105, title: "Chemistry 101 - Organic", type: "Lab", time: "Thu 11:00 AM", attendance: 85, icon: Beaker },
-];
+interface AssignedClass {
+  id: number | string;
+  title: string;
+  type: "Lecture" | "Tutorial" | "Lab" | string;
+  time: string;
+  attendance: number;
+}
+
+//Helper function to dynamically map database strings to icons
+const getClassIcon = (type: string) => {
+  switch (type.toLowerCase()) {
+    case "lecture":
+      return MonitorPlay;
+    case "tutorial":
+      return BookOpen;
+    case "lab":
+      return Beaker;
+    default:
+      return BookOpen;
+  }
+};
 
 export default function HomePage() {
-  // Carousel State - Defaults to the first item (Upcoming Class)
+  //Setup state to handle dynamic data fetching
   const [activeIndex, setActiveIndex] = useState(0);
+  const [scheduleToday, setScheduleToday] = useState<ScheduleItem[]>([]);
+  const [assignedClasses, setAssignedClasses] = useState<AssignedClass[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  //Dynamic date formatting
+  const currentDateFormatted = new Intl.DateTimeFormat('en-GB', { 
+    weekday: 'long', 
+    day: 'numeric', 
+    month: 'long', 
+    year: 'numeric' 
+  }).format(new Date());
+
+  //useEffect block ready for Supabase data fetching
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setIsLoading(true);
+      
+      try {
+        // TODO: Replace with actual Supabase fetch calls
+        // const { data: scheduleData } = await supabase.from('schedule').select('*').eq('date', today);
+        // const { data: classData } = await supabase.from('classes').select('*');
+
+        //Simulating network request with mock data for now
+        const mockSchedule: ScheduleItem[] = [
+          { id: 1, title: "Physics 101 - Mechanics", group: "Group A", time: "10:00 AM - 12:00 PM", location: "Lecture Hall 3", status: "Upcoming", critical: 2, atRisk: 5, attendance: 88 },
+          { id: 2, title: "Mathematics 201 - Calculus", group: "Group B", time: "2:00 PM - 3:00 PM", location: "Tutorial Room 1", status: "Scheduled", critical: 0, atRisk: 1, attendance: 95 },
+          { id: 3, title: "Computer Science 101", group: "Group A", time: "4:00 PM - 6:00 PM", location: "Computer Lab 2", status: "Scheduled", critical: 1, atRisk: 3, attendance: 92 },
+        ];
+
+        const mockAssignedClasses: AssignedClass[] = [
+          { id: 101, title: "Physics 101 - Mechanics", type: "Lecture", time: "Mon 10:00 AM", attendance: 88 },
+          { id: 102, title: "Mathematics 201 - Calculus", type: "Tutorial", time: "Mon 2:00 PM", attendance: 95 },
+          { id: 103, title: "Computer Science 101", type: "Lab", time: "Mon 4:00 PM", attendance: 92 },
+          { id: 104, title: "Physics 102 - Waves & Optics", type: "Lecture", time: "Wed 9:00 AM", attendance: 91 },
+          { id: 105, title: "Chemistry 101 - Organic", type: "Lab", time: "Thu 11:00 AM", attendance: 85 },
+        ];
+
+        setScheduleToday(mockSchedule);
+        setAssignedClasses(mockAssignedClasses);
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
 
   const nextSlide = () => {
     setActiveIndex((prev) => (prev === scheduleToday.length - 1 ? 0 : prev + 1));
@@ -73,16 +110,20 @@ export default function HomePage() {
     setActiveIndex((prev) => (prev === 0 ? scheduleToday.length - 1 : prev - 1));
   };
 
+  if (isLoading) {
+    return <div className="flex-1 flex items-center justify-center">Loading dashboard...</div>;
+  }
+
   return (
     <main className="flex-1 overflow-y-auto bg-transparent flex flex-col">
       
-      {/* 1. TOP HALF: 3D CAROUSEL (50vh height) */}
+      {/* 3D CAROUSEL */}
       <div className="relative w-full h-[55vh] min-h-[450px] flex items-center justify-center overflow-hidden bg-slate-900/5 rounded-b-[3rem] shadow-inner mb-10 pt-4">
         
         {/* Header Overlay */}
         <div className="absolute top-8 left-10 z-40">
           <h2 className="text-3xl font-semibold text-slate-900">Welcome back, Dr. Ahmad</h2>
-          <p className="text-slate-500 mt-1">Monday, 6 July 2026 • Your Schedule</p>
+          <p className="text-slate-500 mt-1">{currentDateFormatted}</p>
         </div>
 
         {/* Carousel Navigation Arrows */}
@@ -103,14 +144,12 @@ export default function HomePage() {
         {/* 3D Track */}
         <div className="relative w-full max-w-4xl h-[350px] flex items-center justify-center perspective-[1200px]">
           {scheduleToday.map((cls, index) => {
-            // Calculate relative position for the 3D effect
             const offset = index - activeIndex;
             const isCenter = offset === 0;
             const isRight = offset > 0 || (activeIndex === scheduleToday.length - 1 && index === 0);
             const isLeft = offset < 0 || (activeIndex === 0 && index === scheduleToday.length - 1);
             
-            // Determine Tailwind transform classes based on position
-            let transformClasses = "translate-x-full scale-50 opacity-0 z-0"; // Hidden default
+            let transformClasses = "translate-x-full scale-50 opacity-0 z-0"; 
             if (isCenter) {
               transformClasses = "translate-x-0 scale-100 opacity-100 z-30 blur-none shadow-2xl";
             } else if (isRight && Math.abs(offset) === 1 || (activeIndex === scheduleToday.length - 1 && index === 0)) {
@@ -125,8 +164,6 @@ export default function HomePage() {
                 onClick={() => !isCenter && setActiveIndex(index)}
                 className={`absolute w-full max-w-2xl bg-white rounded-3xl border border-slate-200 p-8 transition-all duration-700 ease-[cubic-bezier(0.25,0.8,0.25,1)] ${transformClasses}`}
               >
-                
-                
                 <div className="relative z-10 flex flex-col justify-between h-full gap-6">
                   <div className="flex justify-between items-start">
                     <div>
@@ -137,7 +174,6 @@ export default function HomePage() {
                       <p className="text-slate-500 text-lg mt-1">{cls.group} • {cls.location}</p>
                     </div>
                     
-                    {/* Primary Call to Action (Only clickable on active card) */}
                     {isCenter && (
                       <Link href="/attendance/active" className="flex flex-col items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-2xl font-semibold shadow-md shadow-blue-200 transition-all active:scale-95">
                         <QrCode size={28} />
@@ -146,7 +182,6 @@ export default function HomePage() {
                     )}
                   </div>
 
-                  {/* Active Card Metrics */}
                   <div className={`grid grid-cols-3 gap-4 border-t border-slate-100 pt-6 transition-opacity duration-500 ${isCenter ? 'opacity-100' : 'opacity-40'}`}>
                     <div className="bg-red-50 p-3 rounded-xl border border-red-100">
                       <div className="flex items-center gap-1.5 text-red-700 text-xs font-bold uppercase mb-1">
@@ -183,16 +218,17 @@ export default function HomePage() {
             <h3 className="text-xl font-bold text-slate-900">All Assigned Classes</h3>
             <p className="text-sm text-slate-500 mt-1">Semester 1 • Academic Year 2025/2026</p>
           </div>
-          <Link href="/classes" className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">
-            View full roster →
-          </Link>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {allAssignedClasses.map((item) => {
-            const Icon = item.icon;
+          {assignedClasses.map((item) => {
+            const Icon = getClassIcon(item.type);
             return (
-              <div key={item.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all group">
+              <Link 
+                href={`/classes/${item.id}`} 
+                key={item.id} 
+                className="block bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all group"
+              >
                 <div className="flex justify-between items-start mb-4">
                   <div className={`p-2.5 rounded-xl ${
                     item.type === 'Lecture' ? 'bg-indigo-100 text-indigo-600' :
@@ -222,7 +258,7 @@ export default function HomePage() {
                     </span>
                   </div>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>

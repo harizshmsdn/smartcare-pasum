@@ -30,7 +30,7 @@ export default function SettingsPage() {
         <p className="text-slate-500 mt-1">Configure your workspace rules, localization preferences, and AI alert parameters</p>
       </header>
 
-      <div className="max-w-4xl space-y-6">
+      <div className="w-full space-y-6">
         
         {/* SECTION 1: AI & AUTOMATION ALERTS CONFIGURATION (FR-04) */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">

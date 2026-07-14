@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { 
   TrendingUp, 
   Award, 
@@ -165,9 +166,12 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <button className="mt-4 w-full bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2">
+          <Link 
+            href="/interventions"
+            className="mt-4 w-full bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+          >
             Review Cases <ChevronRight size={16} />
-          </button>
+          </Link>
         </div>
 
         {/* ROW 2, COL 1: Raw Merit Scores (0-500) */}

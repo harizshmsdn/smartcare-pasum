@@ -104,9 +104,7 @@ export default function AlertsPage() {
           >
             Mark all as read
           </button>
-          <button className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-xl font-medium shadow-sm hover:bg-slate-50 transition-colors">
-            <Filter size={18} /> Filter
-          </button>
+        
         </div>
       </header>
 
