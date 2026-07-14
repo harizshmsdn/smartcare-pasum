@@ -38,25 +38,24 @@ const mockClasses = [
 export default function ClassesPage() {
   const router = useRouter();
   
-  // 1. New States for UI functionality
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedClass, setSelectedClass] = useState(mockClasses[0]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  // 2. Filter Logic: Applies Tab selection AND Search Query
+  //Filter Logic: Applies Tab selection AND Search Query
   const filteredStudents = mockStudents.filter((student) => {
-    // Tab Filter
+    //Tab Filter
     const matchesTab = activeTab === "all" || (activeTab === "alerts" && student.status !== "good");
     
-    // Search Filter (matches name or ID)
+    //Search Filter (matches name or ID)
     const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           student.id.includes(searchQuery);
 
     return matchesTab && matchesSearch;
   });
 
-  // Calculate dynamic alerts count
+  //Calculate dynamic alerts count
   const alertsCount = mockStudents.filter(s => s.status !== "good").length;
 
   return (
@@ -69,7 +68,7 @@ export default function ClassesPage() {
           <p className="text-slate-500 mt-1">Manage and monitor specific cohorts</p>
         </div>
         
-        {/* FIX 1: Functional Dropdown for selecting classes */}
+        {/* Dropdown for selecting classes */}
         <div className="relative">
           <button 
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -151,7 +150,7 @@ export default function ClassesPage() {
         
         {/* Table Toolbar */}
         <div className="p-5 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-white">
-          {/* FIX 2: Tabs now update activeTab state */}
+          {/* Tabs for filtering students */}
           <div className="flex gap-2 w-full md:w-auto">
             <button 
               onClick={() => setActiveTab("all")} 
