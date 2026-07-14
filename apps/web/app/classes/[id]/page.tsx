@@ -2,15 +2,14 @@
 "use client";
 
 import { useState } from "react";
+import { useParams } from "next/navigation";
 import { 
   Mail, 
-  MessageSquare, 
   CalendarDays, 
   AlertTriangle, 
   TrendingDown,
   Clock,
   CheckCircle2,
-  BookOpen,
   ArrowLeft,
   Award, 
   History, 
@@ -23,9 +22,7 @@ import {
   XAxis, 
   YAxis, 
   CartesianGrid, 
-  Tooltip,
-  AreaChart,
-  Area
+  Tooltip
 } from "recharts";
 import Link from "next/link";
 
@@ -39,6 +36,8 @@ const studentHistory = [
 ];
 
 export default function ProfilePage() {
+  const params = useParams();
+  const studentId = params?.id || "1720441";
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
   return (
@@ -98,13 +97,22 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <button 
-          onClick={() => setIsHistoryModalOpen(true)}
-          className="flex items-center gap-2 px-5 py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl font-semibold transition-all duration-200 shadow-sm hover:shadow active:scale-95"
-        >
-          <History size={20} />
-          View Merit History
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <Link 
+            href={`/classes/${studentId}/merit-requests`}
+            className="flex items-center gap-2 px-5 py-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-xl font-semibold transition-all duration-200 shadow-sm hover:shadow active:scale-95 font-sans"
+          >
+            <Award size={20} />
+            Merit Requests (3)
+          </Link>
+          <button 
+            onClick={() => setIsHistoryModalOpen(true)}
+            className="flex items-center gap-2 px-5 py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl font-semibold transition-all duration-200 shadow-sm hover:shadow active:scale-95 cursor-pointer font-sans"
+          >
+            <History size={20} />
+            View Merit History
+          </button>
+        </div>
       </section>
       {/* --- END MERIT SECTION --- */}
 
@@ -164,25 +172,6 @@ export default function ProfilePage() {
         {/* Right Column: AI Insights & Activity Feed */}
         <div className="space-y-8">
           
-          {/* n8n / AI Output Card */}
-          <div className="bg-red-50 border border-red-100 p-6 rounded-2xl shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="bg-red-100 p-2 rounded-lg text-red-600">
-                <AlertTriangle size={20} />
-              </div>
-              <h3 className="font-bold text-red-900">System Alert Log</h3>
-            </div>
-            <p className="text-sm text-red-800 leading-relaxed mb-4">
-              <strong>Automated Trigger:</strong> Student's attendance dropped by 40% over the last 14 days, perfectly correlating with a 33-point drop in continuous assessments. 
-            </p>
-            <div className="bg-white/60 p-3 rounded-xl border border-red-200">
-              <p className="text-xs font-semibold text-red-900 uppercase tracking-wider mb-2">Recommended Action</p>
-              <p className="text-sm text-red-800 flex items-start gap-2">
-                <ArrowLeft size={16} className="mt-0.5 shrink-0" /> Route to UM Counselling Unit and schedule immediate academic intervention.
-              </p>
-            </div>
-          </div>
-
           {/* Recent Activity Timeline */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <h3 className="font-bold text-slate-900 mb-6">Recent Activity</h3>
