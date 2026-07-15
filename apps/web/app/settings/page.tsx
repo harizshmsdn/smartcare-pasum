@@ -1,7 +1,7 @@
 // apps/web/app/settings/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ExportReportModal from "../../components/ExportReportModal";
 import { 
   Bell, 
@@ -10,14 +10,80 @@ import {
   Save, 
   HelpCircle
 } from "lucide-react";
+import { createClient } from "../../utils/supabase/client";
 
 export default function SettingsPage() {
-  // Mock configuration states matching your SRS requirements
+  const supabase = createClient();
+  const [lecturerId, setLecturerId] = useState("");
   const [attendanceThreshold, setAttendanceThreshold] = useState(80);
   const [gradeDropThreshold, setGradeDropThreshold] = useState(20);
-  const [language, setLanguage] = useState("en"); // Support for EN and BM (Section 4.3)
-  const [emailAlerts, setEmailAlerts] = useState(true);
+  const [language, setLanguage] = useState("en");
+  const [syncExternal, setSyncExternal] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      setIsLoading(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        setLecturerId(user.id);
+
+        const { data } = await supabase
+          .from('settings')
+          .select('*')
+          .eq('lecturer_id', user.id)
+          .maybeSingle();
+
+        if (data) {
+          setAttendanceThreshold(data.attendance_threshold || 80);
+          setGradeDropThreshold(data.grade_drop_threshold || 20);
+          setLanguage(data.language || "en");
+          setSyncExternal(!!data.sync_external_counselling);
+        }
+      } catch (err) {
+        console.error("Error loading settings:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSave = async () => {
+    if (!lecturerId) return;
+
+    try {
+      const { error } = await supabase
+        .from('settings')
+        .upsert({
+          lecturer_id: lecturerId,
+          attendance_threshold: attendanceThreshold,
+          grade_drop_threshold: gradeDropThreshold,
+          language: language,
+          sync_external_counselling: syncExternal,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error("Error saving settings:", error);
+        alert("Failed to save settings: " + error.message);
+        return;
+      }
+
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  if (isLoading) {
+    return <div className="flex-1 flex items-center justify-center bg-slate-50 min-h-screen">Loading settings...</div>;
+  }
 
   return (
     <main className="flex-1 p-8 overflow-y-auto bg-[#FAF9F6]">
@@ -28,9 +94,16 @@ export default function SettingsPage() {
         <p className="text-slate-500 mt-1">Configure your workspace rules, localization preferences, and AI alert parameters</p>
       </header>
 
+      {saveSuccess && (
+        <div className="mb-6 p-4 bg-emerald-50 border border-emerald-250 text-emerald-800 rounded-xl text-sm font-semibold flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+          Settings saved successfully!
+        </div>
+      )}
+
       <div className="w-full space-y-6">
         
-        {/* SECTION 1: AI & AUTOMATION ALERTS CONFIGURATION (FR-04) */}
+        {/* SECTION 1: AI & AUTOMATION ALERTS CONFIGURATION */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center gap-2 mb-6">
             <div className="bg-blue-50 p-2 rounded-lg text-blue-600">
@@ -89,7 +162,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* SECTION 2: LOCALIZATION (Section 4.3) */}
+        {/* SECTION 2: LOCALIZATION */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center gap-2 mb-6">
             <div className="bg-indigo-50 p-2 rounded-lg text-indigo-600">
@@ -135,8 +208,8 @@ export default function SettingsPage() {
             <label className="relative inline-flex items-center cursor-pointer">
               <input 
                 type="checkbox" 
-                checked={emailAlerts} 
-                onChange={(e) => setEmailAlerts(e.target.checked)}
+                checked={syncExternal} 
+                onChange={(e) => setSyncExternal(e.target.checked)}
                 className="sr-only peer"
               />
               <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -146,32 +219,35 @@ export default function SettingsPage() {
 
         {/* SAVE TRIGGER BUTTON CONTAINER */}
         <div className="flex justify-end pt-4">
-          <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold shadow-md shadow-blue-100 transition-all active:scale-95">
+          <button 
+            onClick={handleSave}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold shadow-md shadow-blue-100 transition-all active:scale-95 border-none cursor-pointer"
+          >
             <Save size={18} />
             Save Configuration Changes
           </button>
         </div>
 
         {/* Compliance & Data Section */}
-      <section className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-2">Compliance & Data</h2>
-        <p className="text-gray-600 text-sm mb-4">
-          Export course data, attendance records, and assessment correlations for university auditing purposes.
-        </p>
-        
-        <button 
-          onClick={() => setIsExportModalOpen(true)}
-          className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
-        >
-          Export Official Report
-        </button>
-      </section>
+        <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+          <h2 className="text-lg font-bold mb-2">Compliance & Data</h2>
+          <p className="text-slate-500 text-sm mb-4">
+            Export course data, attendance records, and assessment correlations for university auditing purposes.
+          </p>
+          
+          <button 
+            onClick={() => setIsExportModalOpen(true)}
+            className="bg-slate-900 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-800 transition-colors border-none cursor-pointer"
+          >
+            Export Official Report
+          </button>
+        </section>
 
-      {/* Render the Modal */}
-      <ExportReportModal 
-        isOpen={isExportModalOpen} 
-        onClose={() => setIsExportModalOpen(false)} 
-      />
+        {/* Render the Export Report Modal */}
+        <ExportReportModal 
+          isOpen={isExportModalOpen} 
+          onClose={() => setIsExportModalOpen(false)} 
+        />
 
       </div>
     </main>

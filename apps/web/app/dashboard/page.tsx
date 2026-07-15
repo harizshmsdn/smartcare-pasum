@@ -1,7 +1,7 @@
 // apps/web/app/dashboard/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   TrendingUp, 
@@ -25,6 +25,7 @@ import {
   Tooltip,
   Legend
 } from "recharts";
+import { createClient } from "../../utils/supabase/client";
 
 // Mock Data 1: Subject-Specific Timelines
 const subjectTimelines = {
@@ -50,24 +51,6 @@ const subjectTimelines = {
   ]
 };
 
-// Mock Data 2: Raw Merit Score Points (0 - 500)
-const meritRawScores = [
-  { range: "0-100", students: 5 },
-  { range: "101-200", students: 18 },
-  { range: "201-300", students: 42 },
-  { range: "301-400", students: 65 },
-  { range: "401-500", students: 30 },
-];
-
-// Mock Data 3: Merit Score CGPA Estimates
-const meritCGPA = [
-  { range: "< 2.0", students: 12 },
-  { range: "2.0-2.5", students: 25 },
-  { range: "2.5-3.0", students: 45 },
-  { range: "3.0-3.5", students: 80 },
-  { range: "3.5-4.0", students: 38 },
-];
-
 // Mock Data 4: Mid-Term vs Finals (Major Exams)
 const examPerformance = [
   { subject: "Phy 101", midterm: 68, finals: 75 },
@@ -76,11 +59,119 @@ const examPerformance = [
   { subject: "Comp 101", midterm: 82, finals: 85 },
 ];
 
+interface ChartItem {
+  range: string;
+  students: number;
+}
+
+
 export default function DashboardPage() {
+  const supabase = createClient();
   const [activeSubject, setActiveSubject] = useState<"Physics 101" | "Physics 102">("Physics 101");
+  const [absenteeismCount, setAbsenteeismCount] = useState(0);
+  const [assessmentDropCount, setAssessmentDropCount] = useState(0);
+  
+  const [meritRawScores, setMeritRawScores] = useState<ChartItem[]>([
+    { range: "0-100", students: 0 },
+    { range: "101-200", students: 0 },
+    { range: "201-300", students: 0 },
+    { range: "301-400", students: 0 },
+    { range: "401-500", students: 0 },
+  ]);
+
+  const [meritCGPA, setMeritCGPA] = useState<ChartItem[]>([
+    { range: "< 2.0", students: 0 },
+    { range: "2.0-2.5", students: 0 },
+    { range: "2.5-3.0", students: 0 },
+    { range: "3.0-3.5", students: 0 },
+    { range: "3.5-4.0", students: 0 },
+  ]);
+
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      setIsLoading(true);
+      try {
+        // 1. Fetch absenteeism count
+        const { data: enrollments } = await supabase
+          .from('enrollments')
+          .select('current_attendance_rate');
+        
+        if (enrollments) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const count = enrollments.filter((e: any) => Number(e.current_attendance_rate) < 80).length;
+          setAbsenteeismCount(count);
+        }
+
+        // 2. Fetch assessment drop count (needs review interventions)
+        const { count: dropCount } = await supabase
+          .from('interventions')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'needs_review');
+        setAssessmentDropCount(dropCount || 0);
+
+        // 3. Fetch student merit score distribution
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('total_merit_score')
+          .eq('role', 'student');
+
+        if (profiles) {
+          const raw: [ChartItem, ChartItem, ChartItem, ChartItem, ChartItem] = [
+            { range: "0-100", students: 0 },
+            { range: "101-200", students: 0 },
+            { range: "201-300", students: 0 },
+            { range: "301-400", students: 0 },
+            { range: "401-500", students: 0 },
+          ];
+          const cgpa: [ChartItem, ChartItem, ChartItem, ChartItem, ChartItem] = [
+            { range: "< 2.0", students: 0 },
+            { range: "2.0-2.5", students: 0 },
+            { range: "2.5-3.0", students: 0 },
+            { range: "3.0-3.5", students: 0 },
+            { range: "3.5-4.0", students: 0 },
+          ];
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          profiles.forEach((p: any) => {
+            const score = Number(p.total_merit_score || 0);
+            
+            // Raw distribution
+            if (score <= 100) raw[0].students++;
+            else if (score <= 200) raw[1].students++;
+            else if (score <= 300) raw[2].students++;
+            else if (score <= 400) raw[3].students++;
+            else raw[4].students++;
+
+            // Placement prediction
+            if (score <= 80) cgpa[0].students++;
+            else if (score <= 125) cgpa[1].students++;
+            else if (score <= 175) cgpa[2].students++;
+            else if (score <= 220) cgpa[3].students++;
+            else cgpa[4].students++;
+          });
+
+          setMeritRawScores(raw);
+          setMeritCGPA(cgpa);
+        }
+      } catch (err) {
+        console.error("Error loading analytics:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAnalytics();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (isLoading) {
+    return <div className="flex-1 flex items-center justify-center bg-slate-50 min-h-screen">Loading analytics dashboard...</div>;
+  }
 
   return (
-    <main className="flex-1 h-screen flex flex-col p-8 bg-transparent overflow-hidden">
+    <main className="flex-1 h-screen flex flex-col p-8 bg-[#FAF9F6] overflow-hidden">
       
       {/* Header (Fixed Height) */}
       <header className="shrink-0 mb-6 flex justify-between items-end">
@@ -154,7 +245,7 @@ export default function DashboardPage() {
                 <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Absenteeism</p>
                 <p className="text-xs text-slate-500 mt-0.5">Students &lt; 80%</p>
               </div>
-              <span className="text-3xl font-black text-white">14</span>
+              <span className="text-3xl font-black text-white">{absenteeismCount}</span>
             </div>
             
             <div className="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl flex justify-between items-center">
@@ -162,7 +253,7 @@ export default function DashboardPage() {
                 <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Assessment Drop</p>
                 <p className="text-xs text-slate-500 mt-0.5">Sudden Decline</p>
               </div>
-              <span className="text-3xl font-black text-red-400">8</span>
+              <span className="text-3xl font-black text-red-400">{assessmentDropCount}</span>
             </div>
           </div>
 

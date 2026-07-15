@@ -1,7 +1,7 @@
 // apps/web/app/interventions/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   ArrowLeft,
@@ -11,60 +11,134 @@ import {
   MoreHorizontal,
   MessageSquare,
   GripVertical,
-  ChevronDown
+  ChevronDown,
+  Check
 } from "lucide-react";
+import { createClient } from "../../utils/supabase/client";
 
 interface KanbanItem {
-  id: string;
+  id: string; // Institutional ID (Matric)
+  role?: string;
+  interventionId: string; // DB primary key
   name: string;
   issue: string;
   daysPending: number;
   priority: string;
   class: string;
+  status: string;
 }
 
-// Mock Data for the Kanban Board
-const kanbanData = {
-  needsReview: [
-    { id: "1720441", name: "Ahmad Hakimi bin Faisal", issue: "Critical: 60% Attendance", daysPending: 2, priority: "high", class: "Physics 101 - Group A" },
-    { id: "1720451", name: "Muhammad Danial bin Zulkifli", issue: "Assessment Drop: -25%", daysPending: 1, priority: "medium", class: "Mathematics 201 - Group B" },
-  ],
-  inProgress: [
-    { id: "1720445", name: "Jason Lee Wei Min", issue: "Academic Advising Scheduled", daysPending: 4, priority: "medium", class: "Computer Science 101" },
-  ],
-  referred: [
-    { id: "1720462", name: "Chong Wei Jie", issue: "UM Counselling Unit Sync", daysPending: 7, priority: "high", class: "Physics 101 - Group A" },
-  ],
-  resolved: [
-    { id: "1720450", name: "Siti Aisyah binti Rahman", issue: "Back on track (>80%)", daysPending: 0, priority: "low", class: "Mathematics 201 - Group B" },
-  ]
-};
-
-// Mock Classes for the dropdown
-const mockClasses = [
-  "All Classes",
-  "Physics 101 - Group A",
-  "Mathematics 201 - Group B",
-  "Computer Science 101"
-];
-
 export default function InterventionsPage() {
-  const [selectedClass, setSelectedClass] = useState(mockClasses[0]);
+  const supabase = createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [interventions, setInterventions] = useState<any[]>([]);
+  const [classesList, setClassesList] = useState<string[]>(["All Classes"]);
+  const [selectedClass, setSelectedClass] = useState("All Classes");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Helper function to filter the kanban data based on the selected class
-  const filterByClass = (items: KanbanItem[]) => {
-    if (selectedClass === "All Classes") return items;
-    return items.filter(item => item.class === selectedClass);
+  const loadInterventions = async () => {
+    setIsLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Fetch interventions
+    const { data } = await supabase
+      .from('interventions')
+      .select(`
+        id,
+        issue_description,
+        status,
+        priority,
+        created_at,
+        profiles (
+          institutional_id,
+          full_name
+        ),
+        classes (
+          group_code,
+          subjects (
+            code,
+            name
+          )
+        )
+      `)
+      .eq('lecturer_id', user.id);
+
+    if (data) {
+      setInterventions(data);
+      
+      // Extract unique class titles for filter dropdown
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const uniqueClasses = Array.from(new Set(data.map((item: any) => {
+        const classNode = item.classes;
+        return classNode ? `${classNode.subjects?.code} - ${classNode.subjects?.name} (${classNode.group_code})` : "";
+      }).filter(Boolean))) as string[];
+      
+      setClassesList(["All Classes", ...uniqueClasses]);
+    }
+    setIsLoading(false);
   };
 
-  const filteredNeedsReview = filterByClass(kanbanData.needsReview);
-  const filteredInProgress = filterByClass(kanbanData.inProgress);
-  const filteredReferred = filterByClass(kanbanData.referred);
-  const filteredResolved = filterByClass(kanbanData.resolved);
+  useEffect(() => {
+    loadInterventions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleUpdateStatus = async (id: string, newStatus: string) => {
+    const { error } = await supabase
+      .from('interventions')
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) {
+      console.error("Failed to update status:", error);
+      return;
+    }
+
+    setInterventions(prev => 
+      prev.map(item => item.id === id ? { ...item, status: newStatus } : item)
+    );
+  };
+
+  // Map database items to KanbanItem objects
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mappedItems: KanbanItem[] = interventions.map((item: any) => {
+    const profile = item.profiles;
+    const classNode = item.classes;
+    const classTitle = classNode ? `${classNode.subjects?.code} - ${classNode.subjects?.name} (${classNode.group_code})` : "General";
+    
+    // Days pending calculation
+    const days = Math.max(0, Math.floor((Date.now() - new Date(item.created_at).getTime()) / (1000 * 60 * 60 * 24)));
+
+    return {
+      id: profile?.institutional_id || "Unknown",
+      interventionId: item.id,
+      name: profile?.full_name || "Unknown Student",
+      issue: item.issue_description,
+      daysPending: days,
+      priority: item.priority || "medium",
+      class: classTitle,
+      status: item.status || "needs_review"
+    };
+  });
+
+  // Filter items by selected class
+  const filteredItems = selectedClass === "All Classes" 
+    ? mappedItems 
+    : mappedItems.filter(item => item.class === selectedClass);
+
+  const needsReviewItems = filteredItems.filter(item => item.status === "needs_review");
+  const inProgressItems = filteredItems.filter(item => item.status === "in_progress");
+  const referredItems = filteredItems.filter(item => item.status === "referred");
+  const resolvedItems = filteredItems.filter(item => item.status === "resolved");
+
+  if (isLoading) {
+    return <div className="flex-1 flex items-center justify-center bg-slate-50 min-h-screen">Loading interventions...</div>;
+  }
 
   return (
-    <main className="flex-1 p-8 h-screen flex flex-col bg-transparent overflow-hidden">
+    <main className="flex-1 p-8 h-screen flex flex-col bg-[#FAF9F6] overflow-hidden">
       
       {/* Header & Breadcrumb */}
       <div className="shrink-0 mb-8">
@@ -94,7 +168,7 @@ export default function InterventionsPage() {
               {/* Dropdown Menu */}
               {isDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-full min-w-[220px] bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
-                  {mockClasses.map((cls) => (
+                  {classesList.map((cls) => (
                     <button
                       key={cls}
                       onClick={() => {
@@ -112,7 +186,7 @@ export default function InterventionsPage() {
 
             <div className="flex items-center gap-2 bg-red-50 text-red-700 px-4 py-3 rounded-xl font-semibold text-sm">
               <AlertTriangle size={18} />
-              {filteredNeedsReview.length} Action Required
+              {needsReviewItems.length} Action Required
             </div>
           </div>
         </div>
@@ -129,12 +203,12 @@ export default function InterventionsPage() {
               Needs Review
             </h3>
             <span className="bg-slate-200 text-slate-600 text-xs font-bold px-2.5 py-0.5 rounded-full">
-              {filteredNeedsReview.length}
+              {needsReviewItems.length}
             </span>
           </div>
           <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-            {filteredNeedsReview.map((student, i) => (
-              <KanbanCard key={i} data={student} />
+            {needsReviewItems.map((student) => (
+              <KanbanCard key={student.interventionId} data={student} onUpdateStatus={handleUpdateStatus} />
             ))}
           </div>
         </div>
@@ -147,17 +221,17 @@ export default function InterventionsPage() {
               In Progress
             </h3>
             <span className="bg-slate-200 text-slate-600 text-xs font-bold px-2.5 py-0.5 rounded-full">
-              {filteredInProgress.length}
+              {inProgressItems.length}
             </span>
           </div>
           <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-            {filteredInProgress.map((student, i) => (
-              <KanbanCard key={i} data={student} />
+            {inProgressItems.map((student) => (
+              <KanbanCard key={student.interventionId} data={student} onUpdateStatus={handleUpdateStatus} />
             ))}
           </div>
         </div>
 
-        {/* Column 3: Referred to Counselling */}
+        {/* Column 3: External Referral */}
         <div className="flex-1 flex flex-col min-w-[280px]">
           <div className="flex items-center justify-between mb-4 px-1">
             <h3 className="font-bold text-slate-700 flex items-center gap-2">
@@ -165,12 +239,12 @@ export default function InterventionsPage() {
               External Referral
             </h3>
             <span className="bg-slate-200 text-slate-600 text-xs font-bold px-2.5 py-0.5 rounded-full">
-              {filteredReferred.length}
+              {referredItems.length}
             </span>
           </div>
           <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-            {filteredReferred.map((student, i) => (
-              <KanbanCard key={i} data={student} />
+            {referredItems.map((student) => (
+              <KanbanCard key={student.interventionId} data={student} onUpdateStatus={handleUpdateStatus} />
             ))}
           </div>
         </div>
@@ -183,12 +257,12 @@ export default function InterventionsPage() {
               Resolved
             </h3>
             <span className="bg-slate-200 text-slate-600 text-xs font-bold px-2.5 py-0.5 rounded-full">
-              {filteredResolved.length}
+              {resolvedItems.length}
             </span>
           </div>
           <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-            {filteredResolved.map((student, i) => (
-              <KanbanCard key={i} data={student} isResolved />
+            {resolvedItems.map((student) => (
+              <KanbanCard key={student.interventionId} data={student} onUpdateStatus={handleUpdateStatus} isResolved />
             ))}
           </div>
         </div>
@@ -199,9 +273,26 @@ export default function InterventionsPage() {
 }
 
 // Kanban Card Component
-function KanbanCard({ data, isResolved = false }: { data: KanbanItem, isResolved?: boolean }) {
+function KanbanCard({ 
+  data, 
+  onUpdateStatus, 
+  isResolved = false 
+}: { 
+  data: KanbanItem; 
+  onUpdateStatus: (id: string, newStatus: string) => Promise<void>; 
+  isResolved?: boolean;
+}) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const statuses = [
+    { label: "Needs Review", value: "needs_review" },
+    { label: "In Progress", value: "in_progress" },
+    { label: "Referral", value: "referred" },
+    { label: "Resolved", value: "resolved" }
+  ];
+
   return (
-    <div className={`bg-white p-5 rounded-2xl border shadow-sm group hover:shadow-md transition-all cursor-grab active:cursor-grabbing ${isResolved ? 'border-emerald-100 bg-emerald-50/30' : 'border-slate-200'}`}>
+    <div className={`bg-white p-5 rounded-2xl border shadow-sm group hover:shadow-md transition-all relative ${isResolved ? 'border-emerald-100 bg-emerald-50/30' : 'border-slate-200'}`}>
       <div className="flex justify-between items-start mb-3">
         <div className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
           data.priority === 'high' ? 'bg-red-50 text-red-700' : 
@@ -210,9 +301,33 @@ function KanbanCard({ data, isResolved = false }: { data: KanbanItem, isResolved
         }`}>
           {data.priority} Priority
         </div>
-        <button className="text-slate-400 hover:text-slate-900 transition-colors">
-          <MoreHorizontal size={18} />
-        </button>
+        <div className="relative">
+          <button 
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="text-slate-400 hover:text-slate-900 transition-colors p-1 bg-transparent border-none cursor-pointer"
+          >
+            <MoreHorizontal size={18} />
+          </button>
+          
+          {isMenuOpen && (
+            <div className="absolute right-0 mt-1 w-40 bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden py-1">
+              <p className="text-[10px] font-bold text-slate-400 px-3 py-1 bg-slate-50 tracking-wider">CHANGE STATUS</p>
+              {statuses.map(st => (
+                <button
+                  key={st.value}
+                  onClick={async () => {
+                    await onUpdateStatus(data.interventionId, st.value);
+                    setIsMenuOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 transition-colors flex items-center justify-between ${data.status === st.value ? 'text-blue-600 font-bold' : 'text-slate-700'}`}
+                >
+                  {st.label}
+                  {data.status === st.value && <Check size={12} />}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       
       <h4 className="font-bold text-slate-900 mb-1">{data.name}</h4>
@@ -234,10 +349,10 @@ function KanbanCard({ data, isResolved = false }: { data: KanbanItem, isResolved
           )}
         </div>
         <div className="flex gap-2">
-          <button className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+          <button className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border-none bg-transparent cursor-pointer">
             <MessageSquare size={16} />
           </button>
-          <div className="p-1.5 text-slate-300 cursor-grab active:cursor-grabbing">
+          <div className="p-1.5 text-slate-300">
             <GripVertical size={16} />
           </div>
         </div>

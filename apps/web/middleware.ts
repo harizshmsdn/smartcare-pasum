@@ -53,14 +53,21 @@ export async function middleware(request: NextRequest) {
     // 2. ROLE-BASED ACCESS CONTROL (RBAC)
     // If the user IS logged in and trying to access a protected route, verify they are a lecturer
     if (user && isProtectedRoute) {
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .single()
+        // Fast path: Check app_metadata for the role (saves a database query per request)
+        let role = user.app_metadata?.role
+
+        // Fallback: Query profiles table if not present in JWT app_metadata
+        if (!role) {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', user.id)
+                .single()
+            role = profile?.role
+        }
 
         // Kick out anyone who isn't a lecturer
-        if (!profile || profile.role !== 'lecturer') {
+        if (role !== 'lecturer') {
             await supabase.auth.signOut()
             const url = request.nextUrl.clone()
             url.pathname = '/login'

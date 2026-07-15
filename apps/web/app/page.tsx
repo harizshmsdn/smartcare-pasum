@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { createClient } from "../utils/supabase/client";
 import { 
   QrCode, 
   AlertTriangle, 
@@ -59,6 +60,8 @@ const getClassIcon = (type: string) => {
 
 export default function HomePage() {
   const router = useRouter();
+  const supabase = createClient();
+  const [lecturerName, setLecturerName] = useState("Dr. Alan Turing");
   //Setup state to handle dynamic data fetching
   const [activeIndex, setActiveIndex] = useState(0);
   const [scheduleToday, setScheduleToday] = useState<ScheduleItem[]>([]);
@@ -95,27 +98,72 @@ export default function HomePage() {
       setIsLoading(true);
       
       try {
-        // TODO: Replace with actual Supabase fetch calls
-        // const { data: scheduleData } = await supabase.from('schedule').select('*').eq('date', today);
-        // const { data: classData } = await supabase.from('classes').select('*');
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          router.push('/login');
+          return;
+        }
 
-        //Simulating network request with mock data for now
-        const mockSchedule: ScheduleItem[] = [
-          { id: 1, title: "Physics 101 - Mechanics", group: "Group A", time: "10:00 AM - 12:00 PM", location: "Lecture Hall 3", status: "Upcoming", critical: 2, atRisk: 5, attendance: 88 },
-          { id: 2, title: "Mathematics 201 - Calculus", group: "Group B", time: "2:00 PM - 3:00 PM", location: "Tutorial Room 1", status: "Scheduled", critical: 0, atRisk: 1, attendance: 95 },
-          { id: 3, title: "Computer Science 101", group: "Group A", time: "4:00 PM - 6:00 PM", location: "Computer Lab 2", status: "Scheduled", critical: 1, atRisk: 3, attendance: 92 },
-        ];
+        // Fetch Lecturer Name
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+        if (profile?.full_name) {
+          setLecturerName(profile.full_name);
+        }
 
-        const mockAssignedClasses: AssignedClass[] = [
-          { id: 101, title: "Physics 101 - Mechanics", type: "Lecture", time: "Mon 10:00 AM", attendance: 88 },
-          { id: 102, title: "Mathematics 201 - Calculus", type: "Tutorial", time: "Mon 2:00 PM", attendance: 95 },
-          { id: 103, title: "Computer Science 101", type: "Lab", time: "Mon 4:00 PM", attendance: 92 },
-          { id: 104, title: "Physics 102 - Waves & Optics", type: "Lecture", time: "Wed 9:00 AM", attendance: 91 },
-          { id: 105, title: "Chemistry 101 - Organic", type: "Lab", time: "Thu 11:00 AM", attendance: 85 },
-        ];
+        // Fetch Classes
+        const { data: classesData } = await supabase
+          .from('classes')
+          .select(`
+            id,
+            group_code,
+            type,
+            semester,
+            subjects (
+              code,
+              name
+            )
+          `)
+          .eq('lecturer_id', user.id);
 
-        setScheduleToday(mockSchedule);
-        setAssignedClasses(mockAssignedClasses);
+        const processedClasses = await Promise.all((classesData || []).map(async (cls) => {
+          const { data: enrollments } = await supabase
+            .from('enrollments')
+            .select('current_attendance_rate')
+            .eq('class_id', cls.id);
+
+          const totalEnrollments = enrollments?.length || 0;
+          const avgAttendance = totalEnrollments > 0 
+            ? Math.round((enrollments || []).reduce((sum, e) => sum + Number(e.current_attendance_rate), 0) / totalEnrollments) 
+            : 100;
+
+          const criticalCount = enrollments?.filter(e => Number(e.current_attendance_rate) < 80).length || 0;
+          const atRiskCount = enrollments?.filter(e => Number(e.current_attendance_rate) >= 80 && Number(e.current_attendance_rate) < 90).length || 0;
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const subjectNode = cls.subjects as any;
+          const subjectName = subjectNode?.name || "Unknown Class";
+          const subjectCode = subjectNode?.code || "UNK101";
+
+          return {
+            id: cls.id,
+            title: `${subjectCode} - ${subjectName}`,
+            group: cls.group_code,
+            time: cls.type === 'Lecture' ? '10:00 AM - 12:00 PM' : cls.type === 'Tutorial' ? '2:00 PM - 3:00 PM' : '4:00 PM - 6:00 PM',
+            location: cls.type === 'Lecture' ? 'Lecture Hall 3' : cls.type === 'Tutorial' ? 'Tutorial Room 1' : 'Computer Lab 2',
+            status: 'Scheduled',
+            critical: criticalCount,
+            atRisk: atRiskCount,
+            attendance: avgAttendance,
+            type: cls.type
+          };
+        }));
+
+        setScheduleToday(processedClasses.slice(0, 3));
+        setAssignedClasses(processedClasses);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
       } finally {
@@ -124,6 +172,7 @@ export default function HomePage() {
     };
 
     fetchDashboardData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const nextSlide = () => {
@@ -146,7 +195,7 @@ export default function HomePage() {
         
         {/* Header Overlay */}
         <div className="absolute top-8 left-10 z-40">
-          <h2 className="text-3xl font-semibold text-slate-900">Welcome back, Dr. Ahmad</h2>
+          <h2 className="text-3xl font-semibold text-slate-900">Welcome back, {lecturerName}</h2>
           <p className="text-slate-500 mt-1">{currentDateFormatted}</p>
         </div>
 
@@ -252,7 +301,7 @@ export default function HomePage() {
             const Icon = getClassIcon(item.type);
             return (
               <Link 
-                href={`/classes/${item.id}`} 
+                href={`/classes?classId=${item.id}`} 
                 key={item.id} 
                 className="block bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all group"
               >
@@ -451,18 +500,41 @@ export default function HomePage() {
                 Cancel
               </button>
               <button 
-                onClick={() => {
+                onClick={async () => {
+                  const sessionPin = Math.floor(1000 + Math.random() * 9000).toString() + '-X';
+                  
+                  // Insert active session into Supabase
+                  const { data: newSession, error: sessionError } = await supabase
+                    .from('attendance_sessions')
+                    .insert({
+                      class_id: configuringClass.id,
+                      opened_at: new Date().toISOString(),
+                      session_pin: sessionPin,
+                      geo_lat: 3.115,
+                      geo_lng: 101.655,
+                      geo_radius_meters: 50
+                    })
+                    .select()
+                    .single();
+
+                  if (sessionError) {
+                    console.error("Failed to start session:", sessionError);
+                    return;
+                  }
+
                   // Save active session settings in localStorage
                   const sessionSettings = {
+                    sessionId: newSession.id,
                     classId: configuringClass.id,
                     onlineMode,
                     faceIdRequired: !onlineMode && faceIdRequired,
-                    locationRequired: !onlineMode && locationRequired
+                    locationRequired: !onlineMode && locationRequired,
+                    sessionPin: sessionPin
                   };
                   localStorage.setItem('activeSessionConfig', JSON.stringify(sessionSettings));
                   
                   // Redirect to Active Attendance page with config query params
-                  router.push(`/attendance/active?classId=${configuringClass.id}&onlineMode=${onlineMode}&faceIdRequired=${sessionSettings.faceIdRequired}&locationRequired=${sessionSettings.locationRequired}`);
+                  router.push(`/attendance/active?sessionId=${newSession.id}&classId=${configuringClass.id}&onlineMode=${onlineMode}&faceIdRequired=${sessionSettings.faceIdRequired}&locationRequired=${sessionSettings.locationRequired}`);
                   setShowConfigModal(false);
                 }}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl shadow-md shadow-blue-200 hover:shadow-lg hover:shadow-blue-300 transition-all cursor-pointer border-none font-sans"

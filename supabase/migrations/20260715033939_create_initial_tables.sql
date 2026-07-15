@@ -298,3 +298,30 @@ ON public.alerts FOR ALL TO authenticated USING (auth.uid() = lecturer_id);
 
 CREATE POLICY "Lecturers manage their own interventions" 
 ON public.interventions FOR ALL TO authenticated USING (auth.uid() = lecturer_id);
+
+-- Automated trigger to award merit points to student profile upon approval of a merit claim
+CREATE OR REPLACE FUNCTION public.handle_merit_approval()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF OLD.status = 'pending' AND NEW.status = 'approved' THEN
+        UPDATE public.profiles
+        SET total_merit_score = total_merit_score + COALESCE(NEW.awarded_points, 0)
+        WHERE id = NEW.student_id;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE TRIGGER on_merit_approved
+    AFTER UPDATE ON public.merit_claims
+    FOR EACH ROW EXECUTE FUNCTION public.handle_merit_approval();
+
+-- Explicit schema and table grants for roles
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO postgres, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO anon;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO postgres, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated, anon;
+GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO postgres, service_role;
+GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO authenticated, anon;

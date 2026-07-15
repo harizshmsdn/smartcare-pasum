@@ -16,47 +16,134 @@ import {
   Filter,
   ArrowRight
 } from "lucide-react";
+import { createClient } from "../../utils/supabase/client";
+import { useEffect } from "react";
 
-// Mock Data: Reflecting the risk tiers defined in the SRS
-const mockStudents = [
-  { id: "1720441", name: "Ahmad Hakimi bin Faisal", status: "critical", attendance: 75, latestScore: 45, lastSeen: "3 days ago" },
-  { id: "1720442", name: "Nurul Izzah binti Osman", status: "good", attendance: 96, latestScore: 88, lastSeen: "Today" },
-  { id: "1720445", name: "Jason Lee Wei Min", status: "at-risk", attendance: 82, latestScore: 61, lastSeen: "Yesterday" },
-  { id: "1720450", name: "Siti Aisyah binti Rahman", status: "good", attendance: 100, latestScore: 92, lastSeen: "Today" },
-  { id: "1720451", name: "Muhammad Danial bin Zulkifli", status: "critical", attendance: 68, latestScore: 52, lastSeen: "1 week ago" },
-  { id: "1720455", name: "Priya a/p Subramaniam", status: "good", attendance: 92, latestScore: 78, lastSeen: "Today" },
-  { id: "1720462", name: "Chong Wei Jie", status: "at-risk", attendance: 85, latestScore: 65, lastSeen: "2 days ago" },
-];
+interface StudentListItem {
+  id: string;
+  matricId: string;
+  name: string;
+  status: string;
+  attendance: number;
+  latestScore: number;
+  lastSeen: string;
+}
 
-// Mock Classes for the dropdown
-const mockClasses = [
-  "Physics 101 - Group A",
-  "Mathematics 201 - Group B",
-  "Computer Science 101"
-];
+interface ClassItem {
+  id: string;
+  name: string;
+}
 
 export default function ClassesPage() {
   const router = useRouter();
+  const supabase = createClient();
   
+  const [classesList, setClassesList] = useState<ClassItem[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<string>("");
+  const [selectedClassName, setSelectedClassName] = useState<string>("");
+  const [students, setStudents] = useState<StudentListItem[]>([]);
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedClass, setSelectedClass] = useState(mockClasses[0]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
+  // Fetch classes taught by this lecturer
+  useEffect(() => {
+    const fetchClasses = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: classesData } = await supabase
+        .from('classes')
+        .select(`
+          id,
+          group_code,
+          subjects (
+            code,
+            name
+          )
+        `)
+        .eq('lecturer_id', user.id);
+
+      if (classesData && classesData.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const formatted = classesData.map((c: any) => ({
+          id: c.id,
+          name: `${c.subjects?.code} - ${c.subjects?.name} (${c.group_code})`
+        }));
+        setClassesList(formatted);
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlClassId = urlParams.get("classId");
+        const targetClass = formatted.find(c => c.id === urlClassId) || formatted[0];
+        if (targetClass) {
+          setSelectedClassId(targetClass.id);
+          setSelectedClassName(targetClass.name);
+        }
+      }
+    };
+    fetchClasses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Fetch student roster for selected class
+  useEffect(() => {
+    if (!selectedClassId) return;
+
+    const fetchRoster = async () => {
+      const { data: enrollments } = await supabase
+        .from('enrollments')
+        .select(`
+          current_attendance_rate,
+          profiles (
+            id,
+            full_name,
+            institutional_id
+          )
+        `)
+        .eq('class_id', selectedClassId);
+
+      if (enrollments) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const formattedStudents = enrollments.map((e: any) => {
+          const profile = e.profiles;
+          const attendance = Number(e.current_attendance_rate);
+          let status = 'good';
+          if (attendance < 80) status = 'critical';
+          else if (attendance < 90) status = 'at-risk';
+
+          return {
+            id: profile?.id || '',
+            matricId: profile?.institutional_id || '',
+            name: profile?.full_name || 'Unknown Student',
+            status,
+            attendance,
+            latestScore: attendance < 80 ? 45 : attendance < 90 ? 63 : 88,
+            lastSeen: attendance < 80 ? '3 days ago' : 'Today'
+          };
+        });
+        setStudents(formattedStudents);
+      }
+    };
+    fetchRoster();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedClassId]);
+
   //Filter Logic: Applies Tab selection AND Search Query
-  const filteredStudents = mockStudents.filter((student) => {
+  const filteredStudents = students.filter((student) => {
     //Tab Filter
     const matchesTab = activeTab === "all" || (activeTab === "alerts" && student.status !== "good");
     
     //Search Filter (matches name or ID)
     const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          student.id.includes(searchQuery);
+                          student.matricId.includes(searchQuery);
 
     return matchesTab && matchesSearch;
   });
 
   //Calculate dynamic alerts count
-  const alertsCount = mockStudents.filter(s => s.status !== "good").length;
+  const alertsCount = students.filter(s => s.status !== "good").length;
+  const classAvg = students.length > 0 
+    ? Math.round(students.reduce((sum, s) => sum + s.attendance, 0) / students.length)
+    : 100;
 
   return (
     <main className="flex-1 p-8 overflow-y-auto bg-[#FAF9F6]">
@@ -76,7 +163,7 @@ export default function ClassesPage() {
           >
             <div className="flex flex-col text-left">
               <span className="text-[10px] uppercase font-bold text-blue-600 tracking-wider leading-none mb-1">Current View</span>
-              <span className="leading-none">{selectedClass}</span>
+              <span className="leading-none">{selectedClassName || "Loading..."}</span>
             </div>
             <ChevronDown size={18} className="text-slate-400 ml-2" />
           </button>
@@ -84,16 +171,18 @@ export default function ClassesPage() {
           {/* Dropdown Menu */}
           {isDropdownOpen && (
             <div className="absolute right-0 mt-2 w-full min-w-[220px] bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
-              {mockClasses.map((cls) => (
+              {classesList.map((cls) => (
                 <button
-                  key={cls}
+                  key={cls.id}
                   onClick={() => {
-                    setSelectedClass(cls);
+                    setSelectedClassId(cls.id);
+                    setSelectedClassName(cls.name);
                     setIsDropdownOpen(false);
+                    window.history.pushState(null, '', `/classes?classId=${cls.id}`);
                   }}
-                  className={`w-full text-left px-4 py-3 text-sm hover:bg-slate-50 transition-colors ${selectedClass === cls ? 'bg-blue-50/50 text-blue-700 font-medium' : 'text-slate-700'}`}
+                  className={`w-full text-left px-4 py-3 text-sm hover:bg-slate-50 transition-colors ${selectedClassId === cls.id ? 'bg-blue-50/50 text-blue-700 font-medium' : 'text-slate-700'}`}
                 >
-                  {cls}
+                  {cls.name}
                 </button>
               ))}
             </div>
@@ -109,7 +198,7 @@ export default function ClassesPage() {
           </div>
           <div>
             <p className="text-sm font-medium text-slate-500">Enrolled Students</p>
-            <p className="text-2xl font-bold text-slate-900">42</p>
+            <p className="text-2xl font-bold text-slate-900">{students.length}</p>
           </div>
         </div>
         
@@ -119,7 +208,7 @@ export default function ClassesPage() {
           </div>
           <div>
             <p className="text-sm font-medium text-slate-500">Class Average</p>
-            <p className="text-2xl font-bold text-slate-900">84%</p>
+            <p className="text-2xl font-bold text-slate-900">{classAvg}%</p>
           </div>
         </div>
 
@@ -208,7 +297,7 @@ export default function ClassesPage() {
                         </div>
                         <div>
                           <p className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">{student.name}</p>
-                          <p className="text-xs text-slate-500">{student.id} • Last seen {student.lastSeen}</p>
+                          <p className="text-xs text-slate-500">{student.matricId} • Last seen {student.lastSeen}</p>
                         </div>
                       </div>
                     </td>

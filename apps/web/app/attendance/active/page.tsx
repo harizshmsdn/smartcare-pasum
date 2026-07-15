@@ -14,43 +14,188 @@ import {
   Clock,
   ArrowLeft,
   UserPlus,
-  Laptop
+  Laptop,
+  Check
 } from "lucide-react";
+import { createClient } from "../../../utils/supabase/client";
 
-// Mock Live Data: Demonstrating the 3-Factor Auth status
-const liveAttendees = [
-  { id: "1720450", name: "Siti Aisyah binti Rahman", time: "10:01 AM", faceVerified: true, locationVerified: true, manual: false },
-  { id: "1720442", name: "Nurul Izzah binti Osman", time: "10:02 AM", faceVerified: true, locationVerified: true, manual: false },
-  { id: "1720455", name: "Priya a/p Subramaniam", time: "10:04 AM", faceVerified: true, locationVerified: false, manual: true }, // GPS malfunction case
-  { id: "1720462", name: "Chong Wei Jie", time: "10:05 AM", faceVerified: true, locationVerified: true, manual: false },
-];
+interface Attendee {
+  id: string;
+  name: string;
+  time: string;
+  faceVerified: boolean;
+  locationVerified: boolean;
+  manual: boolean;
+}
 
 export default function ActiveAttendancePage() {
-  // Opens automatically when the page loads
+  const supabase = createClient();
   const [showQrModal, setShowQrModal] = useState(true);
+
+  const [sessionId, setSessionId] = useState<string>("");
 
   const [onlineMode, setOnlineMode] = useState(false);
   const [faceIdRequired, setFaceIdRequired] = useState(true);
   const [locationRequired, setLocationRequired] = useState(true);
+  const [sessionPin, setSessionPin] = useState("8492-X");
+  const [className, setClassName] = useState("Physics 101");
+  const [classGroup, setClassGroup] = useState("Group A");
+  
+  const [totalStudentsCount, setTotalStudentsCount] = useState(0);
+  const [liveAttendees, setLiveAttendees] = useState<Attendee[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [absentStudents, setAbsentStudents] = useState<any[]>([]);
+  const [showOverrideModal, setShowOverrideModal] = useState(false);
+  const [lecturerId, setLecturerId] = useState<string>("");
 
   useEffect(() => {
+    let activeSessionId = "";
+    let activeClassId = "";
     const savedConfig = localStorage.getItem('activeSessionConfig');
+    
     if (savedConfig) {
       try {
         const config = JSON.parse(savedConfig);
+        activeSessionId = config.sessionId || "";
+        activeClassId = config.classId || "";
+        setSessionId(activeSessionId);
         setOnlineMode(!!config.onlineMode);
         setFaceIdRequired(config.faceIdRequired !== false);
         setLocationRequired(config.locationRequired !== false);
+        setSessionPin(config.sessionPin || "8492-X");
       } catch (e) {
         console.error(e);
       }
-    } else if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      setOnlineMode(params.get('onlineMode') === 'true');
-      setFaceIdRequired(params.get('faceIdRequired') !== 'false');
-      setLocationRequired(params.get('locationRequired') !== 'false');
     }
+
+    const loadSessionData = async () => {
+      // Get Lecturer UID
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setLecturerId(user.id);
+
+      if (!activeSessionId) return;
+
+      // 1. Fetch Session Info
+      const { data: session } = await supabase
+        .from('attendance_sessions')
+        .select(`
+          session_pin,
+          classes (
+            group_code,
+            subjects (
+              name
+            )
+          )
+        `)
+        .eq('id', activeSessionId)
+        .single();
+
+      if (session) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const classNode = session.classes as any;
+        if (classNode) {
+          setClassName(classNode.subjects?.name || "Physics 101");
+          setClassGroup(classNode.group_code || "Group A");
+        }
+      }
+
+      // 2. Fetch Enrollments count
+      if (activeClassId) {
+        const { data: enrollments } = await supabase
+          .from('enrollments')
+          .select(`
+            student_id,
+            profiles (
+              id,
+              full_name,
+              institutional_id
+            )
+          `)
+          .eq('class_id', activeClassId);
+
+        if (enrollments) {
+          setTotalStudentsCount(enrollments.length);
+          // Store all enrolled students for check-in override dropdown
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          setAbsentStudents(enrollments.map((e: any) => e.profiles));
+        }
+      }
+    };
+    loadSessionData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Fetch Check-ins regularly (Polled or Real-time)
+  useEffect(() => {
+    if (!sessionId) return;
+
+    const fetchCheckins = async () => {
+      const { data: records } = await supabase
+        .from('attendance_records')
+        .select(`
+          logged_at,
+          face_verified,
+          location_verified,
+          verified_by_lecturer_id,
+          profiles (
+            id,
+            full_name,
+            institutional_id
+          )
+        `)
+        .eq('session_id', sessionId);
+
+      if (records) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const formatted = records.map((r: any) => ({
+          id: r.profiles?.institutional_id || "",
+          name: r.profiles?.full_name || "Unknown Student",
+          time: new Date(r.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          faceVerified: !!r.face_verified,
+          locationVerified: !!r.location_verified,
+          manual: !!r.verified_by_lecturer_id
+        }));
+        setLiveAttendees(formatted);
+
+        setAbsentStudents(prev => 
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          prev.filter(student => !records.some((r: any) => r.profiles?.id === student.id))
+        );
+      }
+    };
+
+    fetchCheckins();
+    const interval = setInterval(fetchCheckins, 5000); // Poll every 5s for live simulation
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleManualOverride = async (studentProfile: any) => {
+    if (!sessionId || !studentProfile) return;
+
+    try {
+      const { error } = await supabase
+        .from('attendance_records')
+        .insert({
+          session_id: sessionId,
+          student_id: studentProfile.id,
+          face_verified: true,
+          location_verified: true,
+          status: 'present',
+          verified_by_lecturer_id: lecturerId
+        });
+
+      if (error) {
+        console.error("Failed override insert:", error);
+        return;
+      }
+
+      setShowOverrideModal(false);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
     <main className="flex-1 p-8 overflow-y-auto bg-slate-50 relative">
@@ -82,7 +227,7 @@ export default function ActiveAttendancePage() {
               
               <div className="text-center w-full">
                 <p className="text-slate-500 font-mono text-sm tracking-widest bg-slate-100 py-3 rounded-xl mb-6">
-                  SESSION-PIN: <span className="font-bold text-slate-800 text-lg">8492-X</span>
+                  SESSION-PIN: <span className="font-bold text-slate-800 text-lg">{sessionPin}</span>
                 </p>
                 <button 
                   onClick={() => setShowQrModal(false)}
@@ -109,10 +254,10 @@ export default function ActiveAttendancePage() {
 
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
-          <h2 className="text-3xl font-semibold text-slate-900">Physics 101 - Group A</h2>
+          <h2 className="text-3xl font-semibold text-slate-900">{className} - {classGroup}</h2>
           <div className="flex flex-col gap-2.5 mt-1">
             <p className="text-slate-500 flex items-center gap-2 text-sm">
-              <Clock size={16} /> Session started at 10:00 AM
+              <Clock size={16} /> Session PIN: <span className="font-bold text-slate-700">{sessionPin}</span>
             </p>
             <div className="flex flex-wrap gap-2">
               {onlineMode ? (
@@ -162,7 +307,7 @@ export default function ActiveAttendancePage() {
           <div>
             <p className="text-sm font-medium text-slate-500 mb-1">Present Students</p>
             <p className="text-3xl font-bold text-slate-900">
-              <span className="text-emerald-600">24</span> <span className="text-lg text-slate-400">/ 42</span>
+              <span className="text-emerald-600">{liveAttendees.length}</span> <span className="text-lg text-slate-400">/ {totalStudentsCount}</span>
             </p>
           </div>
           <div className="bg-emerald-50 p-4 rounded-full text-emerald-600">
@@ -181,7 +326,10 @@ export default function ActiveAttendancePage() {
                 Bypass 3-factor location protocols and manually check-in a student if their device is unable to retrieve GPS coordinates.
               </p>
             </div>
-            <button className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-3 rounded-xl font-medium transition-colors flex items-center gap-2 whitespace-nowrap">
+            <button 
+              onClick={() => setShowOverrideModal(true)}
+              className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-3 rounded-xl font-medium transition-colors flex items-center gap-2 whitespace-nowrap cursor-pointer border-none"
+            >
               <UserPlus size={18} /> Manual Override
             </button>
           </div>
@@ -267,6 +415,49 @@ export default function ActiveAttendancePage() {
           </table>
         </div>
       </div>
+      {/* Manual Override Modal */}
+      {showOverrideModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
+            <div className="bg-slate-900 p-5 flex justify-between items-center text-white">
+              <h3 className="font-bold text-lg flex items-center gap-2">
+                <UserPlus size={20} />
+                Manual Override Check-in
+              </h3>
+              <button 
+                onClick={() => setShowOverrideModal(false)}
+                className="bg-white/10 hover:bg-white/20 p-2 rounded-full border-none text-white cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="p-6 max-h-[60vh] overflow-y-auto">
+              {absentStudents.length > 0 ? (
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold text-slate-500">SELECT ABSENT STUDENT TO CHECK IN:</p>
+                  {absentStudents.map((student) => (
+                    <button
+                      key={student.id}
+                      onClick={() => handleManualOverride(student)}
+                      className="w-full flex items-center justify-between p-3.5 border border-slate-200 hover:border-blue-500 rounded-xl hover:bg-blue-50/50 transition-all text-left font-sans cursor-pointer group"
+                    >
+                      <div>
+                        <p className="font-bold text-slate-900 group-hover:text-blue-700 transition-colors">{student.full_name}</p>
+                        <p className="text-xs text-slate-500">{student.institutional_id}</p>
+                      </div>
+                      <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-all flex items-center gap-1">
+                        Check In <Check size={12} />
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-slate-500 text-center py-6">All enrolled students have checked in.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

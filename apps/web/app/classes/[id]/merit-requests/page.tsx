@@ -18,6 +18,7 @@ import {
   ExternalLink,
   ShieldCheck
 } from "lucide-react";
+import { createClient } from "../../../../utils/supabase/client";
 
 interface MeritRequest {
   id: string;
@@ -34,47 +35,65 @@ interface MeritRequest {
 
 export default function MeritRequestsPage() {
   const params = useParams();
-  const studentId = params?.id || "1720441";
+  const studentId = (params?.id as string) || "22222222-2222-2222-2222-222222222221";
 
-  // Mock pending merit requests state
-  const [requests, setRequests] = useState<MeritRequest[]>([
-    { 
-      id: "req1", 
-      date: "10 July 2026", 
-      time: "2:30 PM", 
-      title: "Sukan Asasi Malaysia - Badminton Singles Gold", 
-      category: "Sports & Recreation",
-      points: 25, 
-      description: "Represented PASUM in the national foundation games and secured 1st place in the men's singles tournament.",
-      proofType: "image",
-      proofUrl: "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800&auto=format&fit=crop&q=80",
-      status: "pending" 
-    },
-    { 
-      id: "req2", 
-      date: "08 July 2026", 
-      time: "11:00 AM", 
-      title: "Dean's List Award Ceremony Coordinator", 
-      category: "Leadership & Service",
-      points: 15, 
-      description: "Appointed as the head of technical logistics for the semester 1 awards ceremony, coordinating audio/visual and staging setups.",
-      proofType: "pdf",
-      proofUrl: "/assets/proof_deans_list.pdf",
-      status: "pending" 
-    },
-    { 
-      id: "req3", 
-      date: "05 July 2026", 
-      time: "4:45 PM", 
-      title: "PASUM Charity Run Volunteer", 
-      category: "Community Engagement",
-      points: 10, 
-      description: "Volunteered to supervise marshalling stations and medical response coordination along check-point 3.",
-      proofType: "image",
-      proofUrl: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800&auto=format&fit=crop&q=80",
-      status: "pending" 
-    }
-  ]);
+  const supabase = createClient();
+  const [requests, setRequests] = useState<MeritRequest[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [studentProfile, setStudentProfile] = useState<any>(null);
+  const [lecturerId, setLecturerId] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!studentId) return;
+
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setLecturerId(user.id);
+        }
+
+        // Fetch Student Profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', studentId)
+          .single();
+        setStudentProfile(profile);
+
+        // Fetch Merit Claims
+        const { data: claims } = await supabase
+          .from('merit_claims')
+          .select('*')
+          .eq('student_id', studentId);
+
+        if (claims) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const formatted = claims.map((c: any) => ({
+            id: c.id,
+            date: new Date(c.submitted_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+            time: new Date(c.submitted_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            title: c.title,
+            category: c.category || 'General',
+            points: c.awarded_points || 10,
+            description: c.description || '',
+            proofType: ((c.proof_file_url || '').toLowerCase().endsWith('.pdf') ? 'pdf' : 'image') as "pdf" | "image",
+            proofUrl: c.proof_file_url || '',
+            status: (c.status === 'approved' ? 'verified' : 'pending') as "verified" | "pending"
+          }));
+          setRequests(formatted);
+        }
+      } catch (err) {
+        console.error("Error loading merit requests:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentId]);
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [inspectRequest, setInspectRequest] = useState<MeritRequest | null>(null);
@@ -106,30 +125,88 @@ export default function MeritRequestsPage() {
     }
   };
 
-  const verifyIndividual = (request: MeritRequest) => {
-    setRequests(prev => 
-      prev.map(r => r.id === request.id ? { ...r, status: "verified" } : r)
-    );
-    setSelectedIds(prev => prev.filter(id => id !== request.id));
-    setVerifiedPointsSum(prev => prev + request.points);
-    setToastMessage(`Merit approved! +${request.points} points awarded for "${request.title}".`);
+  const verifyIndividual = async (request: MeritRequest) => {
+    try {
+      const { error } = await supabase
+        .from('merit_claims')
+        .update({
+          status: 'approved',
+          evaluator_id: lecturerId,
+          evaluated_at: new Date().toISOString()
+        })
+        .eq('id', request.id);
+
+      if (error) {
+        console.error("Failed to approve merit:", error);
+        return;
+      }
+
+      setRequests(prev => 
+        prev.map(r => r.id === request.id ? { ...r, status: "verified" } : r)
+      );
+      setSelectedIds(prev => prev.filter(id => id !== request.id));
+      setVerifiedPointsSum(prev => prev + request.points);
+
+      if (studentProfile) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setStudentProfile((prev: any) => ({
+          ...prev,
+          total_merit_score: Number(prev.total_merit_score || 0) + request.points
+        }));
+      }
+
+      setToastMessage(`Merit approved! +${request.points} points awarded for "${request.title}".`);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const verifySelectedBulk = () => {
+  const verifySelectedBulk = async () => {
     if (selectedIds.length === 0) return;
 
-    const selectedRequests = requests.filter(r => selectedIds.includes(r.id));
-    const addedPoints = selectedRequests.reduce((sum, r) => sum + r.points, 0);
+    try {
+      const selectedRequests = requests.filter(r => selectedIds.includes(r.id));
+      const addedPoints = selectedRequests.reduce((sum, r) => sum + r.points, 0);
 
-    setRequests(prev => 
-      prev.map(r => selectedIds.includes(r.id) ? { ...r, status: "verified" } : r)
-    );
-    setSelectedIds([]);
-    setVerifiedPointsSum(prev => prev + addedPoints);
-    setToastMessage(`Bulk approval complete! ${selectedRequests.length} requests verified. +${addedPoints} total points awarded.`);
+      const { error } = await supabase
+        .from('merit_claims')
+        .update({
+          status: 'approved',
+          evaluator_id: lecturerId,
+          evaluated_at: new Date().toISOString()
+        })
+        .in('id', selectedIds);
+
+      if (error) {
+        console.error("Failed to bulk approve merits:", error);
+        return;
+      }
+
+      setRequests(prev => 
+        prev.map(r => selectedIds.includes(r.id) ? { ...r, status: "verified" } : r)
+      );
+      setSelectedIds([]);
+      setVerifiedPointsSum(prev => prev + addedPoints);
+
+      if (studentProfile) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setStudentProfile((prev: any) => ({
+          ...prev,
+          total_merit_score: Number(prev.total_merit_score || 0) + addedPoints
+        }));
+      }
+
+      setToastMessage(`Bulk approval complete! ${selectedRequests.length} requests verified. +${addedPoints} total points awarded.`);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const pendingCount = requests.filter(r => r.status === "pending").length;
+
+  if (isLoading || !studentProfile) {
+    return <div className="flex-1 flex items-center justify-center bg-slate-50 min-h-screen">Loading merit requests...</div>;
+  }
 
   return (
     <main className="flex-1 p-8 overflow-y-auto bg-slate-50 relative font-sans">
@@ -164,8 +241,8 @@ export default function MeritRequestsPage() {
             <span className="text-xs font-bold tracking-wider uppercase text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
               Merit Verification Worklist
             </span>
-            <h1 className="text-3xl font-extrabold text-slate-900 mt-3 font-sans">Ahmad Hakimi bin Faisal</h1>
-            <p className="text-slate-500 mt-1">Matric: {studentId} • School of Physics 101 (Group A)</p>
+            <h1 className="text-3xl font-extrabold text-slate-900 mt-3 font-sans">{studentProfile.full_name}</h1>
+            <p className="text-slate-500 mt-1">Matric: {studentProfile.institutional_id}</p>
           </div>
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-right flex gap-6">
             <div>
