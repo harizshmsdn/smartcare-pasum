@@ -2,7 +2,6 @@
 "use client";
 
 import { 
-  User, 
   Mail, 
   Phone, 
   MapPin, 

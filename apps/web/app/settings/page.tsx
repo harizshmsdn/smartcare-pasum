@@ -6,10 +6,8 @@ import ExportReportModal from "../../components/ExportReportModal";
 import { 
   Bell, 
   Sliders, 
-  Shield, 
   Globe, 
   Save, 
-  AlertCircle,
   HelpCircle
 } from "lucide-react";
 

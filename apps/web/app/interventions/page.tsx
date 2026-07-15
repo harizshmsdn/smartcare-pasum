@@ -14,6 +14,15 @@ import {
   ChevronDown
 } from "lucide-react";
 
+interface KanbanItem {
+  id: string;
+  name: string;
+  issue: string;
+  daysPending: number;
+  priority: string;
+  class: string;
+}
+
 // Mock Data for the Kanban Board
 const kanbanData = {
   needsReview: [
@@ -44,7 +53,7 @@ export default function InterventionsPage() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Helper function to filter the kanban data based on the selected class
-  const filterByClass = (items: any[]) => {
+  const filterByClass = (items: KanbanItem[]) => {
     if (selectedClass === "All Classes") return items;
     return items.filter(item => item.class === selectedClass);
   };
@@ -190,7 +199,7 @@ export default function InterventionsPage() {
 }
 
 // Kanban Card Component
-function KanbanCard({ data, isResolved = false }: { data: any, isResolved?: boolean }) {
+function KanbanCard({ data, isResolved = false }: { data: KanbanItem, isResolved?: boolean }) {
   return (
     <div className={`bg-white p-5 rounded-2xl border shadow-sm group hover:shadow-md transition-all cursor-grab active:cursor-grabbing ${isResolved ? 'border-emerald-100 bg-emerald-50/30' : 'border-slate-200'}`}>
       <div className="flex justify-between items-start mb-3">

@@ -9,7 +9,6 @@ import {
   TrendingDown, 
   Clock, 
   CheckCircle2,
-  Filter,
   ArrowRight
 } from "lucide-react";
 
@@ -138,7 +137,7 @@ export default function AlertsPage() {
           {filteredAlerts.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-slate-400">
               <CheckCircle2 size={48} className="mb-4 text-emerald-400 opacity-50" />
-              <p className="text-lg font-medium">You're all caught up!</p>
+              <p className="text-lg font-medium">You&apos;re all caught up!</p>
               <p className="text-sm">No new alerts matching this filter.</p>
             </div>
           ) : (
