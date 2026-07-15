@@ -122,6 +122,10 @@ export default function HomePage() {
             group_code,
             type,
             semester,
+            day_of_week,
+            start_time,
+            end_time,
+            location,
             subjects (
               code,
               name
@@ -148,21 +152,92 @@ export default function HomePage() {
           const subjectName = subjectNode?.name || "Unknown Class";
           const subjectCode = subjectNode?.code || "UNK101";
 
+          // Format start_time and end_time (e.g. "10:00:00" -> "10:00 AM")
+          const formatTimeStr = (timeStr: string | null) => {
+            if (!timeStr) return "";
+            const parts = timeStr.split(':');
+            const p0 = parts[0];
+            const p1 = parts[1];
+            if (!p0 || !p1) return timeStr;
+            const hr = parseInt(p0, 10);
+            const min = p1;
+            const ampm = hr >= 12 ? 'PM' : 'AM';
+            const displayHr = hr % 12 === 0 ? 12 : hr % 12;
+            return `${displayHr}:${min} ${ampm}`;
+          };
+
+          const formattedTimeRange = cls.start_time && cls.end_time 
+            ? `${formatTimeStr(cls.start_time)} - ${formatTimeStr(cls.end_time)}`
+            : (cls.type === 'Lecture' ? '10:00 AM - 12:00 PM' : cls.type === 'Tutorial' ? '2:00 PM - 3:00 PM' : '4:00 PM - 6:00 PM');
+
+          const formattedDayTime = cls.day_of_week 
+            ? `${cls.day_of_week} • ${formattedTimeRange}`
+            : formattedTimeRange;
+
           return {
             id: cls.id,
             title: `${subjectCode} - ${subjectName}`,
             group: cls.group_code,
-            time: cls.type === 'Lecture' ? '10:00 AM - 12:00 PM' : cls.type === 'Tutorial' ? '2:00 PM - 3:00 PM' : '4:00 PM - 6:00 PM',
-            location: cls.type === 'Lecture' ? 'Lecture Hall 3' : cls.type === 'Tutorial' ? 'Tutorial Room 1' : 'Computer Lab 2',
+            time: formattedDayTime,
+            location: cls.location || (cls.type === 'Lecture' ? 'Lecture Hall 3' : cls.type === 'Tutorial' ? 'Tutorial Room 1' : 'Computer Lab 2'),
             status: 'Scheduled',
             critical: criticalCount,
             atRisk: atRiskCount,
             attendance: avgAttendance,
-            type: cls.type
+            type: cls.type,
+            dayOfWeek: cls.day_of_week,
+            startTime: cls.start_time,
+            endTime: cls.end_time
           };
         }));
 
-        setScheduleToday(processedClasses.slice(0, 3));
+        // Dynamic schedule filtering by current day
+        const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        const todayDayOfWeek = days[new Date().getDay()];
+
+        const todayClasses = processedClasses.filter(cls => cls.dayOfWeek === todayDayOfWeek);
+        todayClasses.sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
+        
+        // Fallback: sort all classes by day-of-week index & starting time
+        const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+        const fallbackClasses = [...processedClasses].sort((a, b) => {
+          const dayA = dayOrder.indexOf(a.dayOfWeek || "");
+          const dayB = dayOrder.indexOf(b.dayOfWeek || "");
+          if (dayA !== dayB) return dayA - dayB;
+          return (a.startTime || "").localeCompare(b.startTime || "");
+        });
+
+        const displaySchedule = todayClasses.length > 0 ? todayClasses : fallbackClasses;
+        const slicedSchedule = displaySchedule.slice(0, 3);
+
+        // Find index of ongoing or closest upcoming class in the today list
+        const currentTime = new Date().toLocaleTimeString('en-GB', { hour12: false });
+        let activeIdx = 0;
+
+        if (todayClasses.length > 0) {
+          const firstUpcomingOrOngoing = todayClasses.findIndex(cls => {
+            const start = cls.startTime || "00:00:00";
+            let end = cls.endTime || "";
+            if (!end) {
+              const startHr = parseInt(start.split(':')[0] || "0", 10);
+              end = `${String((startHr + 2) % 24).padStart(2, '0')}:${start.split(':')[1] || "00"}:00`;
+            }
+            const isOngoing = currentTime >= start && currentTime <= end;
+            const isUpcoming = currentTime < start;
+            return isOngoing || isUpcoming;
+          });
+
+          if (firstUpcomingOrOngoing !== -1) {
+            activeIdx = firstUpcomingOrOngoing;
+          } else {
+            activeIdx = todayClasses.length - 1; // Default to last class of the day if all are past
+          }
+        }
+
+        const finalActiveIdx = Math.min(activeIdx, Math.max(0, slicedSchedule.length - 1));
+
+        setScheduleToday(slicedSchedule);
+        setActiveIndex(finalActiveIdx);
         setAssignedClasses(processedClasses);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);

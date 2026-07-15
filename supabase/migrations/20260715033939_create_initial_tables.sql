@@ -26,6 +26,9 @@ CREATE TABLE public.profiles (
     face_hash VARCHAR(255), 
     device_id VARCHAR(255), 
     total_merit_score NUMERIC DEFAULT 0, 
+    phone_number VARCHAR(50),
+    office_location VARCHAR(255),
+    affiliation VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()) NOT NULL
 );
@@ -60,6 +63,10 @@ CREATE TABLE public.classes (
     group_code VARCHAR(50) NOT NULL, 
     type public.class_type NOT NULL,
     semester VARCHAR(50) NOT NULL, 
+    day_of_week VARCHAR(20),
+    start_time TIME,
+    end_time TIME,
+    location VARCHAR(100),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()) NOT NULL
 );
 

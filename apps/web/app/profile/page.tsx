@@ -2,11 +2,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  Mail, 
-  Phone, 
-  MapPin, 
-  BookOpen, 
+import {
+  Mail,
+  Phone,
+  MapPin,
+  BookOpen,
   Building
 } from "lucide-react";
 import { createClient } from "../../utils/supabase/client";
@@ -73,7 +73,7 @@ export default function LecturerProfilePage() {
 
   return (
     <main className="flex-1 p-8 overflow-y-auto bg-[#FAF9F6]">
-      
+
       {/* Header */}
       <header className="mb-8">
         <h2 className="text-3xl font-semibold text-slate-900">My Profile</h2>
@@ -82,15 +82,15 @@ export default function LecturerProfilePage() {
 
       {/* Grid wrapper */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         {/* Left Column: Summary Info Card */}
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center relative overflow-hidden">
-            
-            <div className="w-24 h-24 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white mx-auto mb-4 font-bold text-3xl shadow-md animate-pulse">
+
+            <div className="w-24 h-24 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white mx-auto mb-4 font-bold text-3xl shadow-md">
               {initials}
             </div>
-            
+
             <h3 className="text-xl font-bold text-slate-900">{profile.full_name}</h3>
             <p className="text-sm font-medium text-blue-600 mt-0.5">Senior Lecturer</p>
             <p className="text-xs text-slate-400 mt-1">Staff ID: {profile.institutional_id}</p>
@@ -102,11 +102,11 @@ export default function LecturerProfilePage() {
               </div>
               <div className="flex items-center gap-3 text-slate-600">
                 <Phone size={16} className="text-slate-400 shrink-0" />
-                <span>+60 3-7967 4321</span>
+                <span>{profile.phone_number || "+60 3-7967 4321"}</span>
               </div>
               <div className="flex items-center gap-3 text-slate-600">
                 <MapPin size={16} className="text-slate-400 shrink-0" />
-                <span className="text-xs">Block B, Room 2.4, PASUM Main Building</span>
+                <span className="text-xs">{profile.office_location || "PASUM Main Building"}</span>
               </div>
             </div>
           </div>
@@ -114,14 +114,14 @@ export default function LecturerProfilePage() {
 
         {/* Right Column: Academic Details & Assignments (Takes 2 Columns) */}
         <div className="lg:col-span-2 space-y-6">
-          
+
           {/* Department Information */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <h4 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
               <Building size={18} className="text-slate-400" /> Institutional Affiliation
             </h4>
             <p className="text-sm text-slate-600 leading-relaxed bg-slate-50/50 p-4 rounded-xl border border-slate-100">
-              Physics Domain, Center for Foundation Studies in Science (PASUM)
+              {profile.affiliation || "Center for Foundation Studies in Science (PASUM)"}
             </p>
           </div>
 
@@ -130,7 +130,7 @@ export default function LecturerProfilePage() {
             <h4 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
               <BookOpen size={18} className="text-slate-400" /> Assigned Course Load (Current Semester)
             </h4>
-            
+
             <div className="space-y-4">
               {classesTaught.length > 0 ? (
                 classesTaught.map((course, idx) => (
