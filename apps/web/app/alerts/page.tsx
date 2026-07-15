@@ -1,7 +1,7 @@
 // apps/web/app/alerts/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   BellRing, 
@@ -11,67 +11,143 @@ import {
   CheckCircle2,
   ArrowRight
 } from "lucide-react";
+import { createClient } from "../../utils/supabase/client";
 
-// Mock Data: n8n Automation Engine Triggers
-const initialAlerts = [
-  {
-    id: "ALRT-001",
-    studentName: "Ahmad Hakimi bin Faisal",
-    matricId: "1720441",
-    course: "Physics 101",
-    type: "attendance",
-    priority: "critical",
-    message: "Attendance dropped below the 80% threshold (Current: 75%). Immediate intervention recommended.",
-    timestamp: "10 mins ago",
-    isRead: false,
-  },
-  {
-    id: "ALRT-002",
-    studentName: "Muhammad Danial bin Zulkifli",
-    matricId: "1720451",
-    course: "Computer Science 101",
-    type: "assessment",
-    priority: "high",
-    message: "Sudden continuous assessment drop detected. Quiz 2 score is 25% lower than Quiz 1.",
-    timestamp: "2 hours ago",
-    isRead: false,
-  },
-  {
-    id: "ALRT-003",
-    studentName: "Jason Lee Wei Min",
-    matricId: "1720445",
-    course: "Physics 101",
-    type: "system",
-    priority: "medium",
-    message: "GPS Verification failed during the last 2 check-ins. Device diagnostic suggested.",
-    timestamp: "1 day ago",
-    isRead: true,
-  },
-  {
-    id: "ALRT-004",
-    studentName: "Chong Wei Jie",
-    matricId: "1720462",
-    course: "Mathematics 201",
-    type: "attendance",
-    priority: "high",
-    message: "Consecutive absences flagged. Missed 3 classes in a row.",
-    timestamp: "2 days ago",
-    isRead: true,
-  }
-];
+interface AlertItem {
+  id: string;
+  studentName: string;
+  matricId: string;
+  studentUuid: string;
+  course: string;
+  type: string;
+  priority: string;
+  message: string;
+  timestamp: string;
+  isRead: boolean;
+}
 
 export default function AlertsPage() {
-  const [alerts, setAlerts] = useState(initialAlerts);
+  const supabase = createClient();
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [filter, setFilter] = useState("all");
+  const [isLoading, setIsLoading] = useState(true);
+  const [lecturerId, setLecturerId] = useState("");
+
+  const fetchAlerts = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      setLecturerId(user.id);
+
+      const { data } = await supabase
+        .from('alerts')
+        .select(`
+          id,
+          type,
+          priority,
+          message,
+          is_read,
+          created_at,
+          student:profiles!student_id (
+            id,
+            institutional_id,
+            full_name
+          ),
+          classes (
+            subjects (
+              name
+            )
+          )
+        `)
+        .eq('lecturer_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (data) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const formatted: AlertItem[] = data.map((item: any) => {
+          const studentNode = item.student;
+          const classNode = item.classes;
+          const subjectName = classNode?.subjects?.name || "General";
+          
+          // Calculate human readable timestamp
+          const diffMs = Date.now() - new Date(item.created_at).getTime();
+          const diffMin = Math.floor(diffMs / 60000);
+          const diffHr = Math.floor(diffMin / 60);
+          const diffDay = Math.floor(diffHr / 24);
+
+          let timestamp = "Just now";
+          if (diffDay > 0) {
+            timestamp = `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
+          } else if (diffHr > 0) {
+            timestamp = `${diffHr} hour${diffHr > 1 ? 's' : ''} ago`;
+          } else if (diffMin > 0) {
+            timestamp = `${diffMin} min${diffMin > 1 ? 's' : ''} ago`;
+          }
+
+          return {
+            id: item.id,
+            studentName: studentNode?.full_name || "Unknown Student",
+            matricId: studentNode?.institutional_id || "Unknown",
+            studentUuid: studentNode?.id || "",
+            course: subjectName,
+            type: item.type || "system",
+            priority: item.priority || "medium",
+            message: item.message || "",
+            timestamp,
+            isRead: !!item.is_read
+          };
+        });
+        setAlerts(formatted);
+      }
+    } catch (err) {
+      console.error("Error loading alerts:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAlerts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const unreadCount = alerts.filter(a => !a.isRead).length;
 
-  const markAsRead = (id: string) => {
-    setAlerts(alerts.map(a => a.id === id ? { ...a, isRead: true } : a));
+  const markAsRead = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('alerts')
+        .update({ is_read: true })
+        .eq('id', id);
+
+      if (error) {
+        console.error("Failed to mark alert as read:", error);
+        return;
+      }
+
+      setAlerts(prev => prev.map(a => a.id === id ? { ...a, isRead: true } : a));
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const markAllAsRead = () => {
-    setAlerts(alerts.map(a => ({ ...a, isRead: true })));
+  const markAllAsRead = async () => {
+    if (!lecturerId) return;
+    try {
+      const { error } = await supabase
+        .from('alerts')
+        .update({ is_read: true })
+        .eq('lecturer_id', lecturerId);
+
+      if (error) {
+        console.error("Failed to mark all alerts as read:", error);
+        return;
+      }
+
+      setAlerts(prev => prev.map(a => ({ ...a, isRead: true })));
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const filteredAlerts = alerts.filter(a => {
@@ -80,8 +156,12 @@ export default function AlertsPage() {
     return true;
   });
 
+  if (isLoading) {
+    return <div className="flex-1 flex items-center justify-center bg-slate-50 min-h-screen">Loading alerts...</div>;
+  }
+
   return (
-    <main className="flex-1 p-8 h-screen flex flex-col bg-transparent overflow-hidden">
+    <main className="flex-1 p-8 h-screen flex flex-col bg-[#FAF9F6] overflow-hidden">
       
       {/* Header */}
       <header className="shrink-0 mb-8 flex justify-between items-end">
@@ -97,13 +177,14 @@ export default function AlertsPage() {
           <p className="text-slate-500 mt-1">Real-time notifications from the n8n automation engine</p>
         </div>
         <div className="flex gap-3">
-          <button 
-            onClick={markAllAsRead}
-            className="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors px-4 py-2"
-          >
-            Mark all as read
-          </button>
-        
+          {unreadCount > 0 && (
+            <button 
+              onClick={markAllAsRead}
+              className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors px-4 py-2 border-none bg-transparent cursor-pointer"
+            >
+              Mark all as read
+            </button>
+          )}
         </div>
       </header>
 
@@ -114,19 +195,19 @@ export default function AlertsPage() {
         <div className="flex border-b border-slate-100 p-4 gap-2 shrink-0">
           <button 
             onClick={() => setFilter("all")}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${filter === "all" ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-100"}`}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors border-none cursor-pointer ${filter === "all" ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-100 bg-transparent"}`}
           >
             All Alerts
           </button>
           <button 
             onClick={() => setFilter("unread")}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${filter === "unread" ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-100"}`}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors border-none cursor-pointer ${filter === "unread" ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-100 bg-transparent"}`}
           >
             Unread
           </button>
           <button 
             onClick={() => setFilter("critical")}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 ${filter === "critical" ? "bg-red-50 text-red-700 border border-red-100" : "text-slate-500 hover:bg-slate-100 border border-transparent"}`}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 cursor-pointer ${filter === "critical" ? "bg-red-50 text-red-700 border border-red-100" : "text-slate-500 hover:bg-slate-100 border border-transparent bg-transparent"}`}
           >
             Critical Only
           </button>
@@ -191,13 +272,15 @@ export default function AlertsPage() {
 
                   {/* Actions */}
                   <div className="flex flex-col items-end gap-2">
-                    <Link href={`/classes/${alert.matricId}`} className="flex items-center gap-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors">
-                      Review Case <ArrowRight size={14} />
-                    </Link>
+                    {alert.studentUuid && (
+                      <Link href={`/classes/${alert.studentUuid}`} className="flex items-center gap-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors">
+                        Review Case <ArrowRight size={14} />
+                      </Link>
+                    )}
                     {!alert.isRead && (
                       <button 
                         onClick={() => markAsRead(alert.id)}
-                        className="text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors px-2 py-1"
+                        className="text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors px-2 py-1 border-none bg-transparent cursor-pointer"
                       >
                         Mark as read
                       </button>

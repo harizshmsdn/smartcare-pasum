@@ -51,7 +51,7 @@ export default function InterventionsPage() {
         status,
         priority,
         created_at,
-        profiles (
+        student:profiles!student_id (
           institutional_id,
           full_name
         ),
@@ -104,7 +104,7 @@ export default function InterventionsPage() {
   // Map database items to KanbanItem objects
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mappedItems: KanbanItem[] = interventions.map((item: any) => {
-    const profile = item.profiles;
+    const profile = item.student;
     const classNode = item.classes;
     const classTitle = classNode ? `${classNode.subjects?.code} - ${classNode.subjects?.name} (${classNode.group_code})` : "General";
     

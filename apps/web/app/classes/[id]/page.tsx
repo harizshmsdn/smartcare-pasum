@@ -3,25 +3,25 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { 
-  Mail, 
-  CalendarDays, 
-  AlertTriangle, 
+import {
+  Mail,
+  CalendarDays,
+  AlertTriangle,
   TrendingDown,
   Clock,
   CheckCircle2,
   ArrowLeft,
-  Award, 
-  History, 
+  Award,
+  History,
   X
 } from "lucide-react";
-import { 
-  ResponsiveContainer, 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip
 } from "recharts";
 import Link from "next/link";
@@ -32,7 +32,7 @@ import { createClient } from "../../../utils/supabase/client";
 export default function ProfilePage() {
   const params = useParams();
   const studentId = (params?.id as string) || "22222222-2222-2222-2222-222222222221";
-  
+
   const supabase = createClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [studentProfile, setStudentProfile] = useState<any>(null);
@@ -129,7 +129,7 @@ export default function ProfilePage() {
 
   return (
     <main className="flex-1 p-8 overflow-y-auto bg-slate-50 relative">
-      
+
       {/* Navigation Breadcrumb */}
       <div className="mb-6">
         <Link href="/classes" className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600 transition-colors">
@@ -139,8 +139,7 @@ export default function ProfilePage() {
 
       {/* Header Profile Card */}
       <header className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden">
-        {/* Background Accent */}
-        <div className="absolute top-0 right-0 w-48 h-48 bg-red-50 rounded-full -mr-10 -mt-10 opacity-50 pointer-events-none"></div>
+
 
         <div className="flex items-center gap-5 z-10">
           <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center text-slate-700 text-3xl font-bold shadow-inner">
@@ -197,14 +196,14 @@ export default function ProfilePage() {
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <Link 
+          <Link
             href={`/classes/${studentId}/merit-requests`}
             className="flex items-center gap-2 px-5 py-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-xl font-semibold transition-all duration-200 shadow-sm hover:shadow active:scale-95 font-sans"
           >
             <Award size={20} />
             Merit Requests ({meritCount})
           </Link>
-          <button 
+          <button
             onClick={() => setIsHistoryModalOpen(true)}
             className="flex items-center gap-2 px-5 py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl font-semibold transition-all duration-200 shadow-sm hover:shadow active:scale-95 cursor-pointer font-sans"
           >
@@ -216,10 +215,10 @@ export default function ProfilePage() {
       {/* --- END MERIT SECTION --- */}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         {/* Left Column: Metrics & AI Insights (Takes up 2 columns on large screens) */}
         <div className="lg:col-span-2 space-y-8">
-          
+
           {/* Core Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
@@ -259,7 +258,7 @@ export default function ProfilePage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis dataKey="week" stroke="#94a3b8" fontSize={12} />
                   <YAxis stroke="#94a3b8" fontSize={12} />
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                   />
                   <Line type="monotone" dataKey="score" stroke="#3b82f6" strokeWidth={3} name="Score %" dot={{ r: 4 }} activeDot={{ r: 6 }} />
@@ -272,13 +271,13 @@ export default function ProfilePage() {
 
         {/* Right Column: AI Insights & Activity Feed */}
         <div className="space-y-8">
-          
+
           {/* Recent Activity Timeline */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <h3 className="font-bold text-slate-900 mb-6">Recent Activity</h3>
-            
+
             <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-200 before:to-transparent">
-              
+
               {/* Timeline Item 1 */}
               <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
                 <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-red-100 text-red-600 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow flex-col absolute left-0 md:left-1/2 -translate-x-1/2">
@@ -331,14 +330,14 @@ export default function ProfilePage() {
       {isHistoryModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
-            
+
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-slate-100">
               <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                 <Award className="text-blue-600" size={24} />
                 Merit History
               </h3>
-              <button 
+              <button
                 onClick={() => setIsHistoryModalOpen(false)}
                 className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors"
               >
@@ -364,11 +363,11 @@ export default function ProfilePage() {
                 <p className="text-slate-500 text-center py-4">No verified merits in history.</p>
               )}
             </div>
-            
+
           </div>
         </div>
       )}
-      
+
     </main>
   );
 }

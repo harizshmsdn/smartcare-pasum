@@ -3,25 +3,25 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { 
-  TrendingUp, 
-  Award, 
-  BookOpen, 
+import {
+  TrendingUp,
+  Award,
+  BookOpen,
   AlertTriangle,
   GraduationCap,
   ChevronRight
 } from "lucide-react";
-import { 
-  ResponsiveContainer, 
-  LineChart, 
-  Line, 
-  BarChart, 
-  Bar, 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip,
   Legend
 } from "recharts";
@@ -70,7 +70,7 @@ export default function DashboardPage() {
   const [activeSubject, setActiveSubject] = useState<"Physics 101" | "Physics 102">("Physics 101");
   const [absenteeismCount, setAbsenteeismCount] = useState(0);
   const [assessmentDropCount, setAssessmentDropCount] = useState(0);
-  
+
   const [meritRawScores, setMeritRawScores] = useState<ChartItem[]>([
     { range: "0-100", students: 0 },
     { range: "101-200", students: 0 },
@@ -97,7 +97,7 @@ export default function DashboardPage() {
         const { data: enrollments } = await supabase
           .from('enrollments')
           .select('current_attendance_rate');
-        
+
         if (enrollments) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const count = enrollments.filter((e: any) => Number(e.current_attendance_rate) < 80).length;
@@ -136,7 +136,7 @@ export default function DashboardPage() {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           profiles.forEach((p: any) => {
             const score = Number(p.total_merit_score || 0);
-            
+
             // Raw distribution
             if (score <= 100) raw[0].students++;
             else if (score <= 200) raw[1].students++;
@@ -172,7 +172,7 @@ export default function DashboardPage() {
 
   return (
     <main className="flex-1 h-screen flex flex-col p-8 bg-[#FAF9F6] overflow-hidden">
-      
+
       {/* Header (Fixed Height) */}
       <header className="shrink-0 mb-6 flex justify-between items-end">
         <div>
@@ -181,13 +181,13 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-xl font-semibold text-sm">
           <GraduationCap size={18} />
-          PASUM Semester 1
+          Semester 1, Year 2025/2026
         </div>
       </header>
 
       {/* Grid Layout: 3 Columns, 2 Rows */}
       <div className="flex-1 grid grid-cols-1 md:grid-cols-3 grid-rows-2 gap-6 min-h-0 pb-2">
-        
+
         {/* ROW 1, COL 1 & 2: Assessment vs Attendance (Subject Specific via Tabs) */}
         <div className="md:col-span-2 bg-white rounded-3xl border border-slate-200 p-6 shadow-sm flex flex-col min-h-0 relative">
           <div className="shrink-0 mb-4 flex justify-between items-center">
@@ -197,16 +197,16 @@ export default function DashboardPage() {
                 Attendance vs. Assessment Trajectory
               </h3>
             </div>
-            
+
             {/* Subject Tabs */}
             <div className="flex bg-slate-100 p-1 rounded-lg">
-              <button 
+              <button
                 onClick={() => setActiveSubject("Physics 101")}
                 className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${activeSubject === "Physics 101" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
               >
                 Physics 101
               </button>
-              <button 
+              <button
                 onClick={() => setActiveSubject("Physics 102")}
                 className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${activeSubject === "Physics 102" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
               >
@@ -214,7 +214,7 @@ export default function DashboardPage() {
               </button>
             </div>
           </div>
-          
+
           <div className="flex-1 min-h-0 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={subjectTimelines[activeSubject]} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -222,7 +222,7 @@ export default function DashboardPage() {
                 <XAxis dataKey="week" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }}/>
+                <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
                 <Line type="monotone" dataKey="attendance" name="Avg Attendance %" stroke="#1e3a8a" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                 <Line type="monotone" dataKey="assessment" name="Avg Assessment %" stroke="#ef4444" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
               </LineChart>
@@ -233,12 +233,12 @@ export default function DashboardPage() {
         {/* ROW 1, COL 3: Condensed Risk Clusters */}
         <div className="bg-slate-900 rounded-3xl border border-slate-800 p-6 shadow-sm flex flex-col relative overflow-hidden">
           <div className="absolute -right-10 -top-10 w-40 h-40 bg-red-500/20 rounded-full blur-3xl pointer-events-none"></div>
-          
+
           <h3 className="font-bold text-white text-lg flex items-center gap-2 mb-6 z-10 shrink-0">
             <AlertTriangle className="text-red-400" size={20} />
             Active Risk Clusters
           </h3>
-          
+
           <div className="flex-1 flex flex-col justify-center gap-4 z-10">
             <div className="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl flex justify-between items-center">
               <div>
@@ -247,7 +247,7 @@ export default function DashboardPage() {
               </div>
               <span className="text-3xl font-black text-white">{absenteeismCount}</span>
             </div>
-            
+
             <div className="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl flex justify-between items-center">
               <div>
                 <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Assessment Drop</p>
@@ -257,7 +257,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <Link 
+          <Link
             href="/interventions"
             className="mt-4 w-full bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
           >
@@ -274,14 +274,14 @@ export default function DashboardPage() {
             </h3>
             <p className="text-[11px] text-slate-500">Distribution of total points (0-500)</p>
           </div>
-          
+
           <div className="flex-1 min-h-0 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={meritRawScores} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                 <XAxis dataKey="range" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
                 <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-                <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                 <Bar dataKey="students" name="Students" fill="#f59e0b" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -297,14 +297,14 @@ export default function DashboardPage() {
             </h3>
             <p className="text-[11px] text-slate-500">Estimates for University Placement</p>
           </div>
-          
+
           <div className="flex-1 min-h-0 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={meritCGPA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorCgpa" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <XAxis dataKey="range" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
@@ -325,14 +325,14 @@ export default function DashboardPage() {
             </h3>
             <p className="text-[11px] text-slate-500">Mid-term actuals vs. Predicted Finals</p>
           </div>
-          
+
           <div className="flex-1 min-h-0 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={examPerformance} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                 <XAxis dataKey="subject" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
                 <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-                <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                 <Bar dataKey="midterm" name="Mid-Term" fill="#94a3b8" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="finals" name="Finals" fill="#38bdf8" radius={[4, 4, 0, 0]} />
               </BarChart>
