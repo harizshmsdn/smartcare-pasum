@@ -43,14 +43,33 @@ export async function middleware(request: NextRequest) {
     // All routes are protected by default except for the login route
     const isProtectedRoute = !request.nextUrl.pathname.startsWith('/login')
 
-    // If the user is NOT logged in and tries to access a protected route, redirect to login
+    // 1. If the user is NOT logged in and tries to access a protected route, redirect to login
     if (!user && isProtectedRoute) {
         const url = request.nextUrl.clone()
         url.pathname = '/login'
         return NextResponse.redirect(url)
     }
 
-    // If the user IS logged in and tries to access the login page, redirect to the home page
+    // 2. ROLE-BASED ACCESS CONTROL (RBAC)
+    // If the user IS logged in and trying to access a protected route, verify they are a lecturer
+    if (user && isProtectedRoute) {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single()
+
+        // Kick out anyone who isn't a lecturer
+        if (!profile || profile.role !== 'lecturer') {
+            await supabase.auth.signOut()
+            const url = request.nextUrl.clone()
+            url.pathname = '/login'
+            url.searchParams.set('error', 'Unauthorized Access: Lecturers only.')
+            return NextResponse.redirect(url)
+        }
+    }
+
+    // 3. If the user IS logged in (and authorized) and tries to access the login page, redirect to the home page
     if (user && !isProtectedRoute) {
         const url = request.nextUrl.clone()
         url.pathname = '/'
