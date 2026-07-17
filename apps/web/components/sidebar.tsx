@@ -7,15 +7,24 @@ import { Settings, ChevronRight } from "lucide-react";
 
 export function Sidebar() {
   const pathname = usePathname();
+  const isStudent = pathname?.startsWith("/student");
 
   // Route map with explicit border classes added for Tailwind's JIT compiler
-  const navItems = [
-    { name: "Home", href: "/", bgColor: "bg-[#061930]", borderColor: "border-[#061930]" },
-    { name: "Dashboard", href: "/dashboard", bgColor: "bg-[#0b2240]", borderColor: "border-[#0b2240]" },
-    { name: "Classes", href: "/classes", bgColor: "bg-[#12253f]", borderColor: "border-[#12253f]" },
-    { name: "Alerts", href: "/alerts", bgColor: "bg-[#152c4c]", borderColor: "border-[#152c4c]" },
-    { name: "Profile", href: "/profile", bgColor: "bg-[#1d3456]", borderColor: "border-[#1d3456]" },
-  ];
+  const navItems = isStudent
+    ? [
+        { name: "Home", href: "/student", bgColor: "bg-[#061930]", borderColor: "border-[#061930]" },
+        { name: "Dashboard", href: "/student/dashboard", bgColor: "bg-[#0b2240]", borderColor: "border-[#0b2240]" },
+        { name: "Classes", href: "/student/classes", bgColor: "bg-[#12253f]", borderColor: "border-[#12253f]" },
+        { name: "Alerts", href: "/student/alerts", bgColor: "bg-[#152c4c]", borderColor: "border-[#152c4c]" },
+        { name: "Profile", href: "/student/profile", bgColor: "bg-[#1d3456]", borderColor: "border-[#1d3456]" },
+      ]
+    : [
+        { name: "Home", href: "/", bgColor: "bg-[#061930]", borderColor: "border-[#061930]" },
+        { name: "Dashboard", href: "/dashboard", bgColor: "bg-[#0b2240]", borderColor: "border-[#0b2240]" },
+        { name: "Classes", href: "/classes", bgColor: "bg-[#12253f]", borderColor: "border-[#12253f]" },
+        { name: "Alerts", href: "/alerts", bgColor: "bg-[#152c4c]", borderColor: "border-[#152c4c]" },
+        { name: "Profile", href: "/profile", bgColor: "bg-[#1d3456]", borderColor: "border-[#1d3456]" },
+      ];
 
   return (
     <aside className="w-50 bg-[#FAF9F6] flex flex-col p-6 shrink-0 h-screen overflow-hidden">
@@ -67,8 +76,8 @@ export function Sidebar() {
 
       {/* Settings */}
       <Link
-        href="/settings"
-        className={`flex items-center gap-3 px-5 py-4 rounded-2xl font-medium transition-colors w-full text-left mt-auto ${pathname === "/settings"
+        href={isStudent ? "/student/settings" : "/settings"}
+        className={`flex items-center gap-3 px-5 py-4 rounded-2xl font-medium transition-colors w-full text-left mt-auto ${pathname === (isStudent ? "/student/settings" : "/settings")
             ? "bg-slate-200 text-slate-900"
             : "text-slate-500 hover:bg-slate-200 hover:text-slate-900"
           }`}

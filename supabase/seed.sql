@@ -61,7 +61,6 @@ INSERT INTO auth.identities (
   current_timestamp,
   current_timestamp
 );
-
 -- 3. Insert the corresponding record into your public.profiles table
 -- This explicitly sets the role to 'lecturer' to pass the Middleware check
 INSERT INTO public.profiles (
@@ -136,6 +135,16 @@ VALUES ('22222222-2222-2222-2222-222222222227', '00000000-0000-0000-0000-0000000
 
 INSERT INTO public.profiles (id, role, full_name, institutional_id, email, total_merit_score)
 VALUES ('22222222-2222-2222-2222-222222222227', 'student', 'Chong Wei Jie', '1720462', 'student7@pasum.edu.my', 105);
+
+-- Identities for Students (Required for Supabase Auth to allow logins)
+INSERT INTO auth.identities (id, provider_id, user_id, identity_data, provider, created_at, updated_at) VALUES 
+(gen_random_uuid(), 'student1@pasum.edu.my', '22222222-2222-2222-2222-222222222221', format('{"sub":"%s","email":"%s"}', '22222222-2222-2222-2222-222222222221', 'student1@pasum.edu.my')::jsonb, 'email', current_timestamp, current_timestamp),
+(gen_random_uuid(), 'student2@pasum.edu.my', '22222222-2222-2222-2222-222222222222', format('{"sub":"%s","email":"%s"}', '22222222-2222-2222-2222-222222222222', 'student2@pasum.edu.my')::jsonb, 'email', current_timestamp, current_timestamp),
+(gen_random_uuid(), 'student3@pasum.edu.my', '22222222-2222-2222-2222-222222222223', format('{"sub":"%s","email":"%s"}', '22222222-2222-2222-2222-222222222223', 'student3@pasum.edu.my')::jsonb, 'email', current_timestamp, current_timestamp),
+(gen_random_uuid(), 'student4@pasum.edu.my', '22222222-2222-2222-2222-222222222224', format('{"sub":"%s","email":"%s"}', '22222222-2222-2222-2222-222222222224', 'student4@pasum.edu.my')::jsonb, 'email', current_timestamp, current_timestamp),
+(gen_random_uuid(), 'student5@pasum.edu.my', '22222222-2222-2222-2222-222222222225', format('{"sub":"%s","email":"%s"}', '22222222-2222-2222-2222-222222222225', 'student5@pasum.edu.my')::jsonb, 'email', current_timestamp, current_timestamp),
+(gen_random_uuid(), 'student6@pasum.edu.my', '22222222-2222-2222-2222-222222222226', format('{"sub":"%s","email":"%s"}', '22222222-2222-2222-2222-222222222226', 'student6@pasum.edu.my')::jsonb, 'email', current_timestamp, current_timestamp),
+(gen_random_uuid(), 'student7@pasum.edu.my', '22222222-2222-2222-2222-222222222227', format('{"sub":"%s","email":"%s"}', '22222222-2222-2222-2222-222222222227', 'student7@pasum.edu.my')::jsonb, 'email', current_timestamp, current_timestamp);
 
 
 -- ==============================================================================

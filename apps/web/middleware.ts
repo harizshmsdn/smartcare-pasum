@@ -51,7 +51,6 @@ export async function middleware(request: NextRequest) {
     }
 
     // 2. ROLE-BASED ACCESS CONTROL (RBAC)
-    // If the user IS logged in and trying to access a protected route, verify they are a lecturer
     if (user && isProtectedRoute) {
         // Fast path: Check app_metadata for the role (saves a database query per request)
         let role = user.app_metadata?.role
@@ -66,12 +65,34 @@ export async function middleware(request: NextRequest) {
             role = profile?.role
         }
 
-        // Kick out anyone who isn't a lecturer
-        if (role !== 'lecturer') {
+        const path = request.nextUrl.pathname
+        const isStudentRoute = path.startsWith('/student')
+
+        if (role === 'student') {
+            // If student accesses lecturer route, redirect them to the corresponding student route
+            if (!isStudentRoute) {
+                const url = request.nextUrl.clone()
+                if (path === '/') {
+                    url.pathname = '/student'
+                } else {
+                    url.pathname = `/student${path}`
+                }
+                return NextResponse.redirect(url)
+            }
+        } else if (role === 'lecturer') {
+            // If lecturer accesses student route, redirect them to the corresponding lecturer route
+            if (isStudentRoute) {
+                const url = request.nextUrl.clone()
+                const cleanPath = path.slice('/student'.length)
+                url.pathname = cleanPath === '' ? '/' : cleanPath
+                return NextResponse.redirect(url)
+            }
+        } else {
+            // Kick out any unknown role
             await supabase.auth.signOut()
             const url = request.nextUrl.clone()
             url.pathname = '/login'
-            url.searchParams.set('error', 'Unauthorized Access: Lecturers only.')
+            url.searchParams.set('error', 'Unauthorized Access: Invalid role.')
             return NextResponse.redirect(url)
         }
     }
