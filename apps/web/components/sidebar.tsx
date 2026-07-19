@@ -3,7 +3,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Settings, ChevronRight } from "lucide-react";
+import { Settings, ChevronRight, LogOut } from "lucide-react";
+import { createClient } from "../utils/supabase/client";
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -74,16 +75,28 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Settings */}
-      <Link
-        href={isStudent ? "/student/settings" : "/settings"}
-        className={`flex items-center gap-3 px-5 py-4 rounded-2xl font-medium transition-colors w-full text-left mt-auto ${pathname === (isStudent ? "/student/settings" : "/settings")
-            ? "bg-slate-200 text-slate-900"
-            : "text-slate-500 hover:bg-slate-200 hover:text-slate-900"
-          }`}
-      >
-        <Settings size={20} /> Settings
-      </Link>
+      {/* Settings & Logout Container */}
+      <div className="flex flex-col gap-2 mt-auto">
+        <Link
+          href={isStudent ? "/student/settings" : "/settings"}
+          className={`flex items-center gap-3 px-5 py-4 rounded-2xl font-medium transition-colors w-full text-left ${pathname === (isStudent ? "/student/settings" : "/settings")
+              ? "bg-slate-200 text-slate-900"
+              : "text-slate-500 hover:bg-slate-200 hover:text-slate-900"
+            }`}
+        >
+          <Settings size={20} /> Settings
+        </Link>
+        <button
+          onClick={async () => {
+            const supabase = createClient();
+            await supabase.auth.signOut();
+            window.location.href = "/login";
+          }}
+          className="flex items-center gap-3 px-5 py-4 rounded-2xl font-medium transition-colors w-full text-left text-red-600 hover:bg-red-50 hover:text-red-700 border-none bg-transparent cursor-pointer"
+        >
+          <LogOut size={20} /> Log Out
+        </button>
+      </div>
     </aside>
   );
 }
