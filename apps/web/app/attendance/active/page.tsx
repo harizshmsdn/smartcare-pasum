@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { 
   QrCode, 
   X, 
@@ -29,6 +30,7 @@ interface Attendee {
 }
 
 export default function ActiveAttendancePage() {
+  const router = useRouter();
   const supabase = createClient();
   const [showQrModal, setShowQrModal] = useState(true);
 
@@ -49,23 +51,28 @@ export default function ActiveAttendancePage() {
   const [lecturerId, setLecturerId] = useState<string>("");
 
   useEffect(() => {
-    let activeSessionId = "";
-    let activeClassId = "";
-    const savedConfig = localStorage.getItem('activeSessionConfig');
-    
-    if (savedConfig) {
-      try {
-        const config = JSON.parse(savedConfig);
-        activeSessionId = config.sessionId || "";
-        activeClassId = config.classId || "";
-        setSessionId(activeSessionId);
-        setOnlineMode(!!config.onlineMode);
-        setFaceIdRequired(config.faceIdRequired !== false);
-        setLocationRequired(config.locationRequired !== false);
-        setSessionPin(config.sessionPin || "8492-X");
-      } catch (e) {
-        console.error(e);
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlSessionId = urlParams.get("sessionId") || "";
+    const urlClassId = urlParams.get("classId") || "";
+
+    let activeSessionId = urlSessionId;
+    let activeClassId = urlClassId;
+
+    if (!activeSessionId) {
+      const savedConfig = localStorage.getItem('activeSessionConfig');
+      if (savedConfig) {
+        try {
+          const config = JSON.parse(savedConfig);
+          activeSessionId = config.sessionId || "";
+          activeClassId = config.classId || "";
+        } catch (e) {
+          console.error(e);
+        }
       }
+    }
+
+    if (activeSessionId) {
+      setSessionId(activeSessionId);
     }
 
     const loadSessionData = async () => {
@@ -75,11 +82,15 @@ export default function ActiveAttendancePage() {
 
       if (!activeSessionId) return;
 
-      // 1. Fetch Session Info
+      // 1. Fetch Session Info from Database (Dynamic source of truth for sync)
       const { data: session } = await supabase
         .from('attendance_sessions')
         .select(`
           session_pin,
+          online_mode,
+          face_id_required,
+          location_required,
+          class_id,
           classes (
             group_code,
             subjects (
@@ -91,11 +102,19 @@ export default function ActiveAttendancePage() {
         .single();
 
       if (session) {
+        setSessionPin(session.session_pin);
+        setOnlineMode(!!session.online_mode);
+        setFaceIdRequired(!!session.face_id_required);
+        setLocationRequired(!!session.location_required);
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const classNode = session.classes as any;
         if (classNode) {
           setClassName(classNode.subjects?.name || "Physics 101");
           setClassGroup(classNode.group_code || "Group A");
+        }
+        if (!activeClassId) {
+          activeClassId = session.class_id;
         }
       }
 
@@ -197,6 +216,28 @@ export default function ActiveAttendancePage() {
     }
   };
 
+  const handleEndSession = async () => {
+    if (!sessionId) return;
+    try {
+      const { error } = await supabase
+        .from('attendance_sessions')
+        .update({ closed_at: new Date().toISOString() })
+        .eq('id', sessionId);
+
+      if (error) {
+        console.error("Failed to end session:", error);
+        alert("Error ending session: " + error.message);
+        return;
+      }
+
+      // Clean up localStorage configuration
+      localStorage.removeItem('activeSessionConfig');
+      router.push('/');
+    } catch (err) {
+      console.error("End session error:", err);
+    }
+  };
+
   return (
     <main className="flex-1 p-8 overflow-y-auto bg-slate-50 relative">
       
@@ -216,13 +257,17 @@ export default function ActiveAttendancePage() {
             </div>
             
             <div className="p-10 flex flex-col items-center">
-              {/* Placeholder for actual generated QR */}
+              {/* Dynamic generated QR aligned with active session PIN */}
               <div className="w-64 h-64 bg-white border-8 border-slate-900 rounded-xl flex items-center justify-center relative overflow-hidden mb-6 shadow-sm">
-                <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-900 via-slate-900 to-transparent background-size-[10px_10px]"></div>
-                <QrCode size={180} className="text-slate-900 z-10" strokeWidth={1} />
-                <div className="absolute center bg-blue-600 rounded-lg p-2 z-20">
-                  <span className="text-white font-bold text-xs">PASUM</span>
-                </div>
+                {sessionPin ? (
+                  <img 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(sessionPin)}`}
+                    alt={`QR Code for PIN ${sessionPin}`}
+                    className="w-full h-full object-cover z-10"
+                  />
+                ) : (
+                  <QrCode size={180} className="text-slate-900 z-10" strokeWidth={1} />
+                )}
               </div>
               
               <div className="text-center w-full">
@@ -295,7 +340,10 @@ export default function ActiveAttendancePage() {
           >
             <QrCode size={20} className="text-blue-600" /> Show QR
           </button>
-          <button className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-red-50 text-red-700 border border-red-200 px-5 py-3 rounded-xl font-medium hover:bg-red-100 transition-colors">
+          <button 
+            onClick={handleEndSession}
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-red-50 text-red-700 border border-red-200 px-5 py-3 rounded-xl font-medium hover:bg-red-100 transition-colors"
+          >
             End Session
           </button>
         </div>

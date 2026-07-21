@@ -14,7 +14,13 @@ import {
   Calendar,
   MoreVertical,
   Filter,
-  ArrowRight
+  ArrowRight,
+  QrCode,
+  X,
+  ScanFace,
+  MapPin,
+  Laptop,
+  Check
 } from "lucide-react";
 import { createClient } from "../../utils/supabase/client";
 import { useEffect } from "react";
@@ -45,6 +51,25 @@ export default function ClassesPage() {
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // States for the configuration modal
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [onlineMode, setOnlineMode] = useState(false);
+  const [faceIdRequired, setFaceIdRequired] = useState(true);
+  const [locationRequired, setLocationRequired] = useState(true);
+  const [isReplacement, setIsReplacement] = useState(false);
+  const [customDateTime, setCustomDateTime] = useState("");
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+
+  const handleStartSessionClick = () => {
+    setOnlineMode(false);
+    setFaceIdRequired(true);
+    setLocationRequired(true);
+    setIsReplacement(false);
+    setCustomDateTime("");
+    setShowConfigModal(true);
+  };
+
 
   // Fetch classes taught by this lecturer
   useEffect(() => {
@@ -89,6 +114,20 @@ export default function ClassesPage() {
     if (!selectedClassId) return;
 
     const fetchRoster = async () => {
+      // Check for active session (closed_at is null)
+      const { data: activeSession } = await supabase
+        .from('attendance_sessions')
+        .select('id')
+        .eq('class_id', selectedClassId)
+        .is('closed_at', null)
+        .maybeSingle();
+
+      if (activeSession) {
+        setActiveSessionId(activeSession.id);
+      } else {
+        setActiveSessionId(null);
+      }
+
       const { data: enrollments } = await supabase
         .from('enrollments')
         .select(`
@@ -155,38 +194,60 @@ export default function ClassesPage() {
           <p className="text-slate-500 mt-1">Manage and monitor specific cohorts</p>
         </div>
         
-        {/* Dropdown for selecting classes */}
-        <div className="relative">
-          <button 
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center gap-3 bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-medium shadow-sm hover:bg-slate-50 transition-colors"
-          >
-            <div className="flex flex-col text-left">
-              <span className="text-[10px] uppercase font-bold text-blue-600 tracking-wider leading-none mb-1">Current View</span>
-              <span className="leading-none">{selectedClassName || "Loading..."}</span>
-            </div>
-            <ChevronDown size={18} className="text-slate-400 ml-2" />
-          </button>
-
-          {/* Dropdown Menu */}
-          {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-full min-w-[220px] bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
-              {classesList.map((cls) => (
-                <button
-                  key={cls.id}
-                  onClick={() => {
-                    setSelectedClassId(cls.id);
-                    setSelectedClassName(cls.name);
-                    setIsDropdownOpen(false);
-                    window.history.pushState(null, '', `/classes?classId=${cls.id}`);
-                  }}
-                  className={`w-full text-left px-4 py-3 text-sm hover:bg-slate-50 transition-colors ${selectedClassId === cls.id ? 'bg-blue-50/50 text-blue-700 font-medium' : 'text-slate-700'}`}
-                >
-                  {cls.name}
-                </button>
-              ))}
-            </div>
+        {/* Dropdown for selecting classes and Start Session button */}
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          {selectedClassId && (
+            activeSessionId ? (
+              <button
+                onClick={() => router.push(`/attendance/active?sessionId=${activeSessionId}&classId=${selectedClassId}`)}
+                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl font-semibold shadow-md shadow-emerald-200 hover:shadow-lg transition-all active:scale-95 cursor-pointer border-none font-sans animate-pulse"
+              >
+                <QrCode size={18} />
+                <span>Ongoing Session</span>
+              </button>
+            ) : (
+              <button
+                onClick={handleStartSessionClick}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-semibold shadow-md shadow-blue-200 hover:shadow-lg transition-all active:scale-95 cursor-pointer border-none font-sans"
+              >
+                <QrCode size={18} />
+                <span>Start Session</span>
+              </button>
+            )
           )}
+
+          <div className="relative">
+            <button 
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="flex items-center gap-3 bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-medium shadow-sm hover:bg-slate-50 transition-colors"
+            >
+              <div className="flex flex-col text-left">
+                <span className="text-[10px] uppercase font-bold text-blue-600 tracking-wider leading-none mb-1">Current View</span>
+                <span className="leading-none">{selectedClassName || "Loading..."}</span>
+              </div>
+              <ChevronDown size={18} className="text-slate-400 ml-2" />
+            </button>
+
+            {/* Dropdown Menu */}
+            {isDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-full min-w-[220px] bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
+                {classesList.map((cls) => (
+                  <button
+                    key={cls.id}
+                    onClick={() => {
+                      setSelectedClassId(cls.id);
+                      setSelectedClassName(cls.name);
+                      setIsDropdownOpen(false);
+                      window.history.pushState(null, '', `/classes?classId=${cls.id}`);
+                    }}
+                    className={`w-full text-left px-4 py-3 text-sm hover:bg-slate-50 transition-colors ${selectedClassId === cls.id ? 'bg-blue-50/50 text-blue-700 font-medium' : 'text-slate-700'}`}
+                  >
+                    {cls.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -347,8 +408,301 @@ export default function ClassesPage() {
             </tbody>
           </table>
         </div>
-        
       </div>
+
+      {/* Session Configuration Modal */}
+      {showConfigModal && selectedClassId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="bg-slate-900 p-6 text-white relative">
+              <button
+                onClick={() => setShowConfigModal(false)}
+                className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors border-none cursor-pointer text-white"
+              >
+                <X size={20} />
+              </button>
+              <span className="text-xs font-bold tracking-wider uppercase bg-blue-600 text-white px-3 py-1 rounded-full">
+                Session Setup
+              </span>
+              <h2 className="text-2xl font-bold mt-3">{selectedClassName}</h2>
+              <p className="text-slate-400 mt-1">Configure attendance tracking rules below.</p>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto">
+              
+              {/* Choose Attendance Format */}
+              <div>
+                <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Choose Attendance Format</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Option 1: In-Person */}
+                  <div
+                    onClick={() => {
+                      setOnlineMode(false);
+                      setFaceIdRequired(true);
+                      setLocationRequired(true);
+                    }}
+                    className={`flex flex-col p-5 rounded-2xl border-2 cursor-pointer transition-all ${!onlineMode
+                        ? "border-blue-600 bg-blue-50/50"
+                        : "border-slate-200 hover:border-slate-300"
+                      }`}
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="p-2.5 rounded-xl bg-blue-100 text-blue-600">
+                        <Users size={22} />
+                      </div>
+                      {!onlineMode && (
+                        <div className="bg-blue-600 text-white rounded-full p-1 flex items-center justify-center">
+                          <Check size={14} strokeWidth={3} />
+                        </div>
+                      )}
+                    </div>
+                    <span className="font-bold text-slate-900 text-lg">In-Person Class</span>
+                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                      Requires Face ID scanning and GPS location validation in class.
+                    </p>
+                  </div>
+
+                  {/* Option 2: Online */}
+                  <div
+                    onClick={() => {
+                      setOnlineMode(true);
+                      setFaceIdRequired(false);
+                      setLocationRequired(false);
+                    }}
+                    className={`flex flex-col p-5 rounded-2xl border-2 cursor-pointer transition-all ${onlineMode
+                        ? "border-blue-600 bg-blue-50/50"
+                        : "border-slate-200 hover:border-slate-300"
+                      }`}
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="p-2.5 rounded-xl bg-indigo-100 text-indigo-600">
+                        <Laptop size={22} />
+                      </div>
+                      {onlineMode && (
+                        <div className="bg-blue-600 text-white rounded-full p-1 flex items-center justify-center">
+                          <Check size={14} strokeWidth={3} />
+                        </div>
+                      )}
+                    </div>
+                    <span className="font-bold text-slate-900 text-lg">Online Class</span>
+                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                      Bypasses Face ID and GPS location geofencing checks for all students.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Session Timing / Replacement Option */}
+              <div className="border-t border-slate-100 pt-6">
+                <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">
+                  Session Timing
+                </h3>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div
+                    onClick={() => {
+                      setIsReplacement(false);
+                      setCustomDateTime("");
+                    }}
+                    className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${!isReplacement
+                        ? "border-blue-600 bg-blue-50/50"
+                        : "border-slate-200 hover:border-slate-300"
+                      }`}
+                  >
+                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${!isReplacement ? 'border-blue-600' : 'border-slate-300'}`}>
+                      {!isReplacement && <div className="w-2.5 h-2.5 bg-blue-600 rounded-full" />}
+                    </div>
+                    <div>
+                      <div className="font-bold text-slate-900 text-sm">Regular Class (Now)</div>
+                      <div className="text-xs text-slate-500">Start check-in immediately</div>
+                    </div>
+                  </div>
+
+                  <div
+                    onClick={() => {
+                      setIsReplacement(true);
+                      const localNow = new Date();
+                      const offsetMs = localNow.getTimezoneOffset() * 60000;
+                      const localISOTime = new Date(localNow.getTime() - offsetMs).toISOString().slice(0, 16);
+                      setCustomDateTime(localISOTime);
+                    }}
+                    className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${isReplacement
+                        ? "border-blue-600 bg-blue-50/50"
+                        : "border-slate-200 hover:border-slate-300"
+                      }`}
+                  >
+                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isReplacement ? 'border-blue-600' : 'border-slate-300'}`}>
+                      {isReplacement && <div className="w-2.5 h-2.5 bg-blue-600 rounded-full" />}
+                    </div>
+                    <div>
+                      <div className="font-bold text-slate-900 text-sm">Replacement Class</div>
+                      <div className="text-xs text-slate-500">Use custom date/time</div>
+                    </div>
+                  </div>
+                </div>
+
+                {isReplacement && (
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 animate-in fade-in duration-200">
+                    <label className="block text-xs font-bold text-slate-600 uppercase mb-2">
+                      Custom Date & Time
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={customDateTime}
+                      onChange={(e) => setCustomDateTime(e.target.value)}
+                      className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-blue-600 transition-all font-sans"
+                    />
+                    <p className="text-[11px] text-slate-500 mt-2">
+                      The attendance records will be registered under this custom date/time.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Granular Authentication Overrides */}
+              <div className="border-t border-slate-100 pt-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">
+                    Fine-tune Requirements
+                  </h3>
+                  {onlineMode && (
+                    <span className="text-[10.5px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                      Overridden for Online Mode
+                    </span>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  {/* Face ID Switch */}
+                  <div className={`flex items-center justify-between p-4 rounded-xl border ${onlineMode ? 'bg-slate-50 border-slate-150 opacity-60' : 'border-slate-200'}`}>
+                    <div className="flex gap-3 items-start">
+                      <ScanFace className={`mt-0.5 ${faceIdRequired ? 'text-blue-600' : 'text-slate-400'}`} size={20} />
+                      <div>
+                        <div className="font-bold text-slate-900 text-sm">Face ID verification</div>
+                        <div className="text-xs text-slate-500 mt-0.5">Students must match facial features against saved profiles</div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={onlineMode}
+                      onClick={() => setFaceIdRequired(!faceIdRequired)}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${faceIdRequired ? "bg-blue-600" : "bg-slate-200"
+                        } ${onlineMode ? "cursor-not-allowed" : ""}`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${faceIdRequired ? "translate-x-5" : "translate-x-0"
+                          }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Location Switch */}
+                  <div className={`flex items-center justify-between p-4 rounded-xl border ${onlineMode ? 'bg-slate-50 border-slate-150 opacity-60' : 'border-slate-200'}`}>
+                    <div className="flex gap-3 items-start">
+                      <MapPin className={`mt-0.5 ${locationRequired ? 'text-blue-600' : 'text-slate-400'}`} size={20} />
+                      <div>
+                        <div className="font-bold text-slate-900 text-sm">Location / GPS matching</div>
+                        <div className="text-xs text-slate-500 mt-0.5">Verify students are physically present in the lecture hall</div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={onlineMode}
+                      onClick={() => setLocationRequired(!locationRequired)}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${locationRequired ? "bg-blue-600" : "bg-slate-200"
+                        } ${onlineMode ? "cursor-not-allowed" : ""}`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${locationRequired ? "translate-x-5" : "translate-x-0"
+                          }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-slate-50 p-6 flex justify-end gap-3 border-t border-slate-150">
+              <button
+                onClick={() => setShowConfigModal(false)}
+                className="bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 font-semibold px-5 py-3 rounded-xl transition-all cursor-pointer font-sans"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    const { data: { session: authSession } } = await supabase.auth.getSession();
+                    const token = authSession?.access_token;
+
+                    const openedAtTimestamp = isReplacement && customDateTime
+                      ? new Date(customDateTime).toISOString()
+                      : new Date().toISOString();
+
+                    const res = await fetch("http://localhost:8000/api/sessions/start", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                      },
+                      body: JSON.stringify({
+                        class_id: selectedClassId,
+                        opened_at: openedAtTimestamp,
+                        online_mode: onlineMode,
+                        face_id_required: !onlineMode && faceIdRequired,
+                        location_required: !onlineMode && locationRequired,
+                        geo_lat: 3.115,
+                        geo_lng: 101.655,
+                        geo_radius_meters: 50
+                      })
+                    });
+
+                    if (!res.ok) {
+                      const errData = await res.json();
+                      alert("Error starting session: " + (errData.detail || "Unknown error"));
+                      return;
+                    }
+
+                    const data = await res.json();
+                    
+                    if (data.status === "active_exists") {
+                      router.push(`/attendance/active?sessionId=${data.session.id}&classId=${selectedClassId}`);
+                      setShowConfigModal(false);
+                      return;
+                    }
+
+                    const newSession = data.session;
+
+                    // Save active session settings in localStorage
+                    const sessionSettings = {
+                      sessionId: newSession.id,
+                      classId: selectedClassId,
+                      onlineMode: newSession.online_mode,
+                      faceIdRequired: newSession.face_id_required,
+                      locationRequired: newSession.location_required,
+                      sessionPin: newSession.session_pin,
+                      openedAt: openedAtTimestamp
+                    };
+                    localStorage.setItem('activeSessionConfig', JSON.stringify(sessionSettings));
+
+                    // Redirect to Active Attendance page with config query params
+                    router.push(`/attendance/active?sessionId=${newSession.id}&classId=${selectedClassId}&onlineMode=${newSession.online_mode}&faceIdRequired=${newSession.face_id_required}&locationRequired=${newSession.location_required}`);
+                    setShowConfigModal(false);
+                  } catch (err) {
+                    console.error("FastAPI error starting session:", err);
+                    alert("Error calling FastAPI server. Make sure it is running on port 8000.");
+                  }
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl shadow-md shadow-blue-200 hover:shadow-lg hover:shadow-blue-300 transition-all cursor-pointer border-none font-sans"
+              >
+                Start Active Session
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

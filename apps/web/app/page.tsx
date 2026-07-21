@@ -34,6 +34,11 @@ interface ScheduleItem {
   critical: number;
   atRisk: number;
   attendance: number;
+  activeSessionId?: string | null;
+  activeSessionPin?: string | null;
+  activeOnlineMode?: boolean;
+  activeFaceIdRequired?: boolean;
+  activeLocationRequired?: boolean;
 }
 
 interface AssignedClass {
@@ -140,6 +145,14 @@ export default function HomePage() {
             .select('current_attendance_rate')
             .eq('class_id', cls.id);
 
+          // Check for active session (closed_at is null)
+          const { data: activeSession } = await supabase
+            .from('attendance_sessions')
+            .select('id, session_pin, online_mode, face_id_required, location_required')
+            .eq('class_id', cls.id)
+            .is('closed_at', null)
+            .maybeSingle();
+
           const totalEnrollments = enrollments?.length || 0;
           const avgAttendance = totalEnrollments > 0
             ? Math.round((enrollments || []).reduce((sum, e) => sum + Number(e.current_attendance_rate), 0) / totalEnrollments)
@@ -181,14 +194,19 @@ export default function HomePage() {
             group: cls.group_code,
             time: formattedDayTime,
             location: cls.location || (cls.type === 'Lecture' ? 'Lecture Hall 3' : cls.type === 'Tutorial' ? 'Tutorial Room 1' : 'Computer Lab 2'),
-            status: 'Scheduled',
+            status: activeSession ? 'Ongoing' : 'Scheduled',
             critical: criticalCount,
             atRisk: atRiskCount,
             attendance: avgAttendance,
             type: cls.type,
             dayOfWeek: cls.day_of_week,
             startTime: cls.start_time,
-            endTime: cls.end_time
+            endTime: cls.end_time,
+            activeSessionId: activeSession?.id || null,
+            activeSessionPin: activeSession?.session_pin || null,
+            activeOnlineMode: activeSession?.online_mode || false,
+            activeFaceIdRequired: activeSession?.face_id_required || false,
+            activeLocationRequired: activeSession?.location_required || false
           };
         }));
 
@@ -324,13 +342,23 @@ export default function HomePage() {
                     </div>
 
                     {isCenter && (
-                      <button
-                        onClick={() => handleStartSessionClick(cls)}
-                        className="flex flex-col items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-2xl font-semibold shadow-md shadow-blue-200 transition-all active:scale-95 cursor-pointer border-none"
-                      >
-                        <QrCode size={28} />
-                        <span className="text-sm">Start Session</span>
-                      </button>
+                      cls.activeSessionId ? (
+                        <button
+                          onClick={() => router.push(`/attendance/active?sessionId=${cls.activeSessionId}&classId=${cls.id}&onlineMode=${cls.activeOnlineMode}&faceIdRequired=${cls.activeFaceIdRequired}&locationRequired=${cls.activeLocationRequired}`)}
+                          className="flex flex-col items-center justify-center gap-2 bg-emerald-650 hover:bg-emerald-700 text-white px-6 py-4 rounded-2xl font-semibold shadow-md shadow-emerald-200 transition-all active:scale-95 cursor-pointer border-none animate-pulse"
+                        >
+                          <QrCode size={28} />
+                          <span className="text-sm">Ongoing Session</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleStartSessionClick(cls)}
+                          className="flex flex-col items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-2xl font-semibold shadow-md shadow-blue-200 transition-all active:scale-95 cursor-pointer border-none"
+                        >
+                          <QrCode size={28} />
+                          <span className="text-sm">Start Session</span>
+                        </button>
+                      )
                     )}
                   </div>
 
@@ -570,41 +598,62 @@ export default function HomePage() {
               </button>
               <button
                 onClick={async () => {
-                  const sessionPin = Math.floor(1000 + Math.random() * 9000).toString() + '-X';
+                  try {
+                    const { data: { session: authSession } } = await supabase.auth.getSession();
+                    const token = authSession?.access_token;
 
-                  // Insert active session into Supabase
-                  const { data: newSession, error: sessionError } = await supabase
-                    .from('attendance_sessions')
-                    .insert({
-                      class_id: configuringClass.id,
-                      opened_at: new Date().toISOString(),
-                      session_pin: sessionPin,
-                      geo_lat: 3.115,
-                      geo_lng: 101.655,
-                      geo_radius_meters: 50
-                    })
-                    .select()
-                    .single();
+                    const res = await fetch("http://localhost:8000/api/sessions/start", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                      },
+                      body: JSON.stringify({
+                        class_id: configuringClass.id,
+                        opened_at: new Date().toISOString(),
+                        online_mode: onlineMode,
+                        face_id_required: !onlineMode && faceIdRequired,
+                        location_required: !onlineMode && locationRequired,
+                        geo_lat: 3.115,
+                        geo_lng: 101.655,
+                        geo_radius_meters: 50
+                      })
+                    });
 
-                  if (sessionError) {
-                    console.error("Failed to start session:", sessionError);
-                    return;
+                    if (!res.ok) {
+                      const errData = await res.json();
+                      alert("Error starting session: " + (errData.detail || "Unknown error"));
+                      return;
+                    }
+
+                    const data = await res.json();
+                    
+                    if (data.status === "active_exists") {
+                      router.push(`/attendance/active?sessionId=${data.session.id}&classId=${configuringClass.id}`);
+                      setShowConfigModal(false);
+                      return;
+                    }
+
+                    const newSession = data.session;
+
+                    // Save active session settings in localStorage
+                    const sessionSettings = {
+                      sessionId: newSession.id,
+                      classId: configuringClass.id,
+                      onlineMode: newSession.online_mode,
+                      faceIdRequired: newSession.face_id_required,
+                      locationRequired: newSession.location_required,
+                      sessionPin: newSession.session_pin
+                    };
+                    localStorage.setItem('activeSessionConfig', JSON.stringify(sessionSettings));
+
+                    // Redirect to Active Attendance page with config query params
+                    router.push(`/attendance/active?sessionId=${newSession.id}&classId=${configuringClass.id}&onlineMode=${newSession.online_mode}&faceIdRequired=${newSession.face_id_required}&locationRequired=${newSession.location_required}`);
+                    setShowConfigModal(false);
+                  } catch (err) {
+                    console.error("FastAPI error starting session:", err);
+                    alert("Error calling FastAPI server. Make sure it is running on port 8000.");
                   }
-
-                  // Save active session settings in localStorage
-                  const sessionSettings = {
-                    sessionId: newSession.id,
-                    classId: configuringClass.id,
-                    onlineMode,
-                    faceIdRequired: !onlineMode && faceIdRequired,
-                    locationRequired: !onlineMode && locationRequired,
-                    sessionPin: sessionPin
-                  };
-                  localStorage.setItem('activeSessionConfig', JSON.stringify(sessionSettings));
-
-                  // Redirect to Active Attendance page with config query params
-                  router.push(`/attendance/active?sessionId=${newSession.id}&classId=${configuringClass.id}&onlineMode=${onlineMode}&faceIdRequired=${sessionSettings.faceIdRequired}&locationRequired=${sessionSettings.locationRequired}`);
-                  setShowConfigModal(false);
                 }}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl shadow-md shadow-blue-200 hover:shadow-lg hover:shadow-blue-300 transition-all cursor-pointer border-none font-sans"
               >
