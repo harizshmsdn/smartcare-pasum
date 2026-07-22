@@ -73,6 +73,7 @@ export default function HomePage() {
   const [scheduleToday, setScheduleToday] = useState<ScheduleItem[]>([]);
   const [assignedClasses, setAssignedClasses] = useState<AssignedClass[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasAnyActiveSession, setHasAnyActiveSession] = useState(false);
 
   // States for the configuration modal
   const [showConfigModal, setShowConfigModal] = useState(false);
@@ -258,6 +259,7 @@ export default function HomePage() {
         setScheduleToday(slicedSchedule);
         setActiveIndex(finalActiveIdx);
         setAssignedClasses(processedClasses);
+        setHasAnyActiveSession(processedClasses.some((c) => !!c.activeSessionId));
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
       } finally {
@@ -345,10 +347,18 @@ export default function HomePage() {
                       cls.activeSessionId ? (
                         <button
                           onClick={() => router.push(`/attendance/active?sessionId=${cls.activeSessionId}&classId=${cls.id}&onlineMode=${cls.activeOnlineMode}&faceIdRequired=${cls.activeFaceIdRequired}&locationRequired=${cls.activeLocationRequired}`)}
-                          className="flex flex-col items-center justify-center gap-2 bg-emerald-650 hover:bg-emerald-700 text-white px-6 py-4 rounded-2xl font-semibold shadow-md shadow-emerald-200 transition-all active:scale-95 cursor-pointer border-none animate-pulse"
+                          className="flex flex-col items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-4 rounded-2xl font-semibold shadow-md shadow-emerald-200 transition-all active:scale-95 cursor-pointer border-none animate-pulse"
                         >
                           <QrCode size={28} />
                           <span className="text-sm">Ongoing Session</span>
+                        </button>
+                      ) : hasAnyActiveSession ? (
+                        <button
+                          disabled
+                          className="flex flex-col items-center justify-center gap-2 bg-slate-200 text-slate-400 px-6 py-4 rounded-2xl font-semibold cursor-not-allowed border-none shadow-none text-center"
+                        >
+                          <QrCode size={28} />
+                          <span className="text-sm">Another session is ongoing</span>
                         </button>
                       ) : (
                         <button
@@ -411,8 +421,8 @@ export default function HomePage() {
               >
                 <div className="flex justify-between items-start mb-4">
                   <div className={`p-2.5 rounded-xl ${item.type === 'Lecture' ? 'bg-indigo-100 text-indigo-600' :
-                      item.type === 'Tutorial' ? 'bg-emerald-100 text-emerald-600' :
-                        'bg-amber-100 text-amber-600'
+                    item.type === 'Tutorial' ? 'bg-emerald-100 text-emerald-600' :
+                      'bg-amber-100 text-amber-600'
                     }`}>
                     <Icon size={20} />
                   </div>
@@ -475,8 +485,8 @@ export default function HomePage() {
                       setLocationRequired(true);
                     }}
                     className={`flex flex-col p-5 rounded-2xl border-2 cursor-pointer transition-all ${!onlineMode
-                        ? "border-blue-600 bg-blue-50/50"
-                        : "border-slate-200 hover:border-slate-300"
+                      ? "border-blue-600 bg-blue-50/50"
+                      : "border-slate-200 hover:border-slate-300"
                       }`}
                   >
                     <div className="flex justify-between items-start mb-3">
@@ -503,8 +513,8 @@ export default function HomePage() {
                       setLocationRequired(false);
                     }}
                     className={`flex flex-col p-5 rounded-2xl border-2 cursor-pointer transition-all ${onlineMode
-                        ? "border-blue-600 bg-blue-50/50"
-                        : "border-slate-200 hover:border-slate-300"
+                      ? "border-blue-600 bg-blue-50/50"
+                      : "border-slate-200 hover:border-slate-300"
                       }`}
                   >
                     <div className="flex justify-between items-start mb-3">
@@ -627,7 +637,7 @@ export default function HomePage() {
                     }
 
                     const data = await res.json();
-                    
+
                     if (data.status === "active_exists") {
                       router.push(`/attendance/active?sessionId=${data.session.id}&classId=${configuringClass.id}`);
                       setShowConfigModal(false);

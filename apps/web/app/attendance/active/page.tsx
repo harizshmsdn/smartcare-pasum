@@ -4,13 +4,13 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { 
-  QrCode, 
-  X, 
-  Users, 
-  MapPin, 
-  ScanFace, 
-  CheckCircle2, 
+import {
+  QrCode,
+  X,
+  Users,
+  MapPin,
+  ScanFace,
+  CheckCircle2,
   AlertCircle,
   Clock,
   ArrowLeft,
@@ -42,7 +42,7 @@ export default function ActiveAttendancePage() {
   const [sessionPin, setSessionPin] = useState("8492-X");
   const [className, setClassName] = useState("Physics 101");
   const [classGroup, setClassGroup] = useState("Group A");
-  
+
   const [totalStudentsCount, setTotalStudentsCount] = useState(0);
   const [liveAttendees, setLiveAttendees] = useState<Attendee[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -176,7 +176,7 @@ export default function ActiveAttendancePage() {
         }));
         setLiveAttendees(formatted);
 
-        setAbsentStudents(prev => 
+        setAbsentStudents(prev =>
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           prev.filter(student => !records.some((r: any) => r.profiles?.id === student.id))
         );
@@ -240,27 +240,27 @@ export default function ActiveAttendancePage() {
 
   return (
     <main className="flex-1 p-8 overflow-y-auto bg-slate-50 relative">
-      
+
       {/* --- QR CODE OVERLAY MODAL --- */}
       {showQrModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="bg-blue-600 p-6 text-center text-white relative">
-              <button 
+              <button
                 onClick={() => setShowQrModal(false)}
                 className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 p-2 rounded-full transition-colors"
               >
                 <X size={20} />
               </button>
-              <h2 className="text-2xl font-bold">Physics 101 - Group A</h2>
+              <h2 className="text-2xl font-bold">{className} - {classGroup}</h2>
               <p className="text-blue-100 mt-1">Scan to register attendance via SMART-CARE</p>
             </div>
-            
+
             <div className="p-10 flex flex-col items-center">
               {/* Dynamic generated QR aligned with active session PIN */}
               <div className="w-64 h-64 bg-white border-8 border-slate-900 rounded-xl flex items-center justify-center relative overflow-hidden mb-6 shadow-sm">
                 {sessionPin ? (
-                  <img 
+                  <img
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(sessionPin)}`}
                     alt={`QR Code for PIN ${sessionPin}`}
                     className="w-full h-full object-cover z-10"
@@ -269,12 +269,12 @@ export default function ActiveAttendancePage() {
                   <QrCode size={180} className="text-slate-900 z-10" strokeWidth={1} />
                 )}
               </div>
-              
+
               <div className="text-center w-full">
                 <p className="text-slate-500 font-mono text-sm tracking-widest bg-slate-100 py-3 rounded-xl mb-6">
                   SESSION-PIN: <span className="font-bold text-slate-800 text-lg">{sessionPin}</span>
                 </p>
-                <button 
+                <button
                   onClick={() => setShowQrModal(false)}
                   className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-4 rounded-xl transition-colors"
                 >
@@ -314,33 +314,31 @@ export default function ActiveAttendancePage() {
                   <Users size={13} /> In-Person Mode
                 </span>
               )}
-              
-              <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${
-                faceIdRequired 
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-250" 
+
+              <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${faceIdRequired
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-250"
                   : "bg-slate-100 text-slate-500 border-slate-200"
-              }`}>
+                }`}>
                 <ScanFace size={13} /> Face ID: {faceIdRequired ? "Required" : "Bypassed"}
               </span>
-              
-              <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${
-                locationRequired 
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-250" 
+
+              <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${locationRequired
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-250"
                   : "bg-slate-100 text-slate-500 border-slate-200"
-              }`}>
+                }`}>
                 <MapPin size={13} /> GPS Location: {locationRequired ? "Required" : "Bypassed"}
               </span>
             </div>
           </div>
         </div>
         <div className="flex gap-3 w-full md:w-auto">
-          <button 
+          <button
             onClick={() => setShowQrModal(true)}
             className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 px-5 py-3 rounded-xl font-medium shadow-sm hover:bg-slate-50 transition-colors"
           >
             <QrCode size={20} className="text-blue-600" /> Show QR
           </button>
-          <button 
+          <button
             onClick={handleEndSession}
             className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-red-50 text-red-700 border border-red-200 px-5 py-3 rounded-xl font-medium hover:bg-red-100 transition-colors"
           >
@@ -362,7 +360,7 @@ export default function ActiveAttendancePage() {
             <Users size={28} />
           </div>
         </div>
-        
+
         {/* Manual Check-in Override / Online Session Banner */}
         {locationRequired ? (
           <div className="md:col-span-2 bg-slate-900 p-6 rounded-2xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-white">
@@ -374,7 +372,7 @@ export default function ActiveAttendancePage() {
                 Bypass 3-factor location protocols and manually check-in a student if their device is unable to retrieve GPS coordinates.
               </p>
             </div>
-            <button 
+            <button
               onClick={() => setShowOverrideModal(true)}
               className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-3 rounded-xl font-medium transition-colors flex items-center gap-2 whitespace-nowrap cursor-pointer border-none"
             >
@@ -472,7 +470,7 @@ export default function ActiveAttendancePage() {
                 <UserPlus size={20} />
                 Manual Override Check-in
               </h3>
-              <button 
+              <button
                 onClick={() => setShowOverrideModal(false)}
                 className="bg-white/10 hover:bg-white/20 p-2 rounded-full border-none text-white cursor-pointer"
               >

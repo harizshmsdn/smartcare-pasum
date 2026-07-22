@@ -4,11 +4,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { 
-  Search, 
-  ChevronDown, 
-  AlertTriangle, 
-  TrendingDown, 
+import {
+  Search,
+  ChevronDown,
+  AlertTriangle,
+  TrendingDown,
   CheckCircle2,
   Users,
   Calendar,
@@ -43,7 +43,7 @@ interface ClassItem {
 export default function ClassesPage() {
   const router = useRouter();
   const supabase = createClient();
-  
+
   const [classesList, setClassesList] = useState<ClassItem[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>("");
   const [selectedClassName, setSelectedClassName] = useState<string>("");
@@ -60,6 +60,7 @@ export default function ClassesPage() {
   const [isReplacement, setIsReplacement] = useState(false);
   const [customDateTime, setCustomDateTime] = useState("");
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [hasAnyActiveSession, setHasAnyActiveSession] = useState(false);
 
   const handleStartSessionClick = () => {
     setOnlineMode(false);
@@ -122,11 +123,18 @@ export default function ClassesPage() {
         .is('closed_at', null)
         .maybeSingle();
 
+      const { data: anyActive } = await supabase
+        .from('attendance_sessions')
+        .select('id')
+        .is('closed_at', null)
+        .limit(1);
+
       if (activeSession) {
         setActiveSessionId(activeSession.id);
       } else {
         setActiveSessionId(null);
       }
+      setHasAnyActiveSession(!!(anyActive && anyActive.length > 0));
 
       const { data: enrollments } = await supabase
         .from('enrollments')
@@ -170,30 +178,30 @@ export default function ClassesPage() {
   const filteredStudents = students.filter((student) => {
     //Tab Filter
     const matchesTab = activeTab === "all" || (activeTab === "alerts" && student.status !== "good");
-    
+
     //Search Filter (matches name or ID)
-    const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          student.matricId.includes(searchQuery);
+    const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.matricId.includes(searchQuery);
 
     return matchesTab && matchesSearch;
   });
 
   //Calculate dynamic alerts count
   const alertsCount = students.filter(s => s.status !== "good").length;
-  const classAvg = students.length > 0 
+  const classAvg = students.length > 0
     ? Math.round(students.reduce((sum, s) => sum + s.attendance, 0) / students.length)
     : 100;
 
   return (
     <main className="flex-1 p-8 overflow-y-auto bg-[#FAF9F6]">
-      
+
       {/* Header & Class Selector */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h2 className="text-3xl font-semibold text-slate-900">Class Roster</h2>
           <p className="text-slate-500 mt-1">Manage and monitor specific cohorts</p>
         </div>
-        
+
         {/* Dropdown for selecting classes and Start Session button */}
         <div className="flex items-center gap-3 w-full md:w-auto">
           {selectedClassId && (
@@ -204,6 +212,14 @@ export default function ClassesPage() {
               >
                 <QrCode size={18} />
                 <span>Ongoing Session</span>
+              </button>
+            ) : hasAnyActiveSession ? (
+              <button
+                disabled
+                className="flex items-center gap-2 bg-slate-200 text-slate-400 px-5 py-3 rounded-xl font-semibold cursor-not-allowed border-none font-sans"
+              >
+                <QrCode size={18} />
+                <span>Another session is ongoing</span>
               </button>
             ) : (
               <button
@@ -217,7 +233,7 @@ export default function ClassesPage() {
           )}
 
           <div className="relative">
-            <button 
+            <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="flex items-center gap-3 bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-medium shadow-sm hover:bg-slate-50 transition-colors"
             >
@@ -262,7 +278,7 @@ export default function ClassesPage() {
             <p className="text-2xl font-bold text-slate-900">{students.length}</p>
           </div>
         </div>
-        
+
         <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
           <div className="bg-emerald-50 p-3 rounded-2xl text-emerald-600">
             <CheckCircle2 size={24} />
@@ -287,7 +303,7 @@ export default function ClassesPage() {
         <Link href="/interventions" className="bg-slate-900 p-5 rounded-3xl shadow-md flex items-center justify-between group hover:bg-slate-800 transition-all cursor-pointer">
           <div>
             <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Action Required</p>
-            <p className="text-lg font-bold text-white leading-tight">Intervention<br/>Board</p>
+            <p className="text-lg font-bold text-white leading-tight">Intervention<br />Board</p>
           </div>
           <div className="bg-white/10 p-3 rounded-2xl text-white group-hover:scale-110 group-hover:bg-blue-600 transition-all">
             <ArrowRight size={24} />
@@ -297,19 +313,19 @@ export default function ClassesPage() {
 
       {/* Roster Container */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-        
+
         {/* Table Toolbar */}
         <div className="p-5 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-white">
           {/* Tabs for filtering students */}
           <div className="flex gap-2 w-full md:w-auto">
-            <button 
-              onClick={() => setActiveTab("all")} 
+            <button
+              onClick={() => setActiveTab("all")}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === "all" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
             >
               All Students
             </button>
-            <button 
-              onClick={() => setActiveTab("alerts")} 
+            <button
+              onClick={() => setActiveTab("alerts")}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === "alerts" ? "bg-red-50 text-red-700 border border-red-200" : "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-transparent"}`}
             >
               Alerts Only <span className={`px-1.5 py-0.5 rounded text-xs ${activeTab === "alerts" ? "bg-red-200 text-red-800" : "bg-red-100 text-red-700"}`}>{alertsCount}</span>
@@ -320,11 +336,11 @@ export default function ClassesPage() {
             {/* FIX 3: Search Input tied to searchQuery state */}
             <div className="relative flex-1 md:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search matric ID or name..." 
+                placeholder="Search matric ID or name..."
                 className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
               />
             </div>
@@ -431,7 +447,7 @@ export default function ClassesPage() {
 
             {/* Modal Body */}
             <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto">
-              
+
               {/* Choose Attendance Format */}
               <div>
                 <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Choose Attendance Format</h3>
@@ -444,8 +460,8 @@ export default function ClassesPage() {
                       setLocationRequired(true);
                     }}
                     className={`flex flex-col p-5 rounded-2xl border-2 cursor-pointer transition-all ${!onlineMode
-                        ? "border-blue-600 bg-blue-50/50"
-                        : "border-slate-200 hover:border-slate-300"
+                      ? "border-blue-600 bg-blue-50/50"
+                      : "border-slate-200 hover:border-slate-300"
                       }`}
                   >
                     <div className="flex justify-between items-start mb-3">
@@ -472,8 +488,8 @@ export default function ClassesPage() {
                       setLocationRequired(false);
                     }}
                     className={`flex flex-col p-5 rounded-2xl border-2 cursor-pointer transition-all ${onlineMode
-                        ? "border-blue-600 bg-blue-50/50"
-                        : "border-slate-200 hover:border-slate-300"
+                      ? "border-blue-600 bg-blue-50/50"
+                      : "border-slate-200 hover:border-slate-300"
                       }`}
                   >
                     <div className="flex justify-between items-start mb-3">
@@ -506,8 +522,8 @@ export default function ClassesPage() {
                       setCustomDateTime("");
                     }}
                     className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${!isReplacement
-                        ? "border-blue-600 bg-blue-50/50"
-                        : "border-slate-200 hover:border-slate-300"
+                      ? "border-blue-600 bg-blue-50/50"
+                      : "border-slate-200 hover:border-slate-300"
                       }`}
                   >
                     <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${!isReplacement ? 'border-blue-600' : 'border-slate-300'}`}>
@@ -528,8 +544,8 @@ export default function ClassesPage() {
                       setCustomDateTime(localISOTime);
                     }}
                     className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${isReplacement
-                        ? "border-blue-600 bg-blue-50/50"
-                        : "border-slate-200 hover:border-slate-300"
+                      ? "border-blue-600 bg-blue-50/50"
+                      : "border-slate-200 hover:border-slate-300"
                       }`}
                   >
                     <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isReplacement ? 'border-blue-600' : 'border-slate-300'}`}>
@@ -666,7 +682,7 @@ export default function ClassesPage() {
                     }
 
                     const data = await res.json();
-                    
+
                     if (data.status === "active_exists") {
                       router.push(`/attendance/active?sessionId=${data.session.id}&classId=${selectedClassId}`);
                       setShowConfigModal(false);
