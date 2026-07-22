@@ -1,20 +1,21 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BottomNav from '../components/BottomNav.jsx'
+import { supabase } from '../../supabaseClient.js'
 
 export default function Settings() {
   const navigate = useNavigate()
   const [notifications, setNotifications] = useState(true)
 
-  function handleLogout() {
-    // TODO: clear auth token / session here
+  async function handleLogout() {
+    await supabase.auth.signOut()
     navigate('/login')
   }
 
   return (
     <div className="screen">
     <div className="topbar">
-      <button className="back-btn" onClick={() => navigate(-1)}>
+      <button className="back-btn" onClick={() => navigate('/account')}>
         {/* Replaced '←' with a rounded SVG arrow */}
         <svg 
           width="20" 
@@ -51,10 +52,6 @@ export default function Settings() {
         >
           <span className="knob" />
         </button>
-      </div>
-
-      <div className="link-row" onClick={handleLogout} style={{ color: 'var(--danger)' }}>
-        Log Out
       </div>
 
       <div style={{ marginTop: 24 }}>

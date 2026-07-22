@@ -20,7 +20,7 @@ export default function Schedule() {
   return (
     <div className="screen">
       <div className="topbar">
-        <button className="back-btn" onClick={() => navigate(-1)}>
+        <button className="back-btn" onClick={() => navigate('/home')}>
           <svg 
             width="20" 
             height="20" 
@@ -76,7 +76,10 @@ export default function Schedule() {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', color: '#1e293b' }}>{s.subject}</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <h3 style={{ margin: 0, fontSize: '16px', color: '#1e293b' }}>{s.subject}</h3>
+                  {s.type && <span className="pill mint">{s.type}</span>}
+                </div>
                 <p style={{ margin: '0', fontSize: '13px', color: '#64748b' }}>{s.class}</p>
               </div>
 

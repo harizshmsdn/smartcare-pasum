@@ -1,67 +1,16 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BottomNav from '../components/BottomNav.jsx'
-
-const initialNotifications = [
-  {
-    id: 1,
-    title: 'New Schedule Added',
-    message: 'Physics (BT2) class has been added to your schedule for Tuesday.',
-    time: '10 mins ago',
-    type: 'schedule',
-    read: false,
-  },
-  {
-    id: 2,
-    title: 'Merits Updated',
-    message: 'You received +15 points for Sukan Asasi Malaysia!',
-    time: '2 hours ago',
-    type: 'merits',
-    read: false,
-  },
-  {
-    id: 3,
-    title: 'Assessment Reminder',
-    message: 'Chemistry Midterm grade is updated (16/20).',
-    time: 'Yesterday',
-    type: 'assessment',
-    read: true,
-  },
-  {
-    id: 4,
-    title: 'Attendance Warning',
-    message: 'Programming attendance is at 60%. Please check your records.',
-    time: '3 days ago',
-    type: 'attendance',
-    read: true,
-  },
-]
+import { useApp } from '../AppContext.jsx'
 
 export default function Notification() {
   const navigate = useNavigate()
-  const [notifications, setNotifications] = useState(initialNotifications)
-
-  // Mark single item as read
-  const markAsRead = (id) => {
-    setNotifications((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, read: true } : item))
-    )
-  }
-
-  // Mark all as read
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((item) => ({ ...item, read: true })))
-  }
-
-  // Delete single notification
-  const deleteNotification = (id) => {
-    setNotifications((prev) => prev.filter((item) => item.id !== id))
-  }
-
-  // Clear all notifications
-  const clearAll = () => {
-    setNotifications([])
-  }
+  const {
+    notifications,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+    clearAllNotifications,
+  } = useApp()
 
   // Helper to choose badge icon based on notification type
   const getBadgeIcon = (type) => {
@@ -260,7 +209,7 @@ export default function Notification() {
             {/* CLEAR ALL BUTTON */}
             <button
               type="button"
-              onClick={clearAll}
+              onClick={clearAllNotifications}
               style={{
                 marginTop: '16px',
                 backgroundColor: 'transparent',

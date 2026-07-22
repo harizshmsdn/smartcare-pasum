@@ -5,7 +5,6 @@ export default function BottomNav() {
     <div style={navWrapperStyle}>
       <nav style={navBarContainerStyle}>
         
-        // Bottom Button To Home
         <NavLink 
           to="/home" 
           style={({ isActive }) => ({
@@ -32,7 +31,6 @@ export default function BottomNav() {
           )}
         </NavLink>
 
-        // Bottom Button To Scan QR
         <div style={centerButtonWrapperStyle}>
           <NavLink 
             to="/scanattendance" 
@@ -58,9 +56,8 @@ export default function BottomNav() {
           </NavLink>
         </div>
 
-        // Bottom Button To Profile
         <NavLink 
-          to="/profile" 
+          to="/account" 
           style={({ isActive }) => ({
             ...navLinkStyle,
             color: isActive ? '#4d5bf7' : '#8a8f99',
@@ -69,7 +66,7 @@ export default function BottomNav() {
         >
           {({ isActive }) => (
             <>
-              <span style={{ fontSize: 11, letterSpacing: 0.5 }}>PROFILE</span>
+              <span style={{ fontSize: 11, letterSpacing: 0.5 }}>ACCOUNT</span>
               <svg width="20"
                height="20" 
                viewBox="0 0 24 24" 
