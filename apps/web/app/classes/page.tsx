@@ -20,7 +20,11 @@ import {
   ScanFace,
   MapPin,
   Laptop,
-  Check
+  Check,
+  BookOpen,
+  FileSpreadsheet,
+  Plus,
+  Save
 } from "lucide-react";
 import { createClient } from "../../utils/supabase/client";
 import { useEffect } from "react";
@@ -63,6 +67,22 @@ export default function ClassesPage() {
   const [hasAnyActiveSession, setHasAnyActiveSession] = useState(false);
   const [nextSessionTime, setNextSessionTime] = useState<string>("Wed, 10:00 AM");
 
+  // States for Assessments & Marks Modal
+  const [isAssessmentsModalOpen, setIsAssessmentsModalOpen] = useState(false);
+  const [assessmentsTab, setAssessmentsTab] = useState<"matrix" | "list" | "create">("matrix");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [classAssessments, setClassAssessments] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [classRosterScores, setClassRosterScores] = useState<any[]>([]);
+  const [editingScores, setEditingScores] = useState<{ [key: string]: number | string }>({});
+
+  // New assessment form
+  const [newTitle, setNewTitle] = useState("");
+  const [newType, setNewType] = useState("Continuous");
+  const [newWeightage, setNewWeightage] = useState("10");
+  const [newTotalMarks, setNewTotalMarks] = useState("20");
+  const [isSavingScore, setIsSavingScore] = useState(false);
+
   const handleStartSessionClick = () => {
     setOnlineMode(false);
     setFaceIdRequired(true);
@@ -76,57 +96,119 @@ export default function ClassesPage() {
   // Fetch classes taught by this lecturer
   useEffect(() => {
     const fetchClasses = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
 
-      const { data: classesData } = await supabase
-        .from('classes')
-        .select(`
-          id,
-          group_code,
-          day_of_week,
-          start_time,
-          subjects (
-            code,
-            name
-          )
-        `)
-        .eq('lecturer_id', user.id);
+        const { data: classesData } = await supabase
+          .from('classes')
+          .select(`
+            id,
+            group_code,
+            day_of_week,
+            start_time,
+            subjects (
+              code,
+              name
+            )
+          `)
+          .eq('lecturer_id', user.id);
 
-      if (classesData && classesData.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const formatted = classesData.map((c: any) => {
-          let formattedTime = "";
-          if (c.start_time) {
-            const [hrs, mins] = c.start_time.split(":");
-            const h = parseInt(hrs, 10);
-            const ampm = h >= 12 ? "PM" : "AM";
-            const h12 = h % 12 || 12;
-            formattedTime = `${h12}:${mins} ${ampm}`;
+        if (classesData && classesData.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const formatted = classesData.map((c: any) => {
+            let formattedTime = "";
+            if (c.start_time) {
+              const [hrs, mins] = c.start_time.split(":");
+              const h = parseInt(hrs, 10);
+              const ampm = h >= 12 ? "PM" : "AM";
+              const h12 = h % 12 || 12;
+              formattedTime = `${h12}:${mins} ${ampm}`;
+            }
+            const dayShort = c.day_of_week ? c.day_of_week.slice(0, 3) : "";
+            const scheduleStr = dayShort && formattedTime ? `${dayShort}, ${formattedTime}` : "Schedule TBD";
+
+            return {
+              id: c.id,
+              name: `${c.subjects?.code} - ${c.subjects?.name} (${c.group_code})`,
+              schedule: scheduleStr
+            };
+          });
+          setClassesList(formatted);
+          const urlParams = new URLSearchParams(window.location.search);
+          const urlClassId = urlParams.get("classId");
+          const targetClass = formatted.find((c: any) => c.id === urlClassId) || formatted[0];
+          if (targetClass) {
+            setSelectedClassId(targetClass.id);
+            setSelectedClassName(targetClass.name);
+            setNextSessionTime(targetClass.schedule);
           }
-          const dayShort = c.day_of_week ? c.day_of_week.slice(0, 3) : "";
-          const scheduleStr = dayShort && formattedTime ? `${dayShort}, ${formattedTime}` : "Schedule TBD";
-
-          return {
-            id: c.id,
-            name: `${c.subjects?.code} - ${c.subjects?.name} (${c.group_code})`,
-            schedule: scheduleStr
-          };
-        });
-        setClassesList(formatted);
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlClassId = urlParams.get("classId");
-        const targetClass = formatted.find((c: any) => c.id === urlClassId) || formatted[0];
-        if (targetClass) {
-          setSelectedClassId(targetClass.id);
-          setSelectedClassName(targetClass.name);
-          setNextSessionTime(targetClass.schedule);
         }
+      } catch (err) {
+        console.error("Error loading lecturer classes:", err);
       }
     };
     fetchClasses();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Fetch class assessments and gradebook scores from FastAPI
+  const fetchClassAssessments = async (classId: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      const res = await fetch(`http://localhost:8000/api/classes/${classId}/assessments`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setClassAssessments(data.assessments || []);
+        setClassRosterScores(data.roster || []);
+      } else {
+        await fetchFallbackClassAssessments(classId);
+      }
+    } catch (err) {
+      console.warn("FastAPI offline, using Supabase direct assessment fetch:", err);
+      await fetchFallbackClassAssessments(classId);
+    }
+  };
+
+  const fetchFallbackClassAssessments = async (classId: string) => {
+    const { data: assessments } = await supabase
+      .from('assessments')
+      .select('*')
+      .eq('class_id', classId)
+      .order('created_at', { ascending: true });
+
+    setClassAssessments(assessments || []);
+
+    const { data: enrollments } = await supabase
+      .from('enrollments')
+      .select(`
+        student_id,
+        profiles (
+          id,
+          full_name,
+          institutional_id
+        )
+      `)
+      .eq('class_id', classId);
+
+    if (enrollments) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const roster = enrollments.map((e: any) => ({
+        student_id: e.student_id,
+        student_name: e.profiles?.full_name || "Student",
+        matric_id: e.profiles?.institutional_id || "N/A",
+        scores: {}
+      }));
+      setClassRosterScores(roster);
+    }
+  };
 
   // Fetch student roster for selected class
   useEffect(() => {
@@ -290,46 +372,68 @@ export default function ClassesPage() {
         </div>
       </header>
 
-      {/* Top Row: Mini-Bento Class Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="bg-blue-50 p-3 rounded-2xl text-blue-600">
-            <Users size={24} />
+      {/* Top Row: Mini-Bento Class Metrics (5 Columns, 1 Row) */}
+      <div className="grid grid-cols-5 gap-5 mb-8" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}>
+
+        {/* Card 1: Enrolled Students */}
+        <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4 min-w-0">
+          <div className="bg-blue-50 p-3.5 rounded-2xl text-blue-600 shrink-0">
+            <Users size={26} />
           </div>
-          <div>
-            <p className="text-sm font-medium text-slate-500">Enrolled Students</p>
-            <p className="text-2xl font-bold text-slate-900">{students.length}</p>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-slate-500 truncate mb-1">Enrolled Students</p>
+            <p className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">{students.length}</p>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="bg-emerald-50 p-3 rounded-2xl text-emerald-600">
-            <CheckCircle2 size={24} />
+        {/* Card 2: Class Average */}
+        <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4 min-w-0">
+          <div className="bg-emerald-50 p-3.5 rounded-2xl text-emerald-600 shrink-0">
+            <CheckCircle2 size={26} />
           </div>
-          <div>
-            <p className="text-sm font-medium text-slate-500">Class Average</p>
-            <p className="text-2xl font-bold text-slate-900">{classAvg}%</p>
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="bg-indigo-50 p-3 rounded-2xl text-indigo-600">
-            <Calendar size={24} />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-slate-500">Next Session</p>
-            <p className="text-lg font-bold text-slate-900">{nextSessionTime}</p>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-slate-500 truncate mb-1">Class Average</p>
+            <p className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">{classAvg}%</p>
           </div>
         </div>
 
-        {/* Intervention Board CTA */}
-        <Link href="/interventions" className="bg-slate-900 p-5 rounded-3xl shadow-md flex items-center justify-between group hover:bg-slate-800 transition-all cursor-pointer">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Action Required</p>
-            <p className="text-lg font-bold text-white leading-tight">Intervention<br />Board</p>
+        {/* Card 3: Next Session */}
+        <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4 min-w-0">
+          <div className="bg-indigo-50 p-3.5 rounded-2xl text-indigo-600 shrink-0">
+            <Calendar size={26} />
           </div>
-          <div className="bg-white/10 p-3 rounded-2xl text-white group-hover:scale-110 group-hover:bg-blue-600 transition-all">
-            <ArrowRight size={24} />
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-slate-500 truncate mb-1">Next Session</p>
+            <p className="text-2xl sm:text-lg font-bold text-slate-900 truncate leading-tight">{nextSessionTime}</p>
+          </div>
+        </div>
+
+        {/* Card 4: Assessments & Marks CTA Button */}
+        <Link
+          href={`/classes/assessments?classId=${selectedClassId}`}
+          className="bg-[#1e293b] hover:bg-slate-600 p-5 sm:p-6 rounded-3xl shadow-md flex items-center gap-5 sm:gap-6 group transition-all cursor-pointer border-none text-left min-w-0"
+          style={{ backgroundColor: '#1e293b' }}
+        >
+          <div className="bg-white/10 p-3.5 rounded-2xl text-white group-hover:scale-110 group-hover:bg-blue-600 transition-all shrink-0">
+            <BookOpen size={26} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1">Grading & Exams</p>
+            <p className="text-lg sm:text-xl font-bold text-white leading-tight truncate">Assessments & Marks</p>
+          </div>
+        </Link>
+
+        {/* Card 5: Intervention Board CTA */}
+        <Link
+          href="/interventions"
+          className="bg-slate-900 p-5 sm:p-6 rounded-3xl shadow-md flex items-center gap-5 sm:gap-6 group hover:bg-slate-800 transition-all cursor-pointer min-w-0"
+        >
+          <div className="bg-white/10 p-3.5 rounded-2xl text-white group-hover:scale-110 group-hover:bg-blue-600 transition-all shrink-0">
+            <ArrowRight size={26} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Action Required</p>
+            <p className="text-lg sm:text-xl font-bold text-white leading-tight truncate">Intervention Board</p>
           </div>
         </Link>
       </div>
