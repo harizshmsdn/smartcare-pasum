@@ -61,6 +61,7 @@ export default function ClassesPage() {
   const [customDateTime, setCustomDateTime] = useState("");
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [hasAnyActiveSession, setHasAnyActiveSession] = useState(false);
+  const [nextSessionTime, setNextSessionTime] = useState<string>("Wed, 10:00 AM");
 
   const handleStartSessionClick = () => {
     setOnlineMode(false);
@@ -83,6 +84,8 @@ export default function ClassesPage() {
         .select(`
           id,
           group_code,
+          day_of_week,
+          start_time,
           subjects (
             code,
             name
@@ -92,17 +95,32 @@ export default function ClassesPage() {
 
       if (classesData && classesData.length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const formatted = classesData.map((c: any) => ({
-          id: c.id,
-          name: `${c.subjects?.code} - ${c.subjects?.name} (${c.group_code})`
-        }));
+        const formatted = classesData.map((c: any) => {
+          let formattedTime = "";
+          if (c.start_time) {
+            const [hrs, mins] = c.start_time.split(":");
+            const h = parseInt(hrs, 10);
+            const ampm = h >= 12 ? "PM" : "AM";
+            const h12 = h % 12 || 12;
+            formattedTime = `${h12}:${mins} ${ampm}`;
+          }
+          const dayShort = c.day_of_week ? c.day_of_week.slice(0, 3) : "";
+          const scheduleStr = dayShort && formattedTime ? `${dayShort}, ${formattedTime}` : "Schedule TBD";
+
+          return {
+            id: c.id,
+            name: `${c.subjects?.code} - ${c.subjects?.name} (${c.group_code})`,
+            schedule: scheduleStr
+          };
+        });
         setClassesList(formatted);
         const urlParams = new URLSearchParams(window.location.search);
         const urlClassId = urlParams.get("classId");
-        const targetClass = formatted.find(c => c.id === urlClassId) || formatted[0];
+        const targetClass = formatted.find((c: any) => c.id === urlClassId) || formatted[0];
         if (targetClass) {
           setSelectedClassId(targetClass.id);
           setSelectedClassName(targetClass.name);
+          setNextSessionTime(targetClass.schedule);
         }
       }
     };
@@ -253,6 +271,11 @@ export default function ClassesPage() {
                     onClick={() => {
                       setSelectedClassId(cls.id);
                       setSelectedClassName(cls.name);
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      if ((cls as any).schedule) {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        setNextSessionTime((cls as any).schedule);
+                      }
                       setIsDropdownOpen(false);
                       window.history.pushState(null, '', `/classes?classId=${cls.id}`);
                     }}
@@ -294,8 +317,8 @@ export default function ClassesPage() {
             <Calendar size={24} />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-500">Next Lecture</p>
-            <p className="text-lg font-bold text-slate-900">Wed, 10:00 AM</p>
+            <p className="text-sm font-medium text-slate-500">Next Session</p>
+            <p className="text-lg font-bold text-slate-900">{nextSessionTime}</p>
           </div>
         </div>
 
@@ -366,7 +389,7 @@ export default function ClassesPage() {
               {/* NOW RENDERING filteredStudents instead of mockStudents */}
               {filteredStudents.length > 0 ? (
                 filteredStudents.map((student) => (
-                  <tr key={student.id} onClick={() => router.push(`/classes/${student.id}`)} className="hover:bg-slate-50 transition-colors group cursor-pointer">
+                  <tr key={student.id} onClick={() => router.push(`/classes/${student.id}?classId=${selectedClassId}`)} className="hover:bg-slate-50 transition-colors group cursor-pointer">
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">

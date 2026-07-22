@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import {
   Mail,
   CalendarDays,
@@ -31,7 +31,11 @@ import { createClient } from "../../../utils/supabase/client";
 
 export default function ProfilePage() {
   const params = useParams();
+  const searchParams = useSearchParams();
+  const fromClassId = searchParams.get("classId");
   const studentId = (params?.id as string) || "22222222-2222-2222-2222-222222222221";
+
+  const backUrl = fromClassId ? `/classes?classId=${fromClassId}` : "/classes";
 
   const supabase = createClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -50,62 +54,85 @@ export default function ProfilePage() {
     const fetchStudentData = async () => {
       setIsLoading(true);
       try {
-        // 1. Fetch Student Profile
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', studentId)
-          .single();
-        setStudentProfile(profile);
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
 
-        // 2. Fetch Enrollment rate
-        const { data: enrollment } = await supabase
-          .from('enrollments')
-          .select(`
-            current_attendance_rate,
-            classes (
-              group_code,
-              subjects (
-                code,
-                name
-              )
-            )
-          `)
-          .eq('student_id', studentId)
-          .limit(1)
-          .maybeSingle();
-
-        if (enrollment) {
-          setAttendanceRate(Number(enrollment.current_attendance_rate));
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const classNode = enrollment.classes as any;
-          if (classNode) {
-            setClassName(`${classNode.subjects?.code} (${classNode.group_code})`);
+        const res = await fetch(`http://localhost:8000/api/students/${studentId}/analytics${fromClassId ? `?class_id=${fromClassId}` : ''}`, {
+          headers: {
+            "Authorization": `Bearer ${token}`
           }
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setStudentProfile(data.profile);
+          setAttendanceRate(data.enrollment?.attendance_rate || 85);
+          setClassName(data.enrollment?.class_name || "PASUM Class");
+          setMeritCount(data.merit_summary?.pending_count || 0);
+          setMeritHistory(data.merit_summary?.approved_history || []);
+        } else {
+          await fetchFallbackStudentData();
         }
-
-        // 3. Fetch count of pending merit claims
-        const { count } = await supabase
-          .from('merit_claims')
-          .select('*', { count: 'exact', head: true })
-          .eq('student_id', studentId)
-          .eq('status', 'pending');
-        setMeritCount(count || 0);
-
-        // 4. Fetch approved merits for History
-        const { data: merits } = await supabase
-          .from('merit_claims')
-          .select('*')
-          .eq('student_id', studentId)
-          .eq('status', 'approved');
-        setMeritHistory(merits || []);
-
       } catch (err) {
-        console.error("Error fetching student profile:", err);
+        console.warn("FastAPI offline, using Supabase direct student data:", err);
+        await fetchFallbackStudentData();
       } finally {
         setIsLoading(false);
       }
     };
+
+    const fetchFallbackStudentData = async () => {
+      // 1. Fetch Student Profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', studentId)
+        .single();
+      setStudentProfile(profile);
+
+      // 2. Fetch Enrollment rate
+      const { data: enrollment } = await supabase
+        .from('enrollments')
+        .select(`
+          current_attendance_rate,
+          classes (
+            group_code,
+            subjects (
+              code,
+              name
+            )
+          )
+        `)
+        .eq('student_id', studentId)
+        .limit(1)
+        .maybeSingle();
+
+      if (enrollment) {
+        setAttendanceRate(Number(enrollment.current_attendance_rate));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const classNode = enrollment.classes as any;
+        if (classNode) {
+          setClassName(`${classNode.subjects?.code} (${classNode.group_code})`);
+        }
+      }
+
+      // 3. Fetch count of pending merit claims
+      const { count } = await supabase
+        .from('merit_claims')
+        .select('*', { count: 'exact', head: true })
+        .eq('student_id', studentId)
+        .eq('status', 'pending');
+      setMeritCount(count || 0);
+
+      // 4. Fetch approved merits for History
+      const { data: merits } = await supabase
+        .from('merit_claims')
+        .select('*')
+        .eq('student_id', studentId)
+        .eq('status', 'approved');
+      setMeritHistory(merits || []);
+    };
+
     fetchStudentData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentId]);
@@ -130,9 +157,9 @@ export default function ProfilePage() {
   return (
     <main className="flex-1 p-8 overflow-y-auto bg-slate-50 relative">
 
-      {/* Navigation Breadcrumb */}
+      {/* Navigation Breadcrumb (Preserves Selected Class Page) */}
       <div className="mb-6">
-        <Link href="/classes" className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600 transition-colors">
+        <Link href={backUrl} className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors bg-white border border-slate-200 px-3.5 py-2 rounded-xl shadow-sm">
           <ArrowLeft size={16} /> Back to Class Roster
         </Link>
       </div>
@@ -238,10 +265,28 @@ export default function ProfilePage() {
                 <p className="text-sm text-slate-400 font-medium mb-1">Overall</p>
               </div>
             </div>
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-              <p className="text-sm font-medium text-slate-500 mb-1">Risk Assessment</p>
-              <div className="flex items-end gap-2">
-                <p className="text-2xl font-bold uppercase text-slate-900">{riskStatus}</p>
+            {/* Color-Coded Risk Assessment Card */}
+            <div className={`p-5 rounded-2xl border shadow-sm transition-all ${
+              riskStatus === "critical"
+                ? "bg-red-50/90 border-red-200 text-red-900"
+                : riskStatus === "at-risk"
+                ? "bg-amber-50/90 border-amber-200 text-amber-900"
+                : "bg-emerald-50/90 border-emerald-200 text-emerald-900"
+            }`}>
+              <p className="text-sm font-semibold mb-1 opacity-80">Risk Assessment</p>
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-2xl font-extrabold uppercase tracking-wide">
+                  {riskStatus === "critical" ? "Critical Risk" : riskStatus === "at-risk" ? "Moderate Risk" : "Low Risk"}
+                </p>
+                <span className={`text-xs font-bold uppercase px-2.5 py-1 rounded-md border ${
+                  riskStatus === "critical"
+                    ? "bg-red-100 text-red-800 border-red-300 animate-pulse"
+                    : riskStatus === "at-risk"
+                    ? "bg-amber-100 text-amber-800 border-amber-300"
+                    : "bg-emerald-100 text-emerald-800 border-emerald-300"
+                }`}>
+                  {riskStatus === "critical" ? "Action Required" : riskStatus === "at-risk" ? "Watch" : "On Track"}
+                </span>
               </div>
             </div>
           </div>
