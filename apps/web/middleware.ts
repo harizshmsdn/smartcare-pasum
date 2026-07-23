@@ -67,12 +67,13 @@ export async function middleware(request: NextRequest) {
 
         const path = request.nextUrl.pathname
         const isStudentRoute = path.startsWith('/student')
+        const isAdminRoute = path.startsWith('/admin')
 
         if (role === 'student') {
-            // If student accesses lecturer route, redirect them to the corresponding student route
+            // If student accesses lecturer/admin route, redirect them to the corresponding student route
             if (!isStudentRoute) {
                 const url = request.nextUrl.clone()
-                if (path === '/') {
+                if (path === '/' || isAdminRoute) {
                     url.pathname = '/student'
                 } else {
                     url.pathname = `/student${path}`
@@ -80,11 +81,26 @@ export async function middleware(request: NextRequest) {
                 return NextResponse.redirect(url)
             }
         } else if (role === 'lecturer') {
-            // If lecturer accesses student route, redirect them to the corresponding lecturer route
-            if (isStudentRoute) {
+            // If lecturer accesses student/admin route, redirect them to the corresponding lecturer route
+            if (isStudentRoute || isAdminRoute) {
                 const url = request.nextUrl.clone()
-                const cleanPath = path.slice('/student'.length)
+                const cleanPath = isStudentRoute 
+                    ? path.slice('/student'.length) 
+                    : path.slice('/admin'.length)
                 url.pathname = cleanPath === '' ? '/' : cleanPath
+                return NextResponse.redirect(url)
+            }
+        } else if (role === 'admin') {
+            // If admin accesses student/lecturer route, redirect them to the corresponding admin route
+            if (!isAdminRoute) {
+                const url = request.nextUrl.clone()
+                if (path === '/' || isStudentRoute) {
+                    url.pathname = '/admin'
+                } else if (path === '/settings' || path === '/profile') {
+                    url.pathname = '/admin/settings'
+                } else {
+                    url.pathname = '/admin'
+                }
                 return NextResponse.redirect(url)
             }
         } else {
