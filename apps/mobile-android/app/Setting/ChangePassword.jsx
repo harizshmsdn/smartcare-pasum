@@ -1,13 +1,16 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BottomNav from '../components/BottomNav.jsx'
+import { supabase } from '../../supabaseClient.js'
+import { useApp } from '../AppContext.jsx'
 
 export default function ChangePassword() {
   const navigate = useNavigate()
+  const { user } = useApp()
   const [form, setForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' })
   const [error, setError] = useState('')
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
     if (!form.oldPassword || !form.newPassword || !form.confirmPassword) {
       setError('Please fill in all fields.')
@@ -17,15 +20,33 @@ export default function ChangePassword() {
       setError('New password and confirmation do not match.')
       return
     }
-    // TODO: call your backend, e.g. POST /api/auth/change-password
-    alert('Password updated (demo only).')
+
+    setError('')
+
+    // Re-check the current password before allowing the change
+    const { error: verifyError } = await supabase.auth.signInWithPassword({
+      email: user?.email,
+      password: form.oldPassword,
+    })
+    if (verifyError) {
+      setError('Current password is incorrect.')
+      return
+    }
+
+    const { error: updateError } = await supabase.auth.updateUser({ password: form.newPassword })
+    if (updateError) {
+      setError(updateError.message)
+      return
+    }
+
+    alert('Password updated.')
     navigate('/settings')
   }
 
   return (
     <div className="screen">
     <div className="topbar">
-      <button className="back-btn" onClick={() => navigate(-1)}>
+      <button className="back-btn" onClick={() => navigate('/settings')}>
         <svg 
           width="20" 
           height="20" 

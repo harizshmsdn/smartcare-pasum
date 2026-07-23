@@ -28,17 +28,21 @@ export default function ContinuousAssessment() {
     </div>
 
       <h3>Subjects</h3>
-      {assessmentData.map((subj) => (
-        <div className="card" key={subj.subject}>
-          <h3>{subj.subject}</h3>
-          <span className="pill mint">{subj.percent}%</span>
-          {subj.items.map(([label, score]) => (
-            <p key={label} style={{ fontWeight: 600, color: 'var(--ink)' }}>
-              {label}: {score}
-            </p>
-          ))}
-        </div>
-      ))}
+      {assessmentData.length === 0 ? (
+        <p className="empty-state">No assessment yet.</p>
+      ) : (
+        assessmentData.map((subj) => (
+          <div className="card" key={subj.subject}>
+            <h3>{subj.subject}</h3>
+            <span className="pill mint">{subj.percent}%</span>
+            {subj.items.map(([label, score]) => (
+              <p key={label} style={{ fontWeight: 600, color: 'var(--ink)' }}>
+                {label}: {score}
+              </p>
+            ))}
+          </div>
+        ))
+      )}
 
       <BottomNav />
     </div>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BottomNav from '../components/BottomNav.jsx'
 import { useApp } from '../AppContext.jsx'
+import { supabase } from '../../supabaseClient.js'
 
 export default function AddMerit() {
   const navigate = useNavigate()
@@ -13,7 +14,7 @@ export default function AddMerit() {
   const [photo, setPhoto] = useState(null)
   const[error, setError] = useState('')
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
     if (!name || !level || !roles) {
       setError('Please fill in all fields.')
@@ -21,10 +22,21 @@ export default function AddMerit() {
     }
 
     setError('')
-    
-    // TODO: upload `photo` as proof to your file storage, then save the record via your API.
+
+    let proofUrl = null
+    if (photo) {
+      const filePath = `${Date.now()}_${photo.name}`
+      const { error: uploadError } = await supabase.storage.from('merit-proofs').upload(filePath, photo)
+      if (uploadError) {
+        setError('Failed to upload proof file. Please try again.')
+        return
+      }
+      const { data: urlData } = supabase.storage.from('merit-proofs').getPublicUrl(filePath)
+      proofUrl = urlData.publicUrl
+    }
+
     // Points here default to 0; usually merit points are approved/assigned by staff after review.
-    addMerit({ name, points: 0 })
+    await addMerit({ name, level, roles, proofUrl, points: 0 })
     navigate('/merits')
   }
 

@@ -8,6 +8,7 @@ const AFTERNOON = ['12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00'
 const EVENING = ['17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30']
 
 const FREQUENCIES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+const CLASS_TYPES = ['Lecture', 'Tutorial', 'Lab']
 
 export default function AddSchedule() {
   const navigate = useNavigate()
@@ -15,6 +16,7 @@ export default function AddSchedule() {
 
   const [subject, setSubject] = useState('')
   const [className, setClassName] = useState('')
+  const [classType, setClassType] = useState('Lecture')
   const [startTime, setStartTime] = useState(null)
   const [endTime, setEndTime] = useState(null)
   const [frequency, setFrequency] = useState([])
@@ -52,7 +54,7 @@ export default function AddSchedule() {
     )
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
 
     if (!subject || !className || !startTime || !endTime || frequency.length === 0) {
@@ -62,24 +64,30 @@ export default function AddSchedule() {
 
     setError('')
 
-    addSchedule({
-      id: Date.now(),
-      subject,
-      class: className,
-      startTime,
-      endTime,
-      time: `${startTime} - ${endTime}`,
-      frequency,
-    })
-
-    navigate('/schedule')
+    try {
+      await addSchedule({
+        id: Date.now(),
+        subject,
+        class: className,
+        location: className,
+        type: classType,
+        startTime,
+        endTime,
+        time: `${startTime} - ${endTime}`,
+        frequency,
+      })
+      navigate('/schedule')
+    } catch (err) {
+      console.error(err)
+      setError(err?.message || 'Failed to add schedule. Please try again.')
+    }
   }
 
   return (
     <div className="screen">
       {/* Topbar */}
       <div className="topbar">
-        <button className="back-btn" onClick={() => navigate('/schedule')} type="button" aria-label="Go back">
+        <button className="back-btn" onClick={() => navigate('/schedule')}>
           <svg 
             width="20" 
             height="20" 
@@ -111,15 +119,34 @@ export default function AddSchedule() {
         </div>
 
         <div className="field">
-          <label>Class Name</label>
+          <label>Location</label>
           <input 
-            placeholder="Enter Class Name Here" 
+            placeholder="Enter Location Here" 
             value={className} 
             onChange={(e) => {
               setClassName(e.target.value)
               if (error) setError('')
             }} 
           />
+        </div>
+
+        <div className="field">
+          <label style={{ fontWeight: '600', marginBottom: '8px', display: 'block' }}>Class Type</label>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {CLASS_TYPES.map((t) => (
+              <button
+                type="button"
+                key={t}
+                className={'freq-option' + (classType === t ? ' selected' : '')}
+                onClick={() => {
+                  setClassType(t)
+                  if (error) setError('')
+                }}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="field">
