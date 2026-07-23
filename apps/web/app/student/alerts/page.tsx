@@ -30,6 +30,27 @@ export default function StudentAlertsPage() {
 
   const fetchAlerts = async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      if (token) {
+        try {
+          const res = await fetch("http://localhost:8000/api/student/alerts", {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+          if (res.ok) {
+            const apiData = await res.json();
+            setAlerts(apiData.alerts || []);
+            setIsLoading(false);
+            return;
+          }
+        } catch (apiErr) {
+          console.warn("FastAPI alerts error, falling back to Supabase query:", apiErr);
+        }
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setStudentId(user.id);
@@ -92,12 +113,34 @@ export default function StudentAlertsPage() {
 
   useEffect(() => {
     fetchAlerts();
-  }, []);
+
+    // Subscribe to Realtime changes on 'alerts' table for live updates
+    const channel = supabase
+      .channel('student_alerts_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'alerts' }, () => {
+        fetchAlerts();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase]);
 
   const unreadCount = alerts.filter(a => !a.isRead).length;
 
   const markAsRead = async (id: string) => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      if (token) {
+        await fetch(`http://localhost:8000/api/student/alerts/${id}/read`, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+
       const { error } = await supabase
         .from('alerts')
         .update({ is_read: true })
@@ -105,7 +148,6 @@ export default function StudentAlertsPage() {
 
       if (error) {
         console.error("Failed to mark alert as read:", error);
-        return;
       }
 
       setAlerts(prev => prev.map(a => a.id === id ? { ...a, isRead: true } : a));
@@ -115,16 +157,22 @@ export default function StudentAlertsPage() {
   };
 
   const markAllAsRead = async () => {
-    if (!studentId) return;
     try {
-      const { error } = await supabase
-        .from('alerts')
-        .update({ is_read: true })
-        .eq('student_id', studentId);
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
 
-      if (error) {
-        console.error("Failed to mark all alerts as read:", error);
-        return;
+      if (token) {
+        await fetch("http://localhost:8000/api/student/alerts/mark-all-read", {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+
+      if (studentId) {
+        await supabase
+          .from('alerts')
+          .update({ is_read: true })
+          .eq('student_id', studentId);
       }
 
       setAlerts(prev => prev.map(a => ({ ...a, isRead: true })));

@@ -47,6 +47,9 @@ export default function StudentMeritRequestsPage() {
   const loadMeritRequests = async () => {
     setIsLoading(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setStudentId(user.id);
@@ -61,7 +64,34 @@ export default function StudentMeritRequestsPage() {
         setStudentName(profile.full_name);
       }
 
-      // Fetch Merit Claims
+      if (token) {
+        try {
+          const res = await fetch("http://localhost:8000/api/student/merit-claims", {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const apiData = await res.json();
+            const formatted = (apiData.claims || []).map((c: any) => ({
+              id: c.id,
+              date: new Date(c.submitted_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+              time: new Date(c.submitted_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              title: c.title,
+              category: c.category || 'General',
+              points: Number(c.awarded_points || 10),
+              description: c.description || '',
+              proofUrl: c.proof_file_url || '',
+              status: c.status
+            }));
+            setRequests(formatted);
+            setIsLoading(false);
+            return;
+          }
+        } catch (apiErr) {
+          console.warn("FastAPI merit claims error, falling back to Supabase query:", apiErr);
+        }
+      }
+
+      // Fetch Merit Claims via Supabase
       const { data: claims } = await supabase
         .from('merit_claims')
         .select('*')
@@ -91,7 +121,19 @@ export default function StudentMeritRequestsPage() {
 
   useEffect(() => {
     loadMeritRequests();
-  }, []);
+
+    // Subscribe to Realtime changes on 'merit_claims' table for live updates
+    const channel = supabase
+      .channel('student_merit_claims_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'merit_claims' }, () => {
+        loadMeritRequests();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase]);
 
   const handleSubmitRequest = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,22 +141,54 @@ export default function StudentMeritRequestsPage() {
 
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('merit_claims')
-        .insert({
-          student_id: studentId,
-          title: newTitle,
-          category: newCategory,
-          awarded_points: newPoints,
-          description: newDescription,
-          proof_file_url: newProofUrl,
-          status: 'pending'
-        });
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
 
-      if (error) {
-        console.error("Failed to submit merit request:", error);
-        alert("Failed to submit request: " + error.message);
-        return;
+      let submittedSuccess = false;
+
+      if (token) {
+        try {
+          const res = await fetch("http://localhost:8000/api/student/merit-claims", {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              title: newTitle,
+              category: newCategory,
+              awarded_points: newPoints,
+              description: newDescription,
+              proof_file_url: newProofUrl
+            })
+          });
+
+          if (res.ok) {
+            submittedSuccess = true;
+          }
+        } catch (apiErr) {
+          console.warn("FastAPI create merit claim error, falling back to Supabase:", apiErr);
+        }
+      }
+
+      if (!submittedSuccess) {
+        const { error } = await supabase
+          .from('merit_claims')
+          .insert({
+            student_id: studentId,
+            title: newTitle,
+            category: newCategory,
+            awarded_points: newPoints,
+            description: newDescription,
+            proof_file_url: newProofUrl,
+            status: 'pending'
+          });
+
+        if (error) {
+          console.error("Failed to submit merit request:", error);
+          alert("Failed to submit request: " + error.message);
+          return;
+        }
       }
 
       setToastMessage("Merit claim submitted successfully!");

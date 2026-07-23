@@ -119,6 +119,32 @@ export default function StudentClassesPage() {
     const fetchClassDetails = async () => {
       setIsLoading(true);
       try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+
+        if (token) {
+          try {
+            const res = await fetch(`http://localhost:8000/api/student/classes/${selectedClassId}/details`, {
+              headers: {
+                Authorization: `Bearer ${token}`
+              }
+            });
+            if (res.ok) {
+              const apiData = await res.json();
+              setLecturerInfo(apiData.lecturerInfo);
+              setClassScheduleText(apiData.classScheduleText);
+              setAttendanceRate(apiData.attendanceRate);
+              setPerformanceNumeric(apiData.performanceNumeric);
+              setAttendanceLog(apiData.attendanceLog || []);
+              setAssessments(apiData.assessments || []);
+              setIsLoading(false);
+              return;
+            }
+          } catch (apiErr) {
+            console.warn("FastAPI class details error, falling back to Supabase query:", apiErr);
+          }
+        }
+
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
@@ -163,13 +189,49 @@ export default function StudentClassesPage() {
         const rate = enrollment ? Math.round(Number(enrollment.current_attendance_rate)) : 100;
         setAttendanceRate(rate);
 
-        // Derive performance status (numerical calculation)
-        // Weighted formula: 60% Attendance + 40% Continuous Assessment
-        const caAvg = rate < 80 ? 65 : rate < 90 ? 82 : 91;
+        // 3. Fetch Continuous Assessments and student scores
+        const { data: assessmentsData } = await supabase
+          .from('assessments')
+          .select(`
+            id,
+            title,
+            type,
+            weightage,
+            total_marks,
+            student_scores (
+              score_achieved
+            )
+          `)
+          .eq('class_id', selectedClassId);
+
+        let caAvg = rate < 80 ? 65 : rate < 90 ? 82 : 91;
+        if (assessmentsData && assessmentsData.length > 0) {
+          let totalPct = 0;
+          let cnt = 0;
+          const list = assessmentsData.map((a: any) => {
+            const scoreVal = a.student_scores?.[0] ? Number(a.student_scores[0].score_achieved) : 0;
+            const total = Number(a.total_marks) || 100;
+            if (total > 0) {
+              totalPct += (scoreVal / total) * 100;
+              cnt += 1;
+            }
+            return {
+              id: a.id,
+              title: a.title,
+              type: a.type,
+              weightage: Number(a.weightage),
+              score: scoreVal,
+              totalMarks: total
+            };
+          });
+          setAssessments(list);
+          if (cnt > 0) caAvg = totalPct / cnt;
+        }
+
         const score = Math.round((rate * 0.6) + (caAvg * 0.4));
         setPerformanceNumeric(score);
 
-        // 3. Fetch Attendance Log
+        // 4. Fetch Attendance Log
         const { data: sessions } = await supabase
           .from('attendance_sessions')
           .select(`
@@ -189,7 +251,7 @@ export default function StudentClassesPage() {
 
         if (sessions) {
           const logs = sessions.map((s: any) => {
-            const record = s.attendance_records?.[0]; // Filtered by RLS to this student only
+            const record = s.attendance_records?.[0];
             const dateStr = new Date(s.opened_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
             
             const verifiedMethods = [];
@@ -206,42 +268,6 @@ export default function StudentClassesPage() {
             };
           });
           setAttendanceLog(logs);
-        }
-
-        // 4. Fetch Continuous Assessments and student scores
-        const { data: assessmentsData } = await supabase
-          .from('assessments')
-          .select(`
-            id,
-            title,
-            type,
-            weightage,
-            total_marks,
-            student_scores (
-              score_achieved
-            )
-          `)
-          .eq('class_id', selectedClassId);
-
-        if (assessmentsData && assessmentsData.length > 0) {
-          const list = assessmentsData.map((a: any) => ({
-            id: a.id,
-            title: a.title,
-            type: a.type,
-            weightage: Number(a.weightage),
-            score: a.student_scores?.[0] ? Number(a.student_scores[0].score_achieved) : 0,
-            totalMarks: Number(a.total_marks)
-          }));
-          setAssessments(list);
-        } else {
-          // Mock data fallback if no assessments are loaded
-          const mockList = [
-            { id: "1", title: "Continuous Assessment 1", type: "Continuous", weightage: 15, score: rate < 80 ? 8 : 12, totalMarks: 15 },
-            { id: "2", title: "Continuous Assessment 2", type: "Continuous", weightage: 15, score: rate < 80 ? 9 : 13, totalMarks: 15 },
-            { id: "3", title: "Mid-Term Examination", type: "Midterm", weightage: 30, score: rate < 80 ? 18 : 25, totalMarks: 30 },
-            { id: "4", title: "Final Examination (Predictive)", type: "Final", weightage: 40, score: rate < 80 ? 22 : 33, totalMarks: 40 }
-          ];
-          setAssessments(mockList);
         }
 
       } catch (err) {

@@ -18,54 +18,67 @@ export default function StudentProfilePage() {
   const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      setIsLoading(true);
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+  const fetchProfile = async () => {
+    setIsLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-        // Fetch Student Profile
-        const { data: prof } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        setProfile(prof);
+      // Fetch Student Profile
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      setProfile(prof);
 
-        // Fetch Enrolled Courses
-        const { data: enrollmentsData } = await supabase
-          .from('enrollments')
-          .select(`
-            classes (
-              group_code,
-              subjects (
-                code,
-                name
-              )
+      // Fetch Enrolled Courses
+      const { data: enrollmentsData } = await supabase
+        .from('enrollments')
+        .select(`
+          classes (
+            group_code,
+            subjects (
+              code,
+              name
             )
-          `)
-          .eq('student_id', user.id);
+          )
+        `)
+        .eq('student_id', user.id);
 
-        if (enrollmentsData) {
-          const formatted = enrollmentsData.map((e: any) => {
-            const c = e.classes;
-            return {
-              code: c?.subjects?.code || "PHY101",
-              name: c?.subjects?.name || "Unknown Class",
-              group: c?.group_code || "Group A"
-            };
-          });
-          setEnrolledCourses(formatted);
-        }
-      } catch (err) {
-        console.error("Error fetching student profile:", err);
-      } finally {
-        setIsLoading(false);
+      if (enrollmentsData) {
+        const formatted = enrollmentsData.map((e: any) => {
+          const c = e.classes;
+          return {
+            code: c?.subjects?.code || "PHY101",
+            name: c?.subjects?.name || "Unknown Class",
+            group: c?.group_code || "Group A"
+          };
+        });
+        setEnrolledCourses(formatted);
       }
-    };
+    } catch (err) {
+      console.error("Error fetching student profile:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchProfile();
-  }, []);
+
+    // Realtime channel listener for profile updates
+    const channel = supabase
+      .channel('student_profile_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        fetchProfile();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase]);
 
   if (isLoading || !profile) {
     return <div className="flex-1 flex items-center justify-center bg-slate-50 min-h-screen">Loading profile...</div>;

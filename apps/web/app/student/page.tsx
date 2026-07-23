@@ -87,6 +87,30 @@ export default function StudentHomePage() {
           setStudentName(profile.full_name);
         }
 
+        // Fetch Student Scores across classes
+        const { data: scoresData } = await supabase
+          .from('student_scores')
+          .select(`
+            score_achieved,
+            assessments (
+              class_id,
+              total_marks
+            )
+          `)
+          .eq('student_id', user.id);
+
+        const classScoresMap: Record<string, number> = {};
+        if (scoresData) {
+          scoresData.forEach((s: any) => {
+            const cId = s.assessments?.class_id;
+            const total = s.assessments?.total_marks || 100;
+            if (cId && total > 0) {
+              const pct = Math.round((Number(s.score_achieved) / total) * 100);
+              classScoresMap[cId] = pct;
+            }
+          });
+        }
+
         // Fetch Student Enrollments and Class details
         const { data: enrollmentsData } = await supabase
           .from('enrollments')
@@ -120,8 +144,10 @@ export default function StudentHomePage() {
           if (attendance < 80) riskStatus = "critical";
           else if (attendance < 90) riskStatus = "at-risk";
 
-          // Fetch or calculate a simulated latest score based on attendance as fallback
-          const latestScore = attendance < 80 ? 45 : attendance < 90 ? 63 : 88;
+          // Real latest score from database, fallback to attendance rate if score not recorded yet
+          const latestScore: number = (cls?.id && classScoresMap[cls.id] !== undefined)
+            ? Number(classScoresMap[cls.id])
+            : (attendance >= 90 ? 88 : attendance >= 80 ? 75 : 55);
 
           const formatTimeStr = (timeStr: string | null) => {
             if (!timeStr) return "";

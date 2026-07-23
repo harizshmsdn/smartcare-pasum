@@ -18,49 +18,97 @@ export default function StudentInterventionsPage() {
   const [interventions, setInterventions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchInterventions = async () => {
-      setIsLoading(true);
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+  const fetchInterventions = async () => {
+    setIsLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
 
-        // Fetch open interventions for the student (excluding resolved ones)
-        const { data } = await supabase
-          .from('interventions')
-          .select(`
-            id,
-            issue_description,
-            status,
-            priority,
-            created_at,
-            lecturer:profiles!lecturer_id (
-              full_name,
-              email
-            ),
-            classes (
-              group_code,
-              subjects (
-                code,
-                name
-              )
-            )
-          `)
-          .eq('student_id', user.id)
-          .neq('status', 'resolved')
-          .order('created_at', { ascending: false });
-
-        if (data) {
-          setInterventions(data);
+      if (token) {
+        try {
+          const res = await fetch("http://localhost:8000/api/student/interventions", {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const apiData = await res.json();
+            const formatted = (apiData.interventions || []).map((i: any) => ({
+              id: i.id,
+              issue_description: i.issue_description,
+              status: i.status,
+              priority: i.priority,
+              created_at: i.created_at,
+              lecturer: {
+                full_name: i.lecturer_name,
+                email: i.lecturer_email
+              },
+              classes: {
+                group_code: i.group_code,
+                subjects: {
+                  code: i.subject_code,
+                  name: i.subject_name
+                }
+              }
+            }));
+            setInterventions(formatted);
+            setIsLoading(false);
+            return;
+          }
+        } catch (apiErr) {
+          console.warn("FastAPI interventions error, falling back to Supabase query:", apiErr);
         }
-      } catch (err) {
-        console.error("Error fetching interventions for student:", err);
-      } finally {
-        setIsLoading(false);
       }
-    };
 
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('interventions')
+        .select(`
+          id,
+          issue_description,
+          status,
+          priority,
+          created_at,
+          lecturer:profiles!lecturer_id (
+            full_name,
+            email
+          ),
+          classes (
+            group_code,
+            subjects (
+              code,
+              name
+            )
+          )
+        `)
+        .eq('student_id', user.id)
+        .neq('status', 'resolved')
+        .order('created_at', { ascending: false });
+
+      if (data) {
+        setInterventions(data);
+      }
+    } catch (err) {
+      console.error("Error fetching interventions for student:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchInterventions();
+
+    // Subscribe to Realtime changes on 'interventions' table for live updates
+    const channel = supabase
+      .channel('student_interventions_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'interventions' }, () => {
+        fetchInterventions();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [supabase]);
 
   if (isLoading) {
