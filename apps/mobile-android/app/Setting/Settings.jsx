@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BottomNav from '../components/BottomNav.jsx'
-import { supabase } from '../../supabaseClient.js'
+import { supabase } from '../supabaseClient.js'
 
 export default function Settings() {
   const navigate = useNavigate()
@@ -32,6 +32,7 @@ export default function Settings() {
       </svg>
     </button>
     <h1>Settings</h1>
+    <div className="topbar-spacer"/>
     </div>
 
       <h3>Preferences</h3>

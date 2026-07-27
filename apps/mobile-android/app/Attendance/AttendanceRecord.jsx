@@ -26,6 +26,7 @@ export default function AttendanceRecord() {
       </svg>
     </button>
     <h1>Attendance Record</h1>
+    <div className="topbar-spacer"/>
     </div>
 
       <h3>Subjects</h3>

@@ -6,7 +6,7 @@ import jsQR from 'jsqr'
 import * as faceapi from 'face-api.js'
 
 const STAGES = [
-  { key: 1, title: 'Stage 1:\nQR CODE SCAN' },
+  { key: 1, title: 'Stage 1:\nQR / PIN CODE SCAN' },
   { key: 2, title: 'Stage 2:\nFACIAL RECOGNITION' },
   { key: 3, title: 'Stage 3:\nLOCATION VERIFICATION' },
 ]
@@ -38,6 +38,10 @@ export default function ScanAttendance() {
   const [faceMatched, setFaceMatched] = useState(false)
   const [locationResult, setLocationResult] = useState(null) // null | 'skipped' | { ok, distance }
 
+  // Manual PIN Code States
+  const [isManualPin, setIsManualPin] = useState(false)
+  const [pinCode, setPinCode] = useState('')
+
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const streamRef = useRef(null)
@@ -47,32 +51,74 @@ export default function ScanAttendance() {
     canvasRef.current = document.createElement('canvas')
   }
 
-  // Start the camera once, on mount
+  // Camera Management
   useEffect(() => {
+    // Stop camera in Stage 3 or when switching to manual PIN input
+    if (stage === 3 || (stage === 1 && isManualPin)) {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop())
+        streamRef.current = null
+      }
+      return
+    }
+
     let cancelled = false
-    async function startCamera() {
+
+    async function initCamera() {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop())
+        streamRef.current = null
+      }
+
+      const targetFacingMode = stage === 1 ? 'environment' : 'user'
+
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: {} })
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: targetFacingMode },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+        })
+
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop())
           return
         }
+
         streamRef.current = stream
-        if (videoRef.current) videoRef.current.srcObject = stream
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream
+          videoRef.current.onloadedmetadata = () => {
+            videoRef.current.play().catch((err) => console.error('Video play error:', err))
+          }
+        }
       } catch (err) {
-        console.error(err)
-        setErrorText('Could not access the camera. Check permissions and try again.')
+        console.error(`Error loading ${targetFacingMode} camera:`, err)
+        try {
+          const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true })
+          if (!cancelled) {
+            streamRef.current = fallbackStream
+            if (videoRef.current) videoRef.current.srcObject = fallbackStream
+          }
+        } catch (fallbackErr) {
+          setErrorText('Could not access the camera. Check permissions and try again.')
+        }
       }
     }
-    startCamera()
+
+    initCamera()
+
     return () => {
       cancelled = true
-      streamRef.current?.getTracks().forEach((t) => t.stop())
-      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop())
+      }
     }
-  }, [])
+  }, [stage, isManualPin])
 
-  // Load face-api models once, in the background, so stage 2 doesn't stall on it
+  // Load face-api models once in background
   useEffect(() => {
     let cancelled = false
     async function loadModels() {
@@ -94,16 +140,9 @@ export default function ScanAttendance() {
     }
   }, [])
 
-  // Camera no longer needed once we reach the location stage
+  // Stage 1: QR Code Scanner Tick Loop
   useEffect(() => {
-    if (stage === 3) {
-      streamRef.current?.getTracks().forEach((t) => t.stop())
-    }
-  }, [stage])
-
-  // Stage 1: continuously scan camera frames for a QR code
-  useEffect(() => {
-    if (stage !== 1) return
+    if (stage !== 1 || isManualPin) return
     setErrorText('')
     setStatusText('Point your camera at the classroom QR code…')
 
@@ -119,13 +158,16 @@ export default function ScanAttendance() {
         const code = jsQR(imageData.data, imageData.width, imageData.height)
 
         if (code && code.data) {
-          const match = (schedule || []).find((item) => item.id === code.data)
+          // Check match against class ID or class PIN Code
+          const match = (schedule || []).find(
+            (item) => item.id === code.data || String(item.pincode) === code.data.trim()
+          )
           if (match) {
             setMatchedClass(match)
-            setStatusText(`QR Code Scanned! ${match.subject} — ${match.class}`)
-            return // stop scanning once matched
+            setStatusText(`Code Verified! ${match.subject} — ${match.class}`)
+            return
           }
-          setErrorText("This QR code doesn't match any of your enrolled classes.")
+          setErrorText("This code doesn't match any of your enrolled classes.")
         }
       }
       rafRef.current = requestAnimationFrame(tick)
@@ -135,9 +177,32 @@ export default function ScanAttendance() {
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
     }
-  }, [stage, schedule])
+  }, [stage, schedule, isManualPin])
 
-  // Stage 2: attempt to match the live camera face against the enrolled descriptor
+  // Manual PIN Submission Handler
+  const handlePinSubmit = (e) => {
+    e.preventDefault()
+    setErrorText('')
+    if (!pinCode.trim()) {
+      setErrorText('Please enter a PIN code.')
+      return
+    }
+
+    const match = (schedule || []).find(
+      (item) => String(item.pincode) === pinCode.trim() || item.id === pinCode.trim()
+    )
+
+    if (match) {
+      setMatchedClass(match)
+      setStatusText(`PIN Verified! ${match.subject} — ${match.class}`)
+      setErrorText('')
+    } else {
+      setMatchedClass(null)
+      setErrorText('Invalid PIN code. Please check with your lecturer.')
+    }
+  }
+
+  // Stage 2: Face Matching
   const attemptFaceMatch = useCallback(async () => {
     if (!videoRef.current) return
     if (!user?.faceDescriptor) {
@@ -181,7 +246,7 @@ export default function ScanAttendance() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage, modelsLoaded])
 
-  // Stage 3: compare current GPS position against the matched class's coordinates
+  // Stage 3: Location Verification
   const checkLocation = useCallback(() => {
     if (!matchedClass?.latitude || !matchedClass?.longitude) {
       setLocationResult('skipped')
@@ -264,13 +329,50 @@ export default function ScanAttendance() {
       </div>
 
       <div style={{ fontSize: 11, fontWeight: 700, color: '#c0392b', marginBottom: 6 }}>
-        {stage === 3 ? 'YOUR LOCATION' : '● CAMERA FEED'}
+        {stage === 3 ? 'YOUR LOCATION' : isManualPin ? '● PIN CODE ENTRY' : '● CAMERA FEED'}
       </div>
 
+      {/* DISPLAY AREA (Camera vs Manual PIN vs Location) */}
       <div className="camera-box" style={{ position: 'relative', overflow: 'hidden' }}>
         {stage === 3 ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 13, color: 'var(--ink-soft)' }}>
             Map preview
+          </div>
+        ) : stage === 1 && isManualPin ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 20 }}>
+            <p style={{ margin: '0 0 12px 0', fontSize: 13, fontWeight: 600 }}>Enter Class PIN Code</p>
+            <form onSubmit={handlePinSubmit} style={{ display: 'flex', gap: 8, width: '100%', maxWidth: 280 }}>
+              <input
+                type="text"
+                placeholder="e.g. 8492"
+                value={pinCode}
+                onChange={(e) => setPinCode(e.target.value)}
+                style={{
+                  flex: 1,
+                  padding: '10px 14px',
+                  borderRadius: 10,
+                  border: '1px solid #CBD5E1',
+                  textAlign: 'center',
+                  fontSize: 16,
+                  fontWeight: 700,
+                  letterSpacing: 2
+                }}
+              />
+              <button
+                type="submit"
+                style={{
+                  padding: '10px 16px',
+                  backgroundColor: '#4F46E5',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 10,
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Verify
+              </button>
+            </form>
           </div>
         ) : (
           <video
@@ -278,10 +380,35 @@ export default function ScanAttendance() {
             autoPlay
             muted
             playsInline
-            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit', transform: stage === 2 ? 'scaleX(-1)' : 'none' }}
           />
         )}
       </div>
+
+      {/* STAGE 1 TOGGLE: QR SCANNER vs MANUAL PIN ENTRY */}
+      {stage === 1 && (
+        <div style={{ textAlign: 'center', marginTop: 10 }}>
+          <button
+            type="button"
+            onClick={() => {
+              setIsManualPin(!isManualPin)
+              setErrorText('')
+              setStatusText('')
+            }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#4F46E5',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+              textDecoration: 'underline'
+            }}
+          >
+            {isManualPin ? 'Switch to QR Code Scanner' : "Can't scan QR? Enter PIN code instead"}
+          </button>
+        </div>
+      )}
 
       {statusText && <p style={{ fontWeight: 700, marginTop: 8 }}>{statusText}</p>}
       {errorText && <p style={{ color: '#d9534f', fontSize: 13, fontWeight: 500 }}>{errorText}</p>}

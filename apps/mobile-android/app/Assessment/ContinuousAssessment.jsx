@@ -25,6 +25,7 @@ export default function ContinuousAssessment() {
       </svg>
     </button>
     <h1>Continuous Assessment</h1>
+    <div className="topbar-spacer"/>
     </div>
 
       <h3>Subjects</h3>

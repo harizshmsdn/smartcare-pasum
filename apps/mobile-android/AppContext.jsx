@@ -60,9 +60,16 @@ export function AppProvider({ children }) {
           emergencyName: profile.emergency_contact_name || '',
           emergencyRelationship: profile.emergency_contact_relationship || '',
           emergencyPhone: profile.emergency_contact_phone || '',
+          // FIXED: was never fetched, so user?.faceDescriptor was always
+          // undefined — FaceEnrollment and ScanAttendance both depend on it.
+          faceDescriptor: profile.face_descriptor || null,
         })
       }
 
+      // FIXED: added pincode/latitude/longitude — ScanAttendance.jsx matches
+      // scanned codes against `item.pincode` and geofences against
+      // `matchedClass.latitude`/`longitude`, but these were never selected
+      // here, so both checks were silently working with `undefined`.
       const { data: enrollments } = await supabase
         .from('enrollments')
         .select(`
@@ -77,6 +84,9 @@ export function AppProvider({ children }) {
             start_time,
             end_time,
             location,
+            pincode,
+            latitude,
+            longitude,
             subjects (
               name,
               code
@@ -96,7 +106,10 @@ export function AppProvider({ children }) {
             time: `${en.classes.start_time.substring(0, 5)} - ${en.classes.end_time.substring(0, 5)}`,
             frequency: `Every ${en.classes.day_of_week}`,
             location: en.classes.location,
-            type: en.classes.type
+            type: en.classes.type,
+            pincode: en.classes.pincode,
+            latitude: en.classes.latitude,
+            longitude: en.classes.longitude
           }))
         setSchedule(formattedSchedule)
 
@@ -215,6 +228,24 @@ export function AppProvider({ children }) {
     }
   }
 
+  // FIXED: brand new — FaceEnrollment.jsx calls this on capture, but it
+  // was never defined anywhere in context, so Face ID setup threw immediately.
+  async function saveFaceDescriptor(descriptorArray) {
+    if (!user) throw new Error('No active session — please log in again.')
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ face_descriptor: descriptorArray })
+        .eq('id', user.id)
+
+      if (error) throw error
+      setUser((prev) => ({ ...prev, faceDescriptor: descriptorArray }))
+    } catch (err) {
+      console.error('Error saving face descriptor:', err)
+      throw err
+    }
+  }
+
   async function addMerit(entry) {
     if (!user) return
     const { data, error } = await supabase
@@ -223,9 +254,13 @@ export function AppProvider({ children }) {
         {
           student_id: user.id,
           title: entry.name,
+          // FIXED: `level`/`role` need to be added to merit_claims (see
+          // migration.sql) — the base schema doesn't have them yet, and
+          // your AddMerit form collects both.
           level: entry.level,
           role: entry.roles,
-          proof_url: entry.proofUrl,
+          // FIXED: the real column is `proof_file_url`, not `proof_url`.
+          proof_file_url: entry.proofUrl,
           awarded_points: Number(entry.points || 0),
           status: 'pending'
         }
@@ -339,11 +374,20 @@ export function AppProvider({ children }) {
 
       if (fetchError || !current) throw fetchError || new Error('Enrollment not found')
 
+      const newTotal = (current.sessions_total || 0) + 1
+      const newAttended = (current.sessions_attended || 0) + (present ? 1 : 0)
+
       const { error } = await supabase
         .from('enrollments')
         .update({
-          sessions_total: (current.sessions_total || 0) + 1,
-          sessions_attended: (current.sessions_attended || 0) + (present ? 1 : 0)
+          sessions_total: newTotal,
+          sessions_attended: newAttended,
+          // FIXED: the base schema's `alerts` table (lecturer/admin side)
+          // is driven off `current_attendance_rate`, not sessions_total/
+          // sessions_attended — those two columns don't exist on the base
+          // schema at all and need to stay in sync so lecturer-side
+          // threshold alerts keep working once this merges.
+          current_attendance_rate: newTotal > 0 ? Math.round((newAttended / newTotal) * 100) : 100
         })
         .eq('id', enrollmentId)
 
@@ -406,6 +450,7 @@ export function AppProvider({ children }) {
     user,
     setUser,
     updateProfile,
+    saveFaceDescriptor,
     schedule,
     addSchedule,
     deleteSchedule,

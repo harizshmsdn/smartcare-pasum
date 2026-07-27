@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import BottomNav from '../components/BottomNav.jsx'
-import { supabase } from '../../supabaseClient.js'
+import { supabase } from '../supabaseClient.js'
 
 // Arrow Icon
 const IconArrow = () => (
@@ -27,6 +27,12 @@ export default function Profile() {
       showArrow: true
     },
     {
+      id: 'face-id',
+      title: 'Face ID Setup',
+      path: '/account/faceid',
+      showArrow: true
+    },
+    {
       id: 'settings',
       title: 'Settings',
       path: '/settings',
@@ -34,7 +40,7 @@ export default function Profile() {
     },
     {
       id: 'logout',
-      title: 'Logout',
+      title: 'Log Out',
       titleColor: '#ef4444',
       showArrow: false,
       onClick: async () => {
@@ -57,6 +63,7 @@ export default function Profile() {
           </svg>
         </button>
         <h1 style={{ fontSize: '20px', fontWeight: '700', margin: 0 }}>Account</h1>
+        <div className="topbar-spacer"/>
       </div>
 
       {/* Cards List Stack */}
