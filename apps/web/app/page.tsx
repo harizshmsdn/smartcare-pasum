@@ -622,7 +622,7 @@ export default function HomePage() {
                         class_id: configuringClass.id,
                         opened_at: new Date().toISOString(),
                         online_mode: onlineMode,
-                        face_id_required: !onlineMode && faceIdRequired,
+                        face_id_required: faceIdRequired,
                         location_required: !onlineMode && locationRequired,
                         geo_lat: 3.115,
                         geo_lng: 101.655,

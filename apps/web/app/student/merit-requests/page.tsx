@@ -39,9 +39,9 @@ export default function StudentMeritRequestsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newCategory, setNewCategory] = useState("Academic");
-  const [newPoints, setNewPoints] = useState(10);
+  const [newPoints] = useState(10);
   const [newDescription, setNewDescription] = useState("");
-  const [newProofUrl, setNewProofUrl] = useState("https://");
+  const [newProofUrl, setNewProofUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loadMeritRequests = async () => {
@@ -137,7 +137,12 @@ export default function StudentMeritRequestsPage() {
 
   const handleSubmitRequest = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!studentId || !newTitle.trim()) return;
+    if (!studentId) return;
+
+    if (!newTitle.trim() || !newCategory.trim() || !newDescription.trim() || !newProofUrl.trim() || newProofUrl.trim() === 'https://') {
+      alert("All options are mandatory to fill in. Please fill out all fields.");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -197,9 +202,8 @@ export default function StudentMeritRequestsPage() {
       // Reset Modal Form
       setNewTitle("");
       setNewCategory("Academic");
-      setNewPoints(10);
       setNewDescription("");
-      setNewProofUrl("https://");
+      setNewProofUrl("");
       setIsModalOpen(false);
       
       // Reload list
@@ -393,43 +397,31 @@ export default function StudentMeritRequestsPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-400 mb-2">Category</label>
-                  <select 
-                    value={newCategory} 
-                    onChange={(e) => setNewCategory(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-sans"
-                  >
-                    <option value="Academic">Academic</option>
-                    <option value="Leadership">Leadership</option>
-                    <option value="Sports">Sports</option>
-                    <option value="Volunteering">Volunteering</option>
-                    <option value="Others">Others</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-400 mb-2">Requested Points</label>
-                  <input 
-                    type="number" 
-                    value={newPoints} 
-                    onChange={(e) => setNewPoints(Number(e.target.value))}
-                    min="5" 
-                    max="100" 
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-sans text-slate-800"
-                    required
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-bold uppercase text-slate-400 mb-2">Category</label>
+                <select 
+                  value={newCategory} 
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-sans"
+                  required
+                >
+                  <option value="Academic">Academic</option>
+                  <option value="Leadership">Leadership</option>
+                  <option value="Sports">Sports</option>
+                  <option value="Volunteering">Volunteering</option>
+                  <option value="Others">Others</option>
+                </select>
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-400 mb-2">Claim Description</label>
+                <label className="block text-xs font-bold uppercase text-slate-400 mb-2">Role</label>
                 <textarea 
                   value={newDescription} 
                   onChange={(e) => setNewDescription(e.target.value)}
-                  placeholder="Briefly state your role and responsibilities in this event..."
+                  placeholder="e.g. Committee member, Project manager, Participant"
                   rows={3}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-sans text-slate-800"
+                  required
                 />
               </div>
 
@@ -441,6 +433,7 @@ export default function StudentMeritRequestsPage() {
                   onChange={(e) => setNewProofUrl(e.target.value)}
                   placeholder="e.g. https://domain.com/proof.pdf"
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-sans text-slate-800"
+                  required
                 />
                 <p className="text-[10px] text-slate-400 mt-1 leading-snug">
                   Provide a link to a cloud storage file (Google Drive, Dropbox) containing certificates or photos.

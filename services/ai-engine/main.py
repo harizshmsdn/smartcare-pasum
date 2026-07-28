@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Optional
 from fastapi import FastAPI, HTTPException, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from jose import jwt, JWTError
@@ -50,10 +50,16 @@ class ScoreSaveRequest(BaseModel):
 
 class StudentMeritClaimRequest(BaseModel):
     title: str
-    category: str = "General"
+    category: str
+    description: str
+    proof_file_url: str
     awarded_points: float = 10.0
-    description: Optional[str] = ""
-    proof_file_url: Optional[str] = ""
+
+    @validator('title', 'category', 'description', 'proof_file_url')
+    def check_non_empty(cls, v):
+        if not v or not v.strip() or v.strip() == 'https://':
+            raise ValueError('Field cannot be empty or default placeholder')
+        return v.strip()
 
 def get_db_connection():
     """Establishes connection to the Supabase local PostgreSQL database."""

@@ -794,7 +794,7 @@ export default function ClassesPage() {
                         class_id: selectedClassId,
                         opened_at: openedAtTimestamp,
                         online_mode: onlineMode,
-                        face_id_required: !onlineMode && faceIdRequired,
+                        face_id_required: faceIdRequired,
                         location_required: !onlineMode && locationRequired,
                         geo_lat: 3.115,
                         geo_lng: 101.655,
