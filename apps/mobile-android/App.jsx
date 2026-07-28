@@ -1,8 +1,10 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Route, Navigate } from 'react-router-dom'
 import { AppProvider } from './AppContext.jsx'
 import { supabase } from './supabaseClient.js'
+import AnimatedRoutes from './components/AnimatedRoutes.jsx'
 
 import Login from './pages/Login.jsx'
+import CreateAccount from './pages/CreateAccount.jsx'
 import Home from './pages/Home.jsx'
 import Account from './pages/Account.jsx'
 import Settings from './pages/Settings.jsx'
@@ -17,14 +19,16 @@ import AddMerit from './pages/AddMerit.jsx'
 import Notification from './pages/Notification.jsx'
 import StudentInfo from './pages/StudentInfo.jsx'
 import EmergencyContact from './pages/EmergencyContact.jsx'
+import FaceEnrollment from './pages/FaceEnrollment.jsx'
 
 export default function App() {
   return (
     <div className="phone">
       <AppProvider>
-        <Routes>
+        <AnimatedRoutes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/createaccount" element={<CreateAccount />} />
           <Route path="/home" element={<Home />} />
           <Route path="/account" element={<Account />} />
           <Route path="/settings" element={<Settings />} />
@@ -39,7 +43,8 @@ export default function App() {
           <Route path="/notification" element={<Notification/>} />
           <Route path="/profile/studentinfo" element={<StudentInfo />} />
           <Route path="/profile/emergencycontact" element={<EmergencyContact />} />
-        </Routes>
+          <Route path="/account/faceid" element={<FaceEnrollment />} />
+        </AnimatedRoutes>
       </AppProvider>
     </div>
   )

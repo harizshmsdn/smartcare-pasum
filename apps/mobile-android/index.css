@@ -43,7 +43,6 @@ html, body {
 
 .phone {
   width: 100%;
-  max-width: 430px;
   min-height: 100vh;
   min-height: 100dvh; /* Adapts dynamically to address bars collapsing/expanding */
   background: var(--bg-gradient);
@@ -57,6 +56,15 @@ html, body {
   padding-bottom: env(safe-area-inset-bottom, 0px);
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
+
+  /* Turns .phone into a query container so the rules further down can
+     respond to its own rendered width instead of the raw browser
+     viewport. This matters once the shell is centered with room to
+     spare (tablet/iPad/desktop preview) or squeezed into a split-screen
+     / multi-window pane — vw-based sizing would get either of those
+     wrong, container queries can't. */
+  container-type: inline-size;
+  container-name: shell;
 }
 
 .screen {
@@ -66,6 +74,7 @@ html, body {
   -webkit-overflow-scrolling: touch;
 }
 
+
 .screen.no-nav {
   padding-bottom: 24px;
 }
@@ -74,13 +83,18 @@ html, body {
 .topbar {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
   padding: 4px 0 20px;
 }
 
 .topbar h1 {
-  font-size: 20px;
+  flex: 1;
+  text-align: center;
   margin: 0;
+}
+
+.topbar-spacer {
+  width: 20px;
 }
 
 .back-btn {
@@ -227,7 +241,7 @@ html, body {
   bottom: calc(18px + env(safe-area-inset-bottom, 0px)); /* Respects home indicator gap */
   left: max(20px, env(safe-area-inset-left, 0px));
   right: max(20px, env(safe-area-inset-right, 0px));
-  max-width: calc(430px - 40px);
+  max-width: calc(100% - 40px);
   margin: 0 auto;
   height: 62px;
   background: var(--white);
@@ -546,38 +560,142 @@ html, body {
   user-select: none;
 }
 
-/* Tablet and up (iPad portrait ~768px, most Android tablets land here too) */
-@media (min-width: 768px) {
-  .phone {
-    max-width: 600px;
-    min-height: 90vh;
-    min-height: 90dvh;
-    margin: 20px auto;
-    border-radius: var(--radius-lg);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+/* Phones rotated to landscape (and any other short-viewport case, like
+   a foldable's cover screen sideways). Targets height, not width, so it
+   never fires on an actual tablet/iPad, only on genuinely short screens. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .topbar {
+    padding: 2px 0 10px;
   }
 
+  .screen {
+    padding-top: 8px;
+    padding-bottom: 76px;
+  }
+
+  .bottom-nav {
+    height: 52px;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .nav-scan {
+    width: 46px;
+    height: 46px;
+    font-size: 18px;
+    margin-top: -22px;
+  }
+
+  .camera-box {
+    aspect-ratio: auto;
+    width: 150px;
+    height: 150px;
+    margin: 0 auto 12px;
+  }
+}
+
+/* ===================================================================
+   CONTAINER-QUERY FINE-TUNING
+   These read the app shell's own rendered width (see container-type on
+   .phone above), not the browser viewport. That's what makes them
+   correct for every phone model rather than just the ones used to pick
+   breakpoints: a small physical phone, a big phone, or a large tablet
+   showing this app in a narrow split-screen/multi-window pane all end
+   up with the same — correct — spacing for the space they actually have.
+   =================================================================== */
+
+/* Smallest real screens in circulation: older/budget Android phones,
+   a folded cover display, an iPhone SE-class width. */
+@container shell (max-width: 359px) {
+  .screen {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .topbar h1 {
+    font-size: 18px;
+  }
+
+  .card {
+    padding: 12px;
+  }
+
+  .card h3 {
+    font-size: 14px;
+  }
+
+  .card p,
+  .pill,
+  .tab,
+  .slot-btn,
+  .nav-link {
+    font-size: 11px;
+  }
+
+  .shortcuts-grid,
+  .slot-grid {
+    gap: 8px;
+  }
+
+  .shortcuts-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .shortcut {
+    padding: 10px 4px;
+    font-size: 11px;
+  }
+
+  .btn {
+    padding: 10px 18px;
+    font-size: 14px;
+  }
+
+  .btn-social,
+  .freq-option {
+    padding: 10px 12px;
+  }
+
+  .field input,
+  .field select {
+    padding: 10px 12px;
+  }
+}
+
+/* The shell has grown past phone width (tablet portrait, unfolded
+   foldable, desktop preview) — let the grids use the extra room instead
+   of leaving it empty. */
+@container shell (min-width: 520px) {
   .shortcuts-grid {
     grid-template-columns: repeat(4, 1fr);
   }
 
   .slot-grid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
   }
 
-  .bottom-nav {
-    max-width: calc(600px - 40px);
+  .card {
+    padding: 20px;
+  }
+
+  .shortcut .icon,
+  .avatar {
+    width: 38px;
+    height: 38px;
   }
 }
 
-/* Large tablet / iPad landscape */
-@media (min-width: 1024px) {
-  .phone {
-    max-width: 720px;
+/* Comfortably tablet/desktop-sized shell — bump the page heading a touch
+   so it doesn't look lost next to the extra whitespace. */
+@container shell (min-width: 640px) {
+  .topbar h1 {
+    font-size: 24px;
   }
+}
 
-  .bottom-nav {
-    max-width: calc(720px - 40px);
+/* Respect users who've asked the OS to reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  .screen-transition {
+    animation: none !important;
   }
 }
 
@@ -637,11 +755,739 @@ html, body {
 @keyframes fadeIn {
   from { opacity: 0; }
   to   { opacity: 1; }
+}:root {
+  --bg-gradient: linear-gradient(160deg, #fdf6ec 0%, #f3ecf7 45%, #eef1fb 100%);
+  --card-lavender: #c9c9ef;
+  --card-lavender-soft: rgba(201, 201, 239, 0.35);
+  --mint: #a9dbc9;
+  --mint-dark: #8dcab5;
+  --ink: #1f2430;
+  --ink-soft: #6b7280;
+  --white: #ffffff;
+  --line: #e4e4ef;
+  --danger: #e0665f;
+  --radius-lg: 28px;
+  --radius-md: 16px;
+  --radius-sm: 10px;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-/* Respect users who've asked the OS to reduce motion */
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent; 
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font);
+  color: var(--ink);
+  background: #ddd;
+  overscroll-behavior: none;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+#root {
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.phone {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--bg-gradient);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+
+  container-type: inline-size;
+  container-name: shell;
+}
+
+.screen {
+  flex: 1;
+  padding: 20px 20px 100px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.screen.no-nav {
+  padding-bottom: 24px;
+}
+
+/* Top bar */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0 20px;
+}
+
+.topbar h1 {
+  flex: 1;
+  text-align: center;
+  margin: 0;
+}
+
+.topbar-spacer {
+  width: 20px;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+}
+
+/* Buttons */
+.btn {
+  border: none;
+  border-radius: 999px;
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background: var(--mint);
+  color: #1c3b30;
+}
+
+.btn-primary:hover {
+  background: var(--mint-dark);
+}
+
+.btn-outline {
+  background: var(--white);
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.btn-block {
+  width: 100%;
+  display: block;
+  text-align: center;
+}
+
+.btn-social {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+
+.slot-btn.selected {
+  background-color: #8dcab5 !important;
+  color: #21352e !important;
+  font-weight: 600;
+  border-color: #a3d1c3;
+}
+
+.slot-btn.in-range {
+  background-color: #cde6de !important;
+  color: #21352e !important;
+  border-color: #d1eae2;
+}
+
+/* Inputs */
+.field {
+  margin-bottom: 16px;
+}
+
+.field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--ink);
+}
+
+.field input,
+.field select {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--white);
+  font-size: 16px;
+  color: var(--ink);
+}
+
+.field input::placeholder {
+  color: #b7bac6;
+}
+
+/* Cards */
+.card {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.card h3 {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+
+.card p {
+  margin: 2px 0;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.pill {
+  display: inline-block;
+  background: var(--card-lavender-soft);
+  color: #3d3d63;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  margin: 4px 0 8px;
+}
+
+.pill.mint {
+  background: rgba(169, 219, 201, 0.4);
+  color: #1c5040;
+}
+
+/* Bottom nav */
+.bottom-nav {
+  position: fixed;
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  left: max(20px, env(safe-area-inset-left, 0px));
+  right: max(20px, env(safe-area-inset-right, 0px));
+  max-width: calc(100% - 40px);
+  margin: 0 auto;
+  height: 62px;
+  background: var(--white);
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  z-index: 1000;
+}
+
+.nav-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+
+.nav-link.active {
+  color: #4a4ad0;
+}
+
+.nav-scan {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #3d3dc7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 22px;
+  margin-top: -30px;
+  box-shadow: 0 6px 16px rgba(61,61,199,0.4);
+  text-decoration: none;
+}
+
+/* Shortcuts grid */
+.shortcuts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.shortcut {
+  background: var(--white);
+  border-radius: var(--radius-md);
+  padding: 14px 6px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+}
+
+.shortcut .icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--card-lavender-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.tab {
+  flex: 1;
+  text-align: center;
+  padding: 10px;
+  border-radius: 999px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--ink-soft);
+}
+
+.tab.active {
+  background: var(--card-lavender-soft);
+  color: #3d3d63;
+  border-color: transparent;
+}
+
+.tabs-container {
+  padding: 0 4px;
+  margin-bottom: 20px;
+}
+
+.segmented-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tab-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  background: var(--white);
+  color: var(--ink-soft);
+  transition: all 0.2s ease;
+}
+
+.tab-pill.icon-only {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  padding: 0;
+}
+
+.tab-pill.active {
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 20px;
+  background: var(--mint);
+  color: #1c3b30;
+  border-color: transparent;
+  font-weight: 600;
+}
+
+.tab-icon {
+  display: flex;
+  align-items: center;
+}
+
+.tab-label {
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* Toggle */
+.toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  margin-bottom: 10px;
+}
+
+.toggle {
+  width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--line);
+  position: relative;
+  cursor: pointer;
+  border: none;
+}
+
+.toggle.on {
+  background: var(--mint);
+}
+
+.toggle .knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  transition: left 0.15s ease;
+}
+
+.toggle.on .knob {
+  left: 23px;
+}
+
+.link-row {
+  padding: 14px 16px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.slot-btn {
+  padding: 10px 0;
+  text-align: center;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--white);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.slot-btn.selected {
+  background: var(--card-lavender-soft);
+  border-color: transparent;
+  font-weight: 700;
+}
+
+.freq-option {
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--white);
+  margin-bottom: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.freq-option.selected {
+  background: var(--mint);
+  border-color: transparent;
+  font-weight: 700;
+}
+
+.stage-progress {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--line);
+  margin: 10px 0 20px;
+  overflow: hidden;
+}
+
+.stage-progress .fill {
+  height: 100%;
+  background: var(--mint-dark);
+}
+
+.camera-box {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--radius-md);
+  background: #e7e7f4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin-bottom: 16px;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--card-lavender);
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 13px;
+  padding: 40px 0;
+}
+
+/* Touch response setup */
+.btn,
+.slot-btn,
+.shortcut,
+.tab,
+.tab-pill,
+.toggle,
+.link-row,
+.freq-option,
+.nav-link,
+.back-btn {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Landscape / small screen adjustments */
+@media (orientation: landscape) and (max-height: 500px) {
+  .topbar {
+    padding: 2px 0 10px;
+  }
+
+  .screen {
+    padding-top: 8px;
+    padding-bottom: 76px;
+  }
+
+  .bottom-nav {
+    height: 52px;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .nav-scan {
+    width: 46px;
+    height: 46px;
+    font-size: 18px;
+    margin-top: -22px;
+  }
+
+  .camera-box {
+    aspect-ratio: auto;
+    width: 150px;
+    height: 150px;
+    margin: 0 auto 12px;
+  }
+}
+
+/* Container queries */
+@container shell (max-width: 359px) {
+  .screen {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .topbar h1 {
+    font-size: 18px;
+  }
+
+  .card {
+    padding: 12px;
+  }
+
+  .card h3 {
+    font-size: 14px;
+  }
+
+  .card p,
+  .pill,
+  .tab,
+  .slot-btn,
+  .nav-link {
+    font-size: 11px;
+  }
+
+  .shortcuts-grid,
+  .slot-grid {
+    gap: 8px;
+  }
+
+  .shortcuts-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .shortcut {
+    padding: 10px 4px;
+    font-size: 11px;
+  }
+
+  .btn {
+    padding: 10px 18px;
+    font-size: 14px;
+  }
+
+  .btn-social,
+  .freq-option {
+    padding: 10px 12px;
+  }
+
+  .field input,
+  .field select {
+    padding: 10px 12px;
+  }
+}
+
+@container shell (min-width: 520px) {
+  .shortcuts-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .slot-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .card {
+    padding: 20px;
+  }
+
+  .shortcut .icon,
+  .avatar {
+    width: 38px;
+    height: 38px;
+  }
+}
+
+@container shell (min-width: 640px) {
+  .topbar h1 {
+    font-size: 24px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .screen-transition {
     animation: none !important;
   }
+}
+
+/* ===================================================================
+   OPTIMIZED SCREEN / PAGE TRANSITIONS
+   =================================================================== */
+
+.screen-transition {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+
+  /* Force hardware acceleration on GPU */
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+
+  animation-duration: 0.28s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-fill-mode: both;
+}
+
+/* Disable pointer interactions while page is exiting to prevent state collision */
+.screen-transition.is-exiting {
+  pointer-events: none;
+}
+
+/* Navigation directions */
+.screen-enter-forward {
+  animation-name: slideInFromRight;
+}
+
+.screen-exit-forward {
+  animation-name: slideOutToLeft;
+}
+
+.screen-enter-back {
+  animation-name: slideInFromLeft;
+}
+
+.screen-exit-back {
+  animation-name: slideOutToRight;
+}
+
+.screen-fade {
+  animation-name: fadeIn;
+}
+
+/* 3D accelerated keyframe animations */
+@keyframes slideInFromRight {
+  from { transform: translate3d(24px, 0, 0); opacity: 0; }
+  to   { transform: translate3d(0, 0, 0);    opacity: 1; }
+}
+
+@keyframes slideOutToLeft {
+  from { transform: translate3d(0, 0, 0);     opacity: 1; }
+  to   { transform: translate3d(-24px, 0, 0); opacity: 0; }
+}
+
+@keyframes slideInFromLeft {
+  from { transform: translate3d(-24px, 0, 0); opacity: 0; }
+  to   { transform: translate3d(0, 0, 0);     opacity: 1; }
+}
+
+@keyframes slideOutToRight {
+  from { transform: translate3d(0, 0, 0);    opacity: 1; }
+  to   { transform: translate3d(24px, 0, 0); opacity: 0; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }

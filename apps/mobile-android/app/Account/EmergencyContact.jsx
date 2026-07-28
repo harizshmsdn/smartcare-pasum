@@ -2,11 +2,14 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BottomNav from '../components/BottomNav.jsx'
 import { useApp } from '../AppContext.jsx'
+import { supabase } from '../supabaseClient.js'
 
-export default function Profile() {
+export default function EmergencyContact() {
   const navigate = useNavigate()
   const { user, updateProfile } = useApp()
   const [error, setError] = useState('')
+  const [successNotice, setSuccessNotice] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [emergency, setEmergency] = useState({ 
     name: user?.emergencyName || '', 
@@ -18,21 +21,49 @@ export default function Profile() {
     e.preventDefault()
     if (!emergency.name || !emergency.relationship || !emergency.phone) {
       setError('Please fill in all fields.')
+      setSuccessNotice('')
       return
     }
 
     setError('')
+    setSuccessNotice('')
+    setIsSubmitting(true)
+
     try {
+      // Get logged-in user session
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!session?.user) {
+        throw new Error('User session not found. Please log in again.')
+      }
+
+      // Upsert emergency details into Supabase profiles table
+      const { error: dbError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: session.user.id,
+          emergency_name: emergency.name,
+          emergency_relationship: emergency.relationship,
+          emergency_phone: emergency.phone,
+          updated_at: new Date().toISOString()
+        })
+
+      if (dbError) throw dbError
+
+      // Update local React App context
       await updateProfile({
         ...user,
         emergencyName: emergency.name,
         emergencyRelationship: emergency.relationship,
         emergencyPhone: emergency.phone,
       })
-      alert('Emergency details saved.')
+
+      setSuccessNotice('Emergency contact details saved successfully!')
     } catch (err) {
       console.error(err)
-      setError(err?.message || 'Failed to save. Please try again.')
+      setError(err?.message || 'Failed to save to database. Please try again.')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -55,7 +86,24 @@ export default function Profile() {
           </svg>
         </button>
         <h1>Emergency Contact</h1>
+        <div className="topbar-spacer"/>
       </div>
+
+      {/* Success Notice Banner */}
+      {successNotice && (
+        <div style={{
+          backgroundColor: '#d1fae5',
+          color: '#065f46',
+          padding: '12px 16px',
+          borderRadius: '12px',
+          marginBottom: '16px',
+          fontSize: '14px',
+          fontWeight: '500',
+          border: '1px solid #a7f3d0'
+        }}>
+          {successNotice}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit}>
         <div className="field">
@@ -63,7 +111,10 @@ export default function Profile() {
           <input 
             placeholder="Insert Name Here" 
             value={emergency.name} 
-            onChange={(e) => setEmergency({ ...emergency, name: e.target.value })} 
+            onChange={(e) => {
+              setEmergency({ ...emergency, name: e.target.value })
+              if (successNotice) setSuccessNotice('')
+            }} 
           />
         </div>
         <div className="field">
@@ -71,7 +122,10 @@ export default function Profile() {
           <input 
             placeholder="Insert Relationship Here" 
             value={emergency.relationship} 
-            onChange={(e) => setEmergency({ ...emergency, relationship: e.target.value })} 
+            onChange={(e) => {
+              setEmergency({ ...emergency, relationship: e.target.value })
+              if (successNotice) setSuccessNotice('')
+            }} 
           />
         </div>
         <div className="field">
@@ -79,7 +133,10 @@ export default function Profile() {
           <input 
             placeholder="Insert Phone Number Here" 
             value={emergency.phone} 
-            onChange={(e) => setEmergency({ ...emergency, phone: e.target.value })} 
+            onChange={(e) => {
+              setEmergency({ ...emergency, phone: e.target.value })
+              if (successNotice) setSuccessNotice('')
+            }} 
           />
         </div>
 
@@ -89,18 +146,19 @@ export default function Profile() {
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px', paddingBottom: '90px' }}>
           <button 
             type="submit" 
+            disabled={isSubmitting}
             style={{
-              backgroundColor: '#cde6de',
+              backgroundColor: isSubmitting ? '#a3d1c3' : '#cde6de',
               color: '#000000c1',
               border: 'none',
               padding: '8px 24px',
               borderRadius: '16px',
               fontSize: '16px',
               fontWeight: '400',
-              cursor: 'pointer'
+              cursor: isSubmitting ? 'not-allowed' : 'pointer'
             }}
           >
-            Submit
+            {isSubmitting ? 'Saving...' : 'Submit'}
           </button>
         </div>
       </form>

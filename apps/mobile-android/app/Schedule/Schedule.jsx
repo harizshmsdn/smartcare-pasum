@@ -1,12 +1,16 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import BottomNav from '../components/BottomNav.jsx'
 import { useApp } from '../AppContext.jsx'
 
 export default function Schedule() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { schedule, deleteSchedule } = useApp()
   
+  // Message sent from AddSchedule after submission
+  const notificationMessage = location.state?.notification
+
   // State for tracking which item is being deleted (for double-confirmation)
   const [itemToDelete, setItemToDelete] = useState(null)
 
@@ -36,7 +40,24 @@ export default function Schedule() {
           </svg>
         </button>
         <h1>Schedule</h1>
+        <div className="topbar-spacer"/>
       </div>
+
+      {/* Blue Notification Box (Identical to Merits page) */}
+      {notificationMessage && (
+        <div style={{
+          backgroundColor: '#e0f2fe',
+          color: '#0369a1',
+          padding: '12px 16px',
+          borderRadius: '12px',
+          margin: '0 16px 16px 16px',
+          fontSize: '14px',
+          fontWeight: '500',
+          border: '1px solid #bae6fd'
+        }}>
+          {notificationMessage}
+        </div>
+      )}
 
       <div style={{ padding: '0 16px', paddingBottom: '100px' }}>
         <h3>Preferences</h3>

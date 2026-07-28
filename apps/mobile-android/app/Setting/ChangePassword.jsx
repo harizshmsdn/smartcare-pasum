@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BottomNav from '../components/BottomNav.jsx'
-import { supabase } from '../../supabaseClient.js'
+import { supabase } from '../supabaseClient.js'
 import { useApp } from '../AppContext.jsx'
 
 export default function ChangePassword() {
@@ -62,6 +62,7 @@ export default function ChangePassword() {
       </svg>
     </button>
     <h1>Change Password</h1>
+    <div className="topbar-spacer"/>
     </div>
 
       <form onSubmit={handleSubmit}>

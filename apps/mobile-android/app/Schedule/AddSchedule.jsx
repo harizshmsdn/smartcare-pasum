@@ -76,7 +76,11 @@ export default function AddSchedule() {
         time: `${startTime} - ${endTime}`,
         frequency,
       })
-      navigate('/schedule')
+
+      // Pass notification message in navigation state (matching AddMerit pattern)
+      navigate('/schedule', { 
+        state: { notification: 'Schedule Saved Successfully!' } 
+      })
     } catch (err) {
       console.error(err)
       setError(err?.message || 'Failed to add schedule. Please try again.')
@@ -103,6 +107,7 @@ export default function AddSchedule() {
           </svg>
         </button>
         <h1>Add Schedule</h1>
+        <div className="topbar-spacer"/>
       </div>
 
       <form onSubmit={handleSubmit}>
