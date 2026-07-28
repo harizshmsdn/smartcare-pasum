@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>SmartCare Student Portal</title>
+    <script>
+      window.onerror = function(message, source, lineno, colno, error) {
+        alert("JS Error: " + message + " at " + source + ":" + lineno + ":" + colno);
+        return false;
+      };
+      window.addEventListener('unhandledrejection', function(event) {
+        alert("Unhandled Promise Rejection: " + event.reason);
+      });
+    </script>
+  </head>
+  <body style="margin: 0; padding: 0; background-color: #f7fafc; overflow: hidden; height: 100vh;">
+    <div id="root"></div>
+    <script type="module" src="/main.jsx"></script>
+  </body>
+</html>

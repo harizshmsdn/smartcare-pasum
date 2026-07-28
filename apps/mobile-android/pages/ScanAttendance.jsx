@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BottomNav from '../components/BottomNav.jsx'
 import { useApp } from '../AppContext.jsx'
+import { supabase } from '../supabaseClient.js'
 import jsQR from 'jsqr'
 import * as faceapi from 'face-api.js'
 
@@ -140,9 +141,55 @@ export default function ScanAttendance() {
     }
   }, [])
 
+  const verifyScannedPin = useCallback(async (scannedPin) => {
+    setBusy(true)
+    setErrorText('')
+    setStatusText('Verifying PIN...')
+    try {
+      const { data: session, error: sessionError } = await supabase
+        .from('attendance_sessions')
+        .select('id, class_id, geo_lat, geo_lng, geo_radius_meters, online_mode, face_id_required, location_required')
+        .eq('session_pin', scannedPin)
+        .is('closed_at', null)
+        .maybeSingle()
+
+      if (sessionError) throw sessionError
+
+      if (!session) {
+        setErrorText('Invalid PIN code. Please check with your lecturer.')
+        setMatchedClass(null)
+        return
+      }
+
+      const match = (schedule || []).find((item) => item.id === session.class_id)
+      if (!match) {
+        setErrorText("You are not enrolled in this class.")
+        setMatchedClass(null)
+        return
+      }
+
+      setMatchedClass({
+        ...match,
+        sessionId: session.id,
+        latitude: session.geo_lat || match.latitude,
+        longitude: session.geo_lng || match.longitude,
+        geoRadius: session.geo_radius_meters,
+        faceIdRequired: session.face_id_required,
+        locationRequired: session.location_required,
+      })
+      setStatusText(`PIN Verified! ${match.subject} — ${match.class}`)
+      setErrorText('')
+    } catch (err) {
+      console.error(err)
+      setErrorText(err.message || 'Error verifying PIN. Please try again.')
+    } finally {
+      setBusy(false)
+    }
+  }, [schedule])
+
   // Stage 1: QR Code Scanner Tick Loop
   useEffect(() => {
-    if (stage !== 1 || isManualPin) return
+    if (stage !== 1 || isManualPin || matchedClass || busy) return
     setErrorText('')
     setStatusText('Point your camera at the classroom QR code…')
 
@@ -158,16 +205,8 @@ export default function ScanAttendance() {
         const code = jsQR(imageData.data, imageData.width, imageData.height)
 
         if (code && code.data) {
-          // Check match against class ID or class PIN Code
-          const match = (schedule || []).find(
-            (item) => item.id === code.data || String(item.pincode) === code.data.trim()
-          )
-          if (match) {
-            setMatchedClass(match)
-            setStatusText(`Code Verified! ${match.subject} — ${match.class}`)
-            return
-          }
-          setErrorText("This code doesn't match any of your enrolled classes.")
+          verifyScannedPin(code.data.trim())
+          return
         }
       }
       rafRef.current = requestAnimationFrame(tick)
@@ -177,29 +216,17 @@ export default function ScanAttendance() {
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
     }
-  }, [stage, schedule, isManualPin])
+  }, [stage, isManualPin, matchedClass, busy, verifyScannedPin])
 
   // Manual PIN Submission Handler
-  const handlePinSubmit = (e) => {
+  const handlePinSubmit = async (e) => {
     e.preventDefault()
     setErrorText('')
     if (!pinCode.trim()) {
       setErrorText('Please enter a PIN code.')
       return
     }
-
-    const match = (schedule || []).find(
-      (item) => String(item.pincode) === pinCode.trim() || item.id === pinCode.trim()
-    )
-
-    if (match) {
-      setMatchedClass(match)
-      setStatusText(`PIN Verified! ${match.subject} — ${match.class}`)
-      setErrorText('')
-    } else {
-      setMatchedClass(null)
-      setErrorText('Invalid PIN code. Please check with your lecturer.')
-    }
+    await verifyScannedPin(pinCode.trim())
   }
 
   // Stage 2: Face Matching
@@ -238,16 +265,26 @@ export default function ScanAttendance() {
 
   useEffect(() => {
     if (stage !== 2) return
+    if (matchedClass && !matchedClass.faceIdRequired) {
+      setFaceMatched(true)
+      setStatusText('Face ID not required — skipped.')
+      return
+    }
     if (modelsLoaded) {
       attemptFaceMatch()
     } else {
       setStatusText('Loading face recognition…')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stage, modelsLoaded])
+  }, [stage, modelsLoaded, matchedClass])
 
   // Stage 3: Location Verification
   const checkLocation = useCallback(() => {
+    if (matchedClass && !matchedClass.locationRequired) {
+      setLocationResult('skipped')
+      setStatusText('Location verification is not required for this session — skipping.')
+      return
+    }
     if (!matchedClass?.latitude || !matchedClass?.longitude) {
       setLocationResult('skipped')
       setStatusText('This class has no registered location — skipping verification.')
@@ -269,7 +306,8 @@ export default function ScanAttendance() {
           matchedClass.latitude,
           matchedClass.longitude
         )
-        if (distance <= LOCATION_RADIUS_METERS) {
+        const allowedRadius = matchedClass.geoRadius || LOCATION_RADIUS_METERS
+        if (distance <= allowedRadius) {
           setLocationResult({ ok: true, distance })
           setStatusText('Location Verified!')
         } else {
@@ -305,7 +343,12 @@ export default function ScanAttendance() {
 
     setBusy(true)
     try {
-      await logAttendance(matchedClass.enrollmentId, true)
+      await logAttendance(
+        matchedClass.enrollmentId,
+        matchedClass.sessionId,
+        matchedClass.faceIdRequired ? faceMatched : false,
+        matchedClass.locationRequired ? (locationResult && typeof locationResult === 'object' && locationResult.ok) : false
+      )
       alert('Attendance submitted!')
       navigate('/home')
     } catch (err) {

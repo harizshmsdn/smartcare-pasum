@@ -152,10 +152,10 @@ export default function ActiveAttendancePage() {
       const { data: records } = await supabase
         .from('attendance_records')
         .select(`
-          logged_at,
+          timestamp,
           face_verified,
           location_verified,
-          verified_by_lecturer_id,
+          manual_override,
           profiles (
             id,
             full_name,
@@ -169,10 +169,10 @@ export default function ActiveAttendancePage() {
         const formatted = records.map((r: any) => ({
           id: r.profiles?.institutional_id || "",
           name: r.profiles?.full_name || "Unknown Student",
-          time: new Date(r.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          time: new Date(r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           faceVerified: !!r.face_verified,
           locationVerified: !!r.location_verified,
-          manual: !!r.verified_by_lecturer_id
+          manual: !!r.manual_override
         }));
         setLiveAttendees(formatted);
 
@@ -201,8 +201,8 @@ export default function ActiveAttendancePage() {
           student_id: studentProfile.id,
           face_verified: true,
           location_verified: true,
-          status: 'present',
-          verified_by_lecturer_id: lecturerId
+          status: 'Present',
+          manual_override: true
         });
 
       if (error) {

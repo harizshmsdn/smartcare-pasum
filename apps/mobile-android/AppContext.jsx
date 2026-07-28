@@ -74,8 +74,7 @@ export function AppProvider({ children }) {
         .from('enrollments')
         .select(`
           id,
-          sessions_total,
-          sessions_attended,
+          current_attendance_rate,
           classes (
             id,
             group_code,
@@ -84,9 +83,6 @@ export function AppProvider({ children }) {
             start_time,
             end_time,
             location,
-            pincode,
-            latitude,
-            longitude,
             subjects (
               name,
               code
@@ -103,22 +99,43 @@ export function AppProvider({ children }) {
             enrollmentId: en.id,
             subject: en.classes.subjects.name,
             class: en.classes.group_code,
-            time: `${en.classes.start_time.substring(0, 5)} - ${en.classes.end_time.substring(0, 5)}`,
+            time: en.classes.start_time && en.classes.end_time
+              ? `${en.classes.start_time.substring(0, 5)} - ${en.classes.end_time.substring(0, 5)}`
+              : 'N/A',
             frequency: `Every ${en.classes.day_of_week}`,
             location: en.classes.location,
-            type: en.classes.type,
-            pincode: en.classes.pincode,
-            latitude: en.classes.latitude,
-            longitude: en.classes.longitude
+            type: en.classes.type
           }))
         setSchedule(formattedSchedule)
+
+        // Fetch counts dynamically for total sessions and attended sessions
+        const classIds = enrollments.map(en => en.classes?.id).filter(Boolean)
+        const { data: allSessions } = await supabase
+          .from('attendance_sessions')
+          .select('id, class_id')
+          .in('class_id', classIds)
+
+        const { data: studentRecords } = await supabase
+          .from('attendance_records')
+          .select('session_id')
+          .eq('student_id', userId)
+
+        const sessionsByClass = (allSessions || []).reduce((acc, s) => {
+          if (!acc[s.class_id]) acc[s.class_id] = []
+          acc[s.class_id].push(s.id)
+          return acc
+        }, {})
+
+        const attendedSessionIds = new Set((studentRecords || []).map(r => r.session_id))
 
         const formattedAttendance = enrollments
           .filter(en => en.classes && en.classes.subjects)
           .map((en) => {
-            const total = Number(en.sessions_total) || 0
-            const attended = Number(en.sessions_attended) || 0
-            const percent = total > 0 ? Math.round((attended / total) * 100) : 0
+            const classId = en.classes.id
+            const classSessions = sessionsByClass[classId] || []
+            const total = classSessions.length
+            const attended = classSessions.filter(sid => attendedSessionIds.has(sid)).length
+            const percent = Number(en.current_attendance_rate) || (total > 0 ? Math.round((attended / total) * 100) : 0)
 
             return {
               id: en.id,
@@ -147,20 +164,38 @@ export function AppProvider({ children }) {
         setMerits(formattedMerits)
       }
 
-      const { data: assessments } = await supabase
-        .from('assessments')
-        .select('*')
+      const { data: scores, error: scoresError } = await supabase
+        .from('student_scores')
+        .select(`
+          score_achieved,
+          assessments (
+            title,
+            total_marks,
+            classes (
+              subjects (
+                name
+              )
+            )
+          )
+        `)
         .eq('student_id', userId)
 
-      if (assessments) {
-        const grouped = assessments.reduce((acc, current) => {
-          const subjectName = current.subject_name
+      if (scoresError) {
+        console.error('Error fetching student scores:', scoresError)
+      }
+
+      if (scores) {
+        const grouped = scores.reduce((acc, current) => {
+          const subjectName = current.assessments?.classes?.subjects?.name || 'Unknown Subject'
           if (!acc[subjectName]) {
             acc[subjectName] = { subject: subjectName, totalScore: 0, totalPossible: 0, items: [] }
           }
-          acc[subjectName].items.push([current.title, `${current.score}/${current.possible_score}`])
-          acc[subjectName].totalScore += current.score
-          acc[subjectName].totalPossible += current.possible_score
+          const score = Number(current.score_achieved) || 0
+          const possible = Number(current.assessments?.total_marks) || 100
+          
+          acc[subjectName].items.push([current.assessments?.title || 'Assessment', `${score}/${possible}`])
+          acc[subjectName].totalScore += score
+          acc[subjectName].totalPossible += possible
           return acc
         }, {})
 
@@ -363,35 +398,63 @@ export function AppProvider({ children }) {
     }
   }
 
-  async function logAttendance(enrollmentId, present = true) {
+  async function logAttendance(enrollmentId, sessionId, faceVerified = false, locationVerified = false) {
     if (!user) throw new Error('No active session — please log in again.')
     try {
-      const { data: current, error: fetchError } = await supabase
+      const { error: insertError } = await supabase
+        .from('attendance_records')
+        .insert({
+          session_id: sessionId,
+          student_id: user.id,
+          face_verified: faceVerified,
+          location_verified: locationVerified,
+          status: 'Present'
+        })
+
+      if (insertError) throw insertError
+
+      // 2. Fetch the class ID for this enrollment
+      const { data: enrollment, error: fetchEnrollError } = await supabase
         .from('enrollments')
-        .select('sessions_total, sessions_attended')
+        .select('class_id')
         .eq('id', enrollmentId)
         .single()
 
-      if (fetchError || !current) throw fetchError || new Error('Enrollment not found')
+      if (fetchEnrollError || !enrollment) throw fetchEnrollError || new Error('Enrollment not found')
 
-      const newTotal = (current.sessions_total || 0) + 1
-      const newAttended = (current.sessions_attended || 0) + (present ? 1 : 0)
+      // 3. Fetch all sessions for this class
+      const { data: sessions, error: fetchSessionsError } = await supabase
+        .from('attendance_sessions')
+        .select('id')
+        .eq('class_id', enrollment.class_id)
 
-      const { error } = await supabase
+      if (fetchSessionsError) throw fetchSessionsError
+
+      const sessionIds = (sessions || []).map((s) => s.id)
+
+      // 4. Fetch all checked-in records for this student in these sessions
+      const { data: records, error: fetchRecordsError } = await supabase
+        .from('attendance_records')
+        .select('id')
+        .eq('student_id', user.id)
+        .in('session_id', sessionIds)
+
+      if (fetchRecordsError) throw fetchRecordsError
+
+      const totalSessions = sessionIds.length
+      const attendedSessions = (records || []).length
+      const newRate = totalSessions > 0 ? Math.round((attendedSessions / totalSessions) * 100) : 100
+
+      // 5. Update the enrollment's attendance rate
+      const { error: updateError } = await supabase
         .from('enrollments')
         .update({
-          sessions_total: newTotal,
-          sessions_attended: newAttended,
-          // FIXED: the base schema's `alerts` table (lecturer/admin side)
-          // is driven off `current_attendance_rate`, not sessions_total/
-          // sessions_attended — those two columns don't exist on the base
-          // schema at all and need to stay in sync so lecturer-side
-          // threshold alerts keep working once this merges.
-          current_attendance_rate: newTotal > 0 ? Math.round((newAttended / newTotal) * 100) : 100
+          current_attendance_rate: newRate
         })
         .eq('id', enrollmentId)
 
-      if (error) throw error
+      if (updateError) throw updateError
+
       await loadStudentData(user.id)
     } catch (err) {
       console.error('Error logging attendance session:', err)
