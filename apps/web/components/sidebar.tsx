@@ -14,21 +14,21 @@ export function Sidebar() {
   // Route map with explicit border classes added for Tailwind's JIT compiler
   const navItems = isAdmin
     ? [
-        { name: "Dashboard", href: "/admin", bgColor: "bg-[#061930]", borderColor: "border-[#061930]" },
-        { name: "Users", href: "/admin/users", bgColor: "bg-[#0b2240]", borderColor: "border-[#0b2240]" },
-        { name: "Classes", href: "/admin/classes", bgColor: "bg-[#12253f]", borderColor: "border-[#12253f]" },
-        { name: "Schedules", href: "/admin/schedules", bgColor: "bg-[#152c4c]", borderColor: "border-[#152c4c]" },
-        { name: "Cases", href: "/admin/cases", bgColor: "bg-[#1d3456]", borderColor: "border-[#1d3456]" },
-      ]
+      { name: "Dashboard", href: "/admin", bgColor: "bg-[#061930]", borderColor: "border-[#061930]" },
+      { name: "Users", href: "/admin/users", bgColor: "bg-[#0b2240]", borderColor: "border-[#0b2240]" },
+      { name: "Classes", href: "/admin/classes", bgColor: "bg-[#12253f]", borderColor: "border-[#12253f]" },
+      { name: "Schedules", href: "/admin/schedules", bgColor: "bg-[#152c4c]", borderColor: "border-[#152c4c]" },
+      { name: "Cases", href: "/admin/cases", bgColor: "bg-[#1d3456]", borderColor: "border-[#1d3456]" },
+    ]
     : isStudent
-    ? [
+      ? [
         { name: "Home", href: "/student", bgColor: "bg-[#061930]", borderColor: "border-[#061930]" },
         { name: "Dashboard", href: "/student/dashboard", bgColor: "bg-[#0b2240]", borderColor: "border-[#0b2240]" },
         { name: "Classes", href: "/student/classes", bgColor: "bg-[#12253f]", borderColor: "border-[#12253f]" },
         { name: "Alerts", href: "/student/alerts", bgColor: "bg-[#152c4c]", borderColor: "border-[#152c4c]" },
         { name: "Profile", href: "/student/profile", bgColor: "bg-[#1d3456]", borderColor: "border-[#1d3456]" },
       ]
-    : [
+      : [
         { name: "Home", href: "/", bgColor: "bg-[#061930]", borderColor: "border-[#061930]" },
         { name: "Dashboard", href: "/dashboard", bgColor: "bg-[#0b2240]", borderColor: "border-[#0b2240]" },
         { name: "Classes", href: "/classes", bgColor: "bg-[#12253f]", borderColor: "border-[#12253f]" },
@@ -37,7 +37,7 @@ export function Sidebar() {
       ];
 
   return (
-    <aside className="w-50 bg-[#FAF9F6] flex flex-col p-6 shrink-0 h-screen overflow-hidden">
+    <aside className="w-50 bg-transparent flex flex-col p-6 shrink-0 h-screen overflow-hidden">
 
       {/* Centered Title */}
       <h1 className="text-2xl font-bold mb-6 tracking-tight text-center text-slate-900">
@@ -65,16 +65,16 @@ export function Sidebar() {
                 size={28}
                 strokeWidth={2.5}
                 className={`absolute top-5 right-5 transition-all duration-300 ${isActive
-                    ? "text-black rotate-0"
-                    : "text-white -rotate-45 group-hover:rotate-0 group-hover:text-black"
+                  ? "text-black rotate-0"
+                  : "text-white -rotate-45 group-hover:rotate-0 group-hover:text-black"
                   }`}
               />
 
               {/* Page Name - Bottom Left */}
               <div
                 className={`absolute bottom-5 left-5 transition-colors duration-300 font-bold text-xl tracking-wide ${isActive
-                    ? "text-black"
-                    : "text-white group-hover:text-black"
+                  ? "text-black"
+                  : "text-white group-hover:text-black"
                   }`}
               >
                 {item.name}
@@ -89,8 +89,8 @@ export function Sidebar() {
         <Link
           href={isAdmin ? "/admin/settings" : isStudent ? "/student/settings" : "/settings"}
           className={`flex items-center gap-3 px-5 py-4 rounded-2xl font-medium transition-colors w-full text-left ${pathname === (isAdmin ? "/admin/settings" : isStudent ? "/student/settings" : "/settings")
-              ? "bg-slate-200 text-slate-900"
-              : "text-slate-500 hover:bg-slate-200 hover:text-slate-900"
+            ? "bg-slate-200 text-slate-900"
+            : "text-slate-500 hover:bg-slate-200 hover:text-slate-900"
             }`}
         >
           <Settings size={20} /> Settings

@@ -287,7 +287,7 @@ export default function HomePage() {
     <main className="flex-1 overflow-y-auto bg-transparent flex flex-col">
 
       {/* 3D CAROUSEL */}
-      <div className="relative w-full h-[55vh] min-h-[450px] flex items-center justify-center overflow-hidden bg-slate-900/5 rounded-b-[3rem] shadow-inner mb-10 pt-4">
+      <div className="relative w-full h-[55vh] min-h-[450px] flex items-center justify-center overflow-hidden bg-transparent rounded-b-[3rem] mb-10 pt-4">
 
         {/* Header Overlay */}
         <div className="absolute top-8 left-10 z-40">

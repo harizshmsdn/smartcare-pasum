@@ -5,6 +5,11 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import "./globals.css";
 import { Sidebar } from "../components/sidebar";
+import { Geist } from "next/font/google";
+import { cn } from "@/lib/utils";
+import Grainient from "@/components/Grainient";
+
+const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -47,15 +52,43 @@ export default async function RootLayout({
   } = await supabase.auth.getUser();
 
   return (
-    <html lang="en">
+    <html lang="en" className={cn("font-sans", geist.variable)}>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} flex h-screen bg-[#FAF9F6] text-slate-800 font-sans overflow-hidden`}
+        className={`${geistSans.variable} ${geistMono.variable} flex h-screen text-slate-800 font-sans overflow-hidden relative`}
       >
+        {/* Animated Background */}
+        <div className="absolute inset-0 -z-50 w-full h-full pointer-events-none">
+          <Grainient
+            color1="#efe5d3"
+            color2="#e2d9e8"
+            color3="#c8d4ff"
+            timeSpeed={0.8}
+            colorBalance={-0.27}
+            warpStrength={1}
+            warpFrequency={5}
+            warpSpeed={2}
+            warpAmplitude={50}
+            blendAngle={0}
+            blendSoftness={0.05}
+            rotationAmount={500}
+            noiseScale={2}
+            grainAmount={0.1}
+            grainScale={2}
+            grainAnimated={false}
+            contrast={1.5}
+            gamma={1}
+            saturation={1}
+            centerX={0}
+            centerY={0}
+            zoom={0.9}
+          />
+        </div>
+
         {/* Persistent Sidebar - Only visible if logged in */}
         {user && <Sidebar />}
 
         {/* Dynamic Page Content */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden bg-transparent">
           {children}
         </div>
       </body>
