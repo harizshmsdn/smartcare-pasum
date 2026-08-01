@@ -269,7 +269,7 @@ export default function StudentHomePage() {
 
               let transformClasses = "translate-x-full scale-50 opacity-0 z-0";
               if (isCenter) {
-                transformClasses = "translate-x-0 scale-100 opacity-100 z-30 blur-none shadow-2xl";
+                transformClasses = "translate-x-0 scale-100 opacity-100 z-30 blur-none shadow-2xl cursor-pointer hover:scale-[1.01]";
               } else if (isRight && Math.abs(offset) === 1 || (activeIndex === scheduleToday.length - 1 && index === 0)) {
                 transformClasses = "translate-x-[35%] scale-75 opacity-70 z-20 blur-[4px] shadow-lg cursor-pointer hover:blur-none";
               } else if (isLeft && Math.abs(offset) === 1 || (activeIndex === 0 && index === scheduleToday.length - 1)) {
@@ -279,7 +279,13 @@ export default function StudentHomePage() {
               return (
                 <BorderGlow
                   key={cls.id}
-                  onClick={() => !isCenter && setActiveIndex(index)}
+                  onClick={() => {
+                    if (isCenter) {
+                      router.push(`/student/classes?classId=${cls.id}`);
+                    } else {
+                      setActiveIndex(index);
+                    }
+                  }}
                   backgroundColor="#ffffff"
                   borderRadius={24}
                   glowColor="220 90 60"

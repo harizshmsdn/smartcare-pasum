@@ -208,7 +208,7 @@ export default function StudentDashboardPage() {
           <h2 className="text-3xl font-semibold text-slate-900 font-sans">Academic Overview</h2>
           <p className="text-slate-500 mt-1">Track your progress, accumulated merits, and exam performance</p>
         </div>
-        <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-xl font-semibold text-sm">
+        <div className="flex items-center gap-2 bg-transparent text-blue-700 px-4 py-2 rounded-xl font-semibold text-sm">
           <GraduationCap size={18} />
           Semester 1, Year 2025/2026
         </div>
@@ -270,7 +270,7 @@ export default function StudentDashboardPage() {
 
         {/* Total Merits Card */}
         <BorderGlow
-          backgroundColor="#0b2240"
+          backgroundColor="#0f172a"
           borderRadius={24}
           glowColor="38 92 50" // amber glow
           colors={['#f59e0b', '#d97706', '#fbbf24']}

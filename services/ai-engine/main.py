@@ -518,10 +518,30 @@ def get_student_analytics(student_id: str, class_id: Optional[str] = None, user:
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            # Check caller's role and identity
+            caller_p = check_user_auth(cur, user["id"])
+            caller_role = caller_p["role"]
+
+            if user["id"] != student_id and caller_role != "admin":
+                if caller_role == "lecturer":
+                    # Verify lecturer teaches at least one class that the student is enrolled in
+                    cur.execute(
+                        """
+                        SELECT 1 FROM public.enrollments e
+                        JOIN public.classes c ON e.class_id = c.id
+                        WHERE e.student_id = %s AND c.lecturer_id = %s LIMIT 1;
+                        """,
+                        (student_id, user["id"])
+                    )
+                    if not cur.fetchone():
+                        raise HTTPException(status_code=403, detail="Access denied: You do not teach this student")
+                else:
+                    raise HTTPException(status_code=403, detail="Access denied: Cannot view other students' analytics")
+
             # 1. Fetch Student Profile
             cur.execute(
                 """
-                SELECT id, full_name, institutional_id, email, COALESCE(total_merit_score, 0) as total_merit_score
+                SELECT id, role, full_name, institutional_id, email, COALESCE(total_merit_score, 0) as total_merit_score
                 FROM public.profiles
                 WHERE id = %s LIMIT 1;
                 """,
@@ -530,6 +550,8 @@ def get_student_analytics(student_id: str, class_id: Optional[str] = None, user:
             profile = cur.fetchone()
             if not profile:
                 raise HTTPException(status_code=404, detail="Student profile not found")
+            if profile["role"] != "student":
+                raise HTTPException(status_code=400, detail="Target user is not a student")
 
             # 2. Fetch Enrollment details (prioritize class_id if provided)
             target_class_param = class_id if class_id else ""
@@ -1207,15 +1229,8 @@ def get_student_dashboard_analytics(user: dict = Depends(get_current_user)):
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             student_id = user["id"]
 
-            # 1. Fetch Profile Total Merits
-            cur.execute(
-                "SELECT full_name, COALESCE(total_merit_score, 0) as total_merit_score FROM public.profiles WHERE id = %s LIMIT 1;",
-                (student_id,)
-            )
-            profile = cur.fetchone()
-            if not profile:
-                raise HTTPException(status_code=404, detail="Student profile not found")
-
+            # 1. Fetch Profile Total Merits & Verify Student Role
+            profile = check_user_auth(cur, student_id, "student")
             total_merits = float(profile["total_merit_score"])
 
             # 2. Fetch Enrollments & Class details
@@ -1369,6 +1384,8 @@ def get_student_class_details(class_id: str, user: dict = Depends(get_current_us
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             student_id = user["id"]
+            # Verify student role
+            check_user_auth(cur, student_id, "student")
 
             cur.execute(
                 """
@@ -1393,7 +1410,9 @@ def get_student_class_details(class_id: str, user: dict = Depends(get_current_us
                 (class_id, student_id)
             )
             enroll_row = cur.fetchone()
-            att_rate = round(float(enroll_row["current_attendance_rate"])) if enroll_row and enroll_row["current_attendance_rate"] is not None else 100
+            if not enroll_row:
+                raise HTTPException(status_code=403, detail="Access denied: Student is not enrolled in this class")
+            att_rate = round(float(enroll_row["current_attendance_rate"])) if enroll_row["current_attendance_rate"] is not None else 100
 
             def fmt_time(t_str):
                 if not t_str: return ""
@@ -1515,6 +1534,7 @@ def get_student_alerts(user: dict = Depends(get_current_user)):
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             student_id = user["id"]
+            check_user_auth(cur, student_id, "student")
 
             cur.execute(
                 """
@@ -1590,6 +1610,7 @@ def mark_all_student_alerts_read(user: dict = Depends(get_current_user)):
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             student_id = user["id"]
+            check_user_auth(cur, student_id, "student")
             cur.execute("UPDATE public.alerts SET is_read = true WHERE student_id = %s;", (student_id,))
             conn.commit()
             return {"status": "success", "message": "All student alerts marked as read."}
@@ -1606,6 +1627,7 @@ def mark_student_alert_read(alert_id: str, user: dict = Depends(get_current_user
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             student_id = user["id"]
+            check_user_auth(cur, student_id, "student")
             cur.execute("UPDATE public.alerts SET is_read = true WHERE id = %s AND student_id = %s RETURNING id;", (alert_id, student_id))
             updated = cur.fetchone()
             if not updated:
@@ -1625,6 +1647,7 @@ def get_student_merit_claims(user: dict = Depends(get_current_user)):
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             student_id = user["id"]
+            check_user_auth(cur, student_id, "student")
             cur.execute(
                 """
                 SELECT id, title, category, awarded_points, description, proof_file_url, status, submitted_at
@@ -1649,6 +1672,7 @@ def create_student_merit_claim(req: StudentMeritClaimRequest, user: dict = Depen
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             student_id = user["id"]
+            check_user_auth(cur, student_id, "student")
             cur.execute(
                 """
                 INSERT INTO public.merit_claims (student_id, title, category, awarded_points, description, proof_file_url, status)
@@ -1771,6 +1795,7 @@ def get_student_interventions(user: dict = Depends(get_current_user)):
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             student_id = user["id"]
+            check_user_auth(cur, student_id, "student")
             cur.execute(
                 """
                 SELECT 
@@ -1845,13 +1870,39 @@ class AdminMeritReviewRequest(BaseModel):
     status: str
     awarded_points: float
 
-def check_admin_auth(user: dict):
+def check_user_auth(cur, user_id: str, required_role: Optional[str] = None) -> dict:
+    """Verifies that the user exists, returns their profile, and optionally validates their role."""
+    cur.execute(
+        """
+        SELECT id, role, full_name, COALESCE(total_merit_score, 0) as total_merit_score 
+        FROM public.profiles 
+        WHERE id = %s LIMIT 1;
+        """,
+        (user_id,)
+    )
+    profile = cur.fetchone()
+    if not profile:
+        raise HTTPException(status_code=404, detail="User profile not found")
+    if required_role and profile["role"] != required_role:
+        raise HTTPException(status_code=403, detail=f"Access denied: {profile['role']} role is not authorized")
+    return profile
+
+def check_admin_auth(user: dict, cur=None):
+    """Verifies that the user has the 'admin' role, reusing the cursor if provided to avoid extra connections."""
+    if cur is not None:
+        cur.execute("SELECT role FROM public.profiles WHERE id = %s LIMIT 1;", (user["id"],))
+        p = cur.fetchone()
+        role = p.get("role") if isinstance(p, dict) else (p[0] if p else None)
+        if role != 'admin':
+            raise HTTPException(status_code=403, detail="Forbidden: Admin access required.")
+        return
+
     conn = get_db_connection()
     try:
-        with conn.cursor() as cur:
-            cur.execute("SELECT role FROM public.profiles WHERE id = %s LIMIT 1;", (user["id"],))
-            p = cur.fetchone()
-            role = p[0] if p else None
+        with conn.cursor() as c:
+            c.execute("SELECT role FROM public.profiles WHERE id = %s LIMIT 1;", (user["id"],))
+            p = c.fetchone()
+            role = p.get("role") if isinstance(p, dict) else (p[0] if p else None)
             if role != 'admin':
                 raise HTTPException(status_code=403, detail="Forbidden: Admin access required.")
     finally:
@@ -1860,10 +1911,10 @@ def check_admin_auth(user: dict):
 # ----------------- ADMIN DASHBOARD & METRICS -----------------
 @app.get("/api/admin/dashboard")
 def get_admin_dashboard(user: dict = Depends(get_current_user)):
-    check_admin_auth(user)
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            check_admin_auth(user, cur)
             # 1. KPIs
             cur.execute("SELECT COUNT(*) FROM public.profiles WHERE role = 'student';")
             students_count = cur.fetchone()["count"]
@@ -1967,10 +2018,10 @@ def get_admin_dashboard(user: dict = Depends(get_current_user)):
 # ----------------- USER MANAGEMENT -----------------
 @app.get("/api/admin/users")
 def get_admin_users(user: dict = Depends(get_current_user)):
-    check_admin_auth(user)
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            check_admin_auth(user, cur)
             cur.execute("""
                 SELECT id, role, full_name, institutional_id, email, phone_number, office_location, affiliation, created_at 
                 FROM public.profiles 
@@ -1985,10 +2036,10 @@ def get_admin_users(user: dict = Depends(get_current_user)):
 
 @app.post("/api/admin/users")
 def create_admin_user(req: AdminUserCreateRequest, user: dict = Depends(get_current_user)):
-    check_admin_auth(user)
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
+            check_admin_auth(user, cur)
             # Check if email is already taken
             cur.execute("SELECT id FROM public.profiles WHERE email = %s LIMIT 1;", (req.email,))
             if cur.fetchone():
@@ -2030,10 +2081,10 @@ def create_admin_user(req: AdminUserCreateRequest, user: dict = Depends(get_curr
 
 @app.patch("/api/admin/users/{user_id}")
 def update_admin_user(user_id: str, req: AdminUserUpdateRequest, user: dict = Depends(get_current_user)):
-    check_admin_auth(user)
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
+            check_admin_auth(user, cur)
             cur.execute("""
                 UPDATE public.profiles 
                 SET role = %s, full_name = %s, institutional_id = %s, email = %s, phone_number = %s, office_location = %s, affiliation = %s
@@ -2056,10 +2107,10 @@ def update_admin_user(user_id: str, req: AdminUserUpdateRequest, user: dict = De
 
 @app.delete("/api/admin/users/{user_id}")
 def delete_admin_user(user_id: str, user: dict = Depends(get_current_user)):
-    check_admin_auth(user)
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
+            check_admin_auth(user, cur)
             # profiles is ON DELETE CASCADE referenced from auth.users
             cur.execute("DELETE FROM auth.users WHERE id = %s;", (user_id,))
             conn.commit()
@@ -2074,10 +2125,10 @@ def delete_admin_user(user_id: str, user: dict = Depends(get_current_user)):
 # ----------------- CLASSES & SUBJECTS -----------------
 @app.get("/api/admin/subjects")
 def get_admin_subjects(user: dict = Depends(get_current_user)):
-    check_admin_auth(user)
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            check_admin_auth(user, cur)
             cur.execute("SELECT id, code, name, credit_hours, created_at FROM public.subjects ORDER BY code ASC;")
             subjects = cur.fetchall() or []
             return {"subjects": subjects}
@@ -2088,10 +2139,10 @@ def get_admin_subjects(user: dict = Depends(get_current_user)):
 
 @app.post("/api/admin/subjects")
 def create_admin_subject(req: AdminSubjectCreateRequest, user: dict = Depends(get_current_user)):
-    check_admin_auth(user)
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
+            check_admin_auth(user, cur)
             cur.execute("""
                 INSERT INTO public.subjects (code, name, credit_hours)
                 VALUES (%s, %s, %s)
@@ -2108,10 +2159,10 @@ def create_admin_subject(req: AdminSubjectCreateRequest, user: dict = Depends(ge
 
 @app.get("/api/admin/classes")
 def get_admin_classes(user: dict = Depends(get_current_user)):
-    check_admin_auth(user)
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            check_admin_auth(user, cur)
             cur.execute("""
                 SELECT 
                     c.id, c.group_code, c.type, c.semester, c.day_of_week, c.start_time, c.end_time, c.location,
@@ -2131,10 +2182,10 @@ def get_admin_classes(user: dict = Depends(get_current_user)):
 
 @app.post("/api/admin/classes")
 def create_admin_class(req: AdminClassCreateRequest, user: dict = Depends(get_current_user)):
-    check_admin_auth(user)
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
+            check_admin_auth(user, cur)
             cur.execute("""
                 INSERT INTO public.classes (subject_id, lecturer_id, group_code, type, semester, day_of_week, start_time, end_time, location)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
@@ -2151,10 +2202,10 @@ def create_admin_class(req: AdminClassCreateRequest, user: dict = Depends(get_cu
 
 @app.delete("/api/admin/classes/{class_id}")
 def delete_admin_class(class_id: str, user: dict = Depends(get_current_user)):
-    check_admin_auth(user)
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
+            check_admin_auth(user, cur)
             cur.execute("DELETE FROM public.classes WHERE id = %s;", (class_id,))
             conn.commit()
             return {"status": "success"}
@@ -2168,10 +2219,10 @@ def delete_admin_class(class_id: str, user: dict = Depends(get_current_user)):
 # ----------------- SCHEDULES & ENROLLMENTS -----------------
 @app.get("/api/admin/enrollments")
 def get_admin_enrollments(user: dict = Depends(get_current_user)):
-    check_admin_auth(user)
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            check_admin_auth(user, cur)
             cur.execute("""
                 SELECT 
                     e.id as enrollment_id, e.current_attendance_rate,
@@ -2192,10 +2243,10 @@ def get_admin_enrollments(user: dict = Depends(get_current_user)):
 
 @app.post("/api/admin/enrollments")
 def create_admin_enrollment(req: AdminEnrollmentRequest, user: dict = Depends(get_current_user)):
-    check_admin_auth(user)
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
+            check_admin_auth(user, cur)
             # Check if student is already enrolled
             cur.execute("SELECT id FROM public.enrollments WHERE student_id = %s AND class_id = %s LIMIT 1;", (req.student_id, req.class_id))
             if cur.fetchone():
@@ -2217,10 +2268,10 @@ def create_admin_enrollment(req: AdminEnrollmentRequest, user: dict = Depends(ge
 
 @app.delete("/api/admin/enrollments/{enrollment_id}")
 def delete_admin_enrollment(enrollment_id: str, user: dict = Depends(get_current_user)):
-    check_admin_auth(user)
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
+            check_admin_auth(user, cur)
             cur.execute("DELETE FROM public.enrollments WHERE id = %s;", (enrollment_id,))
             conn.commit()
             return {"status": "success"}
@@ -2234,10 +2285,10 @@ def delete_admin_enrollment(enrollment_id: str, user: dict = Depends(get_current
 # ----------------- INTERVENTIONS & CASES -----------------
 @app.get("/api/admin/interventions")
 def get_admin_interventions(user: dict = Depends(get_current_user)):
-    check_admin_auth(user)
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            check_admin_auth(user, cur)
             cur.execute("""
                 SELECT 
                     i.id as intervention_id, i.issue_description, i.status, i.priority, i.created_at, i.updated_at,
@@ -2260,10 +2311,10 @@ def get_admin_interventions(user: dict = Depends(get_current_user)):
 
 @app.patch("/api/admin/interventions/{intervention_id}")
 def update_admin_intervention(intervention_id: str, req: AdminInterventionUpdateRequest, user: dict = Depends(get_current_user)):
-    check_admin_auth(user)
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
+            check_admin_auth(user, cur)
             cur.execute("""
                 UPDATE public.interventions 
                 SET status = %s, priority = %s, issue_description = %s
@@ -2281,10 +2332,10 @@ def update_admin_intervention(intervention_id: str, req: AdminInterventionUpdate
 # ----------------- MERIT CLAIMS -----------------
 @app.get("/api/admin/merit-claims")
 def get_admin_merit_claims(user: dict = Depends(get_current_user)):
-    check_admin_auth(user)
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            check_admin_auth(user, cur)
             cur.execute("""
                 SELECT 
                     m.id as claim_id, m.title, m.category, m.proof_file_url, m.status, m.awarded_points, m.submitted_at,
@@ -2302,10 +2353,10 @@ def get_admin_merit_claims(user: dict = Depends(get_current_user)):
 
 @app.patch("/api/admin/merit-claims/{claim_id}")
 def review_admin_merit_claim(claim_id: str, req: AdminMeritReviewRequest, user: dict = Depends(get_current_user)):
-    check_admin_auth(user)
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
+            check_admin_auth(user, cur)
             # We want to verify evaluator_id is admin user's id
             cur.execute("""
                 UPDATE public.merit_claims 
