@@ -205,7 +205,7 @@ export default function StudentMeritRequestsPage() {
       setNewDescription("");
       setNewProofUrl("");
       setIsModalOpen(false);
-      
+
       // Reload list
       loadMeritRequests();
     } catch (err) {
@@ -221,11 +221,11 @@ export default function StudentMeritRequestsPage() {
     .reduce((sum, r) => sum + r.points, 0);
 
   if (isLoading && requests.length === 0) {
-    return <div className="flex-1 flex items-center justify-center bg-slate-50 min-h-screen">Loading merit requests...</div>;
+    return <div className="flex-1 flex items-center justify-center bg-[#FAF9F6] min-h-screen">Loading merit requests...</div>;
   }
 
   return (
-    <main className="flex-1 p-8 overflow-y-auto bg-slate-50 relative font-sans">
+    <main className="flex-1 p-8 overflow-y-auto bg-[#FAF9F6] relative font-sans">
       {/* Toast Alert Notification */}
       {toastMessage && (
         <div className="fixed top-8 right-8 z-50 flex items-center gap-3 bg-slate-900 border border-slate-800 text-white px-5 py-4 rounded-2xl shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300">
@@ -259,22 +259,22 @@ export default function StudentMeritRequestsPage() {
             <h1 className="text-3xl font-extrabold text-slate-900 mt-3 font-sans">{studentName || "Student"}</h1>
             <p className="text-slate-500 mt-1">Track and submit co-curricular and leadership merit points</p>
           </div>
-          
+
           <div className="flex gap-4 items-center flex-wrap">
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-right flex gap-6 shrink-0">
               <div>
                 <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Pending Claims</span>
-                <span className="text-2xl font-black text-blue-600">{pendingCount} requests</span>
+                <span className="text-2xl font-black text-blue-600">{pendingCount}</span>
               </div>
               <div className="border-l border-slate-200 pl-6">
                 <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Approved Points</span>
                 <span className="text-2xl font-black text-emerald-600">+{approvedPointsSum} pts</span>
               </div>
             </div>
-            
+
             <button
               onClick={() => setIsModalOpen(true)}
-              className="bg-[#0b2240] hover:bg-[#12253f] text-white font-semibold px-5 py-3 rounded-xl shadow-md hover:scale-[1.02] active:scale-95 flex items-center gap-2 border-none cursor-pointer text-sm transition-all"
+              className="bg-[#0b2240] hover:bg-[#12253f] text-white font-semibold px-5 py-3 rounded-xl shadow-md hover:scale-[1.02] hover:bg-slate-800 active:scale-95 flex items-center gap-2 border-none cursor-pointer text-sm transition-all"
             >
               <PlusCircle size={18} /> Submit Merit Claim
             </button>
@@ -295,7 +295,6 @@ export default function StudentMeritRequestsPage() {
                 <th className="p-5">Merit Details</th>
                 <th className="p-5">Category</th>
                 <th className="p-5">Submitted Date & Time</th>
-                <th className="p-5 text-center">Requested Points</th>
                 <th className="p-5">Proof Document</th>
                 <th className="p-5 text-right">Verification Status</th>
               </tr>
@@ -309,7 +308,7 @@ export default function StudentMeritRequestsPage() {
                       <p className="text-slate-450 text-xs mt-1.5 line-clamp-2 leading-relaxed">{request.description}</p>
                     </td>
                     <td className="p-5">
-                      <span className="bg-slate-100 text-slate-600 text-xs font-semibold px-2.5 py-1 rounded-md">
+                      <span className="bg-slate-100 text-slate-650 text-xs font-semibold px-2.5 py-1 rounded-md border border-slate-200">
                         {request.category}
                       </span>
                     </td>
@@ -322,14 +321,11 @@ export default function StudentMeritRequestsPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="p-5 text-center font-bold text-slate-900 text-lg font-mono">
-                      {request.points}
-                    </td>
                     <td className="p-5">
                       {request.proofUrl && request.proofUrl !== "https://" ? (
-                        <a 
-                          href={request.proofUrl} 
-                          target="_blank" 
+                        <a
+                          href={request.proofUrl}
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50/50 hover:bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 transition-colors"
                         >
@@ -340,22 +336,21 @@ export default function StudentMeritRequestsPage() {
                       )}
                     </td>
                     <td className="p-5 text-right">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold uppercase border ${
-                        request.status === 'approved' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' :
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold uppercase border ${request.status === 'approved' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' :
                         request.status === 'rejected' ? 'bg-red-50 border-red-200 text-red-800' :
-                        'bg-blue-50 border-blue-200 text-blue-800'
-                      }`}>
+                          'bg-blue-50 border-blue-200 text-blue-800'
+                        }`}>
                         {request.status === 'approved' ? 'Verified' :
-                         request.status === 'rejected' ? 'Rejected' :
-                         'Pending Approval'}
+                          request.status === 'rejected' ? 'Rejected' :
+                            'Pending Approval'}
                       </span>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="p-10 text-center text-slate-400 italic text-sm">
-                    No merit requests submitted yet. Click "Submit Merit Claim" to start.
+                  <td colSpan={5} className="p-10 text-center text-slate-400 italic text-sm">
+                    No merit claims submitted yet. Click "Submit Merit Claim" to start.
                   </td>
                 </tr>
               )}
@@ -377,7 +372,7 @@ export default function StudentMeritRequestsPage() {
                 <X size={20} />
               </button>
               <span className="text-xs font-bold tracking-wider uppercase bg-blue-600 text-white px-3 py-1 rounded-full">
-                New Merit Request
+                New Merit Claim
               </span>
               <h2 className="text-2xl font-bold mt-3">Submit Merit Claim</h2>
               <p className="text-slate-400 mt-1">Provide activity details and upload evidence for evaluation</p>
@@ -387,9 +382,9 @@ export default function StudentMeritRequestsPage() {
             <form onSubmit={handleSubmitRequest} className="p-8 space-y-5 overflow-y-auto flex-1 text-sm text-slate-700">
               <div>
                 <label className="block text-xs font-bold uppercase text-slate-400 mb-2">Claim Title / Event Name</label>
-                <input 
-                  type="text" 
-                  value={newTitle} 
+                <input
+                  type="text"
+                  value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="e.g. PASUM charity run coordinate lead"
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-sans text-slate-800"
@@ -399,8 +394,8 @@ export default function StudentMeritRequestsPage() {
 
               <div>
                 <label className="block text-xs font-bold uppercase text-slate-400 mb-2">Category</label>
-                <select 
-                  value={newCategory} 
+                <select
+                  value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-sans"
                   required
@@ -415,8 +410,8 @@ export default function StudentMeritRequestsPage() {
 
               <div>
                 <label className="block text-xs font-bold uppercase text-slate-400 mb-2">Role</label>
-                <textarea 
-                  value={newDescription} 
+                <textarea
+                  value={newDescription}
                   onChange={(e) => setNewDescription(e.target.value)}
                   placeholder="e.g. Committee member, Project manager, Participant"
                   rows={3}
@@ -427,9 +422,9 @@ export default function StudentMeritRequestsPage() {
 
               <div>
                 <label className="block text-xs font-bold uppercase text-slate-400 mb-2">Proof File URL</label>
-                <input 
-                  type="text" 
-                  value={newProofUrl} 
+                <input
+                  type="text"
+                  value={newProofUrl}
                   onChange={(e) => setNewProofUrl(e.target.value)}
                   placeholder="e.g. https://domain.com/proof.pdf"
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-sans text-slate-800"

@@ -2,21 +2,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ChevronDown,
-  BookOpen,
   Calendar,
   Mail,
   MapPin,
   Clock,
   CheckCircle2,
-  AlertTriangle,
-  TrendingDown,
   TrendingUp,
   User,
-  ExternalLink,
   Award,
   ShieldAlert,
   ChevronRight
@@ -46,7 +41,6 @@ interface AssessmentItem {
 }
 
 export default function StudentClassesPage() {
-  const router = useRouter();
   const supabase = createClient();
 
   const [classesList, setClassesList] = useState<ClassItem[]>([]);
@@ -100,7 +94,7 @@ export default function StudentClassesPage() {
         const urlParams = new URLSearchParams(window.location.search);
         const urlClassId = urlParams.get("classId");
         const targetClass = formatted.find(c => c.id === urlClassId) || formatted[0];
-        
+
         if (targetClass) {
           setSelectedClassId(targetClass.id);
           setSelectedClassName(targetClass.name);
@@ -185,7 +179,7 @@ export default function StudentClassesPage() {
           .eq('class_id', selectedClassId)
           .eq('student_id', user.id)
           .single();
-        
+
         const rate = enrollment ? Math.round(Number(enrollment.current_attendance_rate)) : 100;
         setAttendanceRate(rate);
 
@@ -253,7 +247,7 @@ export default function StudentClassesPage() {
           const logs = sessions.map((s: any) => {
             const record = s.attendance_records?.[0];
             const dateStr = new Date(s.opened_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-            
+
             const verifiedMethods = [];
             if (record?.face_verified) verifiedMethods.push("Face ID");
             if (record?.location_verified) verifiedMethods.push("GPS");
@@ -318,9 +312,8 @@ export default function StudentClassesPage() {
                       setIsDropdownOpen(false);
                       window.history.pushState(null, '', `/student/classes?classId=${cls.id}`);
                     }}
-                    className={`w-full text-left px-4 py-3 text-sm hover:bg-slate-50 transition-colors ${
-                      selectedClassId === cls.id ? 'bg-blue-50/50 text-blue-700 font-medium' : 'text-slate-700'
-                    }`}
+                    className={`w-full text-left px-4 py-3 text-sm hover:bg-slate-50 transition-colors ${selectedClassId === cls.id ? 'bg-blue-50/50 text-blue-700 font-medium' : 'text-slate-700'
+                      }`}
                   >
                     {cls.name}
                   </button>
@@ -340,11 +333,10 @@ export default function StudentClassesPage() {
           </div>
           <div>
             <p className="text-sm font-medium text-slate-500">Class Performance</p>
-            <h4 className={`text-2xl font-black mt-0.5 ${
-              performanceNumeric < 80 ? 'text-red-600' :
+            <h4 className={`text-2xl font-black mt-0.5 ${performanceNumeric < 80 ? 'text-red-600' :
               performanceNumeric < 90 ? 'text-orange-655' :
-              'text-emerald-600'
-            }`}>
+                'text-emerald-600'
+              }`}>
               {performanceNumeric}%
             </h4>
           </div>
@@ -357,11 +349,10 @@ export default function StudentClassesPage() {
           </div>
           <div>
             <p className="text-sm font-medium text-slate-500">My Attendance Rate</p>
-            <h4 className={`text-2xl font-black mt-0.5 ${
-              attendanceRate < 80 ? 'text-red-600' :
+            <h4 className={`text-2xl font-black mt-0.5 ${attendanceRate < 80 ? 'text-red-600' :
               attendanceRate < 90 ? 'text-orange-655' :
-              'text-emerald-600'
-            }`}>
+                'text-emerald-600'
+              }`}>
               {attendanceRate}%
             </h4>
           </div>
@@ -381,9 +372,9 @@ export default function StudentClassesPage() {
         {/* Card 4: Support Cases (Same size as other metrics, dark blue background, white text) */}
         <Link
           href="/student/interventions"
-          className="bg-[#0b2240] hover:bg-[#12253f] border border-slate-800 p-5 rounded-3xl shadow-sm flex items-center gap-4 transition-all hover:scale-[1.02] cursor-pointer"
+          className="group bg-[#0b2240] hover:bg-[#12253f] border border-slate-800 p-5 rounded-3xl shadow-sm flex items-center gap-4 transition-all hover:scale-[1.02] hover:bg-slate-800 cursor-pointer"
         >
-          <div className="bg-white/10 p-3 rounded-2xl text-white">
+          <div className="bg-white/10 p-3 rounded-2xl text-white transition-all group-hover:bg-blue-600">
             <ShieldAlert size={24} />
           </div>
           <div>
@@ -397,9 +388,9 @@ export default function StudentClassesPage() {
 
       {/* Main Details Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Left Column: Assigned Lecturer */}
-        <div className="space-y-6">
+
+        {/* Left Column: Assigned Lecturer & Continuous Assessment */}
+        <div className="space-y-6 lg:col-span-1">
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <h3 className="font-bold text-slate-900 text-lg mb-6 flex items-center gap-2">
               <User size={20} className="text-blue-600" />
@@ -437,13 +428,9 @@ export default function StudentClassesPage() {
               <p className="text-slate-500 text-sm">No lecturer assigned.</p>
             )}
           </div>
-        </div>
 
-        {/* Right Column: Attendance Log & Continuous Assessment */}
-        <div className="lg:col-span-2 space-y-8">
-          
           {/* Continuous Assessment & Exams Marks Card */}
-          <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
             <div className="mb-6 pb-4 border-b border-slate-100 flex justify-between items-center">
               <div>
                 <h3 className="font-extrabold text-slate-900 text-lg flex items-center gap-2">
@@ -454,29 +441,28 @@ export default function StudentClassesPage() {
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-2xl border border-slate-150">
+            <div className="overflow-x-auto w-full rounded-2xl border border-slate-150">
               <table className="w-full text-left border-collapse bg-white">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-150 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                    <th className="py-4 px-5">Assessment Name</th>
-                    <th className="py-4 px-5">Type</th>
-                    <th className="py-4 px-5 text-center">Weightage</th>
-                    <th className="py-4 px-5 text-right">Marks Achieved</th>
+                    <th className="py-4 px-4">Assessment Name</th>
+                    <th className="py-4 px-4">Type</th>
+                    <th className="py-4 px-4 text-center">Weightage</th>
+                    <th className="py-4 px-4 text-right">Marks Achieved</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-150">
                   {assessments.map((a) => (
                     <tr key={a.id} className="text-sm text-slate-700 hover:bg-slate-50/50 transition-colors">
-                      <td className="py-4 px-5 font-semibold text-slate-900">{a.title}</td>
-                      <td className="py-4 px-5">
-                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider border ${
-                          a.type === 'Final' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-slate-100 text-slate-650 border-slate-200'
-                        }`}>
+                      <td className="py-4 px-4 font-semibold text-slate-900">{a.title}</td>
+                      <td className="py-4 px-4">
+                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider border ${a.type === 'Final' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-slate-100 text-slate-650 border-slate-200'
+                          }`}>
                           {a.type}
                         </span>
                       </td>
-                      <td className="py-4 px-5 text-center font-semibold text-slate-600">{a.weightage}%</td>
-                      <td className="py-4 px-5 text-right font-mono font-bold text-slate-900">
+                      <td className="py-4 px-4 text-center font-semibold text-slate-600">{a.weightage}%</td>
+                      <td className="py-4 px-4 text-right font-mono font-bold text-slate-900">
                         <span className="text-blue-600">{a.score}</span> <span className="text-slate-400">/</span> {a.totalMarks}
                       </td>
                     </tr>
@@ -485,16 +471,18 @@ export default function StudentClassesPage() {
               </table>
             </div>
           </div>
+        </div>
 
-          {/* Attendance Log List */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+        {/* Right Column: Attendance Log List */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col h-full">
             <h3 className="font-bold text-slate-900 text-lg mb-6 flex items-center gap-2">
               <CheckCircle2 size={20} className="text-blue-600" />
               Attendance log
             </h3>
 
             {attendanceLog.length > 0 ? (
-              <div className="space-y-4">
+              <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
                 {attendanceLog.map((log) => (
                   <div key={log.id} className="flex justify-between items-center p-4 rounded-xl border border-slate-100 bg-slate-50/30 hover:border-slate-200 transition-colors">
                     <div>
@@ -511,12 +499,11 @@ export default function StudentClassesPage() {
                       </div>
                     </div>
 
-                    <span className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider border ${
-                      log.status === 'Present' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' :
+                    <span className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider border ${log.status === 'Present' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' :
                       log.status === 'Late' ? 'bg-amber-50 border-amber-200 text-amber-800' :
-                      log.status === 'Excused' ? 'bg-blue-50 border-blue-200 text-blue-800' :
-                      'bg-red-50 border-red-200 text-red-800'
-                    }`}>
+                        log.status === 'Excused' ? 'bg-blue-50 border-blue-200 text-blue-800' :
+                          'bg-red-50 border-red-200 text-red-800'
+                      }`}>
                       {log.status}
                     </span>
                   </div>
@@ -526,8 +513,8 @@ export default function StudentClassesPage() {
               <p className="text-slate-500 text-sm text-center py-6">No attendance sessions registered for this class.</p>
             )}
           </div>
-
         </div>
+
       </div>
     </main>
   );

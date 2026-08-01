@@ -1,6 +1,6 @@
-// apps/web/components/sidebar.tsx
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Settings, ChevronRight, LogOut } from "lucide-react";
@@ -10,6 +10,56 @@ export function Sidebar() {
   const pathname = usePathname();
   const isStudent = pathname?.startsWith("/student");
   const isAdmin = pathname?.startsWith("/admin");
+
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const supabase = createClient();
+    let isMounted = true;
+
+    const fetchUnreadCount = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !isMounted) return;
+
+      let query = supabase
+        .from('alerts')
+        .select('id', { count: 'exact', head: true })
+        .eq('is_read', false);
+
+      if (isStudent) {
+        query = query.eq('student_id', user.id);
+      } else if (!isAdmin) {
+        query = query.eq('lecturer_id', user.id);
+      } else {
+        // Admin layout doesn't track alerts
+        return;
+      }
+
+      const { count, error } = await query;
+      if (!error && count !== null && isMounted) {
+        setUnreadCount(count);
+      }
+    };
+
+    fetchUnreadCount();
+
+    // Subscribe to public.alerts Postgres changes
+    const channel = supabase
+      .channel('sidebar-alerts')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'alerts' },
+        () => {
+          fetchUnreadCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(channel);
+    };
+  }, [isStudent, isAdmin]);
 
   // Route map with explicit border classes added for Tailwind's JIT compiler
   const navItems = isAdmin
@@ -72,12 +122,17 @@ export function Sidebar() {
 
               {/* Page Name - Bottom Left */}
               <div
-                className={`absolute bottom-5 left-5 transition-colors duration-300 font-bold text-xl tracking-wide ${isActive
+                className={`absolute bottom-5 left-5 transition-colors duration-300 font-bold text-xl tracking-wide flex items-center gap-2 ${isActive
                   ? "text-black"
                   : "text-white group-hover:text-black"
                   }`}
               >
-                {item.name}
+                <span>{item.name}</span>
+                {item.name === "Alerts" && unreadCount > 0 && (
+                  <span className="w-6 h-6 rounded-full bg-red-500 text-white text-xs font-black flex items-center justify-center animate-pulse shrink-0">
+                    {unreadCount}
+                  </span>
+                )}
               </div>
             </Link>
           );

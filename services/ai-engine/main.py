@@ -1773,6 +1773,23 @@ def create_intervention(req: InterventionCreateRequest, user: dict = Depends(get
                     (user_id, req.student_id, req.class_id, req.priority, f"Academic advising scheduled for your class: {subject_name}. Please check in with your lecturer.")
                 )
 
+            # Always insert alert for student regarding the intervention setup
+            cur.execute(
+                """
+                INSERT INTO public.alerts (
+                    lecturer_id,
+                    student_id,
+                    class_id,
+                    type,
+                    priority,
+                    message,
+                    is_read,
+                    created_at
+                ) VALUES (%s, %s, %s, 'academic', %s, %s, false, CURRENT_TIMESTAMP);
+                """,
+                (user_id, req.student_id, req.class_id, req.priority, f"An academic intervention case has been created for your class: {subject_name}. Reason: {req.issue_description}")
+            )
+
             conn.commit()
 
             # Send mock email notification

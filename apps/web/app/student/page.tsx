@@ -227,7 +227,7 @@ export default function StudentHomePage() {
   };
 
   if (isLoading) {
-    return <div className="flex-1 flex items-center justify-center bg-slate-50 min-h-screen">Loading student portal...</div>;
+    return <div className="flex-1 flex items-center justify-center bg-[#FAF9F6] min-h-screen">Loading student portal...</div>;
   }
 
   return (

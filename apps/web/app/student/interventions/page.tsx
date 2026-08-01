@@ -2,14 +2,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  AlertTriangle, 
-  CheckCircle2, 
-  Clock, 
-  Mail, 
-  CalendarDays,
+import Link from "next/link";
+import {
+  AlertTriangle,
+  Clock,
+  Mail,
   ShieldCheck,
-  TrendingDown
+  ArrowLeft
 } from "lucide-react";
 import { createClient } from "../../../utils/supabase/client";
 
@@ -112,13 +111,21 @@ export default function StudentInterventionsPage() {
   }, [supabase]);
 
   if (isLoading) {
-    return <div className="flex-1 flex items-center justify-center bg-slate-50 min-h-screen">Loading case files...</div>;
+    return <div className="flex-1 flex items-center justify-center bg-[#FAF9F6] min-h-screen">Loading case files...</div>;
   }
 
   const activeCount = interventions.length;
 
   return (
     <main className="flex-1 p-8 overflow-y-auto bg-[#FAF9F6]">
+      {/* Navigation and Breadcrumbs */}
+      <div className="mb-6 flex justify-between items-center">
+        <Link href="/student/classes" className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600 transition-colors">
+          <ArrowLeft size={16} /> Back to Enrolled Courses
+        </Link>
+        <span className="text-xs text-slate-400 font-medium">Student Portal Workspace</span>
+      </div>
+
       {/* Header */}
       <header className="mb-8">
         <h2 className="text-3xl font-semibold text-slate-900 flex items-center gap-3">
@@ -139,17 +146,16 @@ export default function StudentInterventionsPage() {
               const classNode = item.classes;
               const subjectNode = classNode?.subjects;
               const subjectText = subjectNode ? `${subjectNode.code} - ${subjectNode.name} (${classNode.group_code})` : "General Support Case";
-              
+
               const dateStr = new Date(item.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
               return (
                 <div key={item.id} className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in duration-200">
                   {/* Warning Banner */}
-                  <div className={`p-4 flex items-center gap-3 text-white font-semibold ${
-                    item.priority === 'critical' ? 'bg-red-655' : 
-                    item.priority === 'high' ? 'bg-orange-655' : 
-                    'bg-blue-600'
-                  }`}>
+                  <div className={`p-4 flex items-center gap-3 text-white font-semibold ${item.priority === 'critical' ? 'bg-red-655' :
+                      item.priority === 'high' ? 'bg-orange-655' :
+                        'bg-blue-600'
+                    }`}>
                     <AlertTriangle size={20} />
                     <span>Active Support Plan Flagged — {item.priority.toUpperCase()} Priority</span>
                   </div>
@@ -166,13 +172,12 @@ export default function StudentInterventionsPage() {
                           <Clock size={14} /> Logged on {dateStr}
                         </p>
                       </div>
-                      
+
                       <div className="flex gap-2">
-                        <span className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider border ${
-                          item.status === 'needs_review' ? 'bg-red-50 border-red-200 text-red-800' :
-                          item.status === 'in_progress' ? 'bg-amber-50 border-amber-200 text-amber-800' :
-                          'bg-blue-50 border-blue-200 text-blue-800'
-                        }`}>
+                        <span className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider border ${item.status === 'needs_review' ? 'bg-red-50 border-red-200 text-red-800' :
+                            item.status === 'in_progress' ? 'bg-amber-50 border-amber-200 text-amber-800' :
+                              'bg-blue-50 border-blue-200 text-blue-800'
+                          }`}>
                           {item.status.replace('_', ' ')}
                         </span>
                       </div>
@@ -190,9 +195,9 @@ export default function StudentInterventionsPage() {
                         <p className="text-slate-400 text-xs font-bold uppercase">Case Manager</p>
                         <p className="font-bold text-slate-800 text-sm mt-1">{item.lecturer?.full_name || "Assigned Lecturer"}</p>
                       </div>
-                      
+
                       {/* Action trigger mail link */}
-                      <a 
+                      <a
                         href={`mailto:${item.lecturer?.email}?subject=Intervention Meeting Request - PASUM&body=Hello ${item.lecturer?.full_name}, I would like to schedule a session regarding my support plan for ${subjectNode?.code || 'class'}.`}
                         className="flex items-center justify-center gap-2 bg-[#0b2240] hover:bg-[#12253f] text-white font-semibold px-5 py-3 rounded-xl transition-all shadow-sm active:scale-95 text-xs text-center w-full sm:w-auto"
                       >
