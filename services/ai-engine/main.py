@@ -61,6 +61,20 @@ class StudentMeritClaimRequest(BaseModel):
             raise ValueError('Field cannot be empty or default placeholder')
         return v.strip()
 
+class InterventionCreateRequest(BaseModel):
+    student_id: str
+    class_id: str
+    issue_description: str
+    status: str
+    priority: str
+    schedule_advising: bool = False
+
+    @validator('student_id', 'class_id', 'issue_description', 'status', 'priority')
+    def check_fields_non_empty(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Fields cannot be empty')
+        return v.strip()
+
 def get_db_connection():
     """Establishes connection to the Supabase local PostgreSQL database."""
     try:
@@ -575,22 +589,65 @@ def get_student_analytics(student_id: str, class_id: Optional[str] = None, user:
             )
             approved_merits = cur.fetchall() or []
 
-            # 5. Fetch Assessment Scores for Trajectory
+            # 4.5 Fetch all enrolled classes for switcher UI
             cur.execute(
                 """
                 SELECT 
-                    a.title,
-                    ss.score_achieved,
-                    a.total_marks,
-                    ROUND((ss.score_achieved / NULLIF(a.total_marks, 0)) * 100) as score_pct
-                FROM public.student_scores ss
-                JOIN public.assessments a ON ss.assessment_id = a.id
-                WHERE ss.student_id = %s
-                ORDER BY ss.date_recorded ASC
-                LIMIT 5;
+                    c.id as class_id,
+                    s.code as subject_code,
+                    s.name as subject_name,
+                    c.group_code
+                FROM public.enrollments e
+                JOIN public.classes c ON e.class_id = c.id
+                JOIN public.subjects s ON c.subject_id = s.id
+                WHERE e.student_id = %s
+                ORDER BY s.code ASC;
                 """,
                 (student_id,)
             )
+            all_classes_rows = cur.fetchall() or []
+            enrolled_classes = [
+                {
+                    "class_id": str(row["class_id"]),
+                    "class_name": f"{row['subject_code']} ({row['group_code']})"
+                }
+                for row in all_classes_rows
+            ]
+
+            # 5. Fetch Assessment Scores for Trajectory (filtered by current class context)
+            resolved_class_id = str(enrollment["class_id"]) if enrollment else None
+            if resolved_class_id:
+                cur.execute(
+                    """
+                    SELECT 
+                        a.title,
+                        ss.score_achieved,
+                        a.total_marks,
+                        ROUND((ss.score_achieved / NULLIF(a.total_marks, 0)) * 100) as score_pct
+                    FROM public.student_scores ss
+                    JOIN public.assessments a ON ss.assessment_id = a.id
+                    WHERE ss.student_id = %s AND a.class_id = %s
+                    ORDER BY ss.date_recorded ASC
+                    LIMIT 5;
+                    """,
+                    (student_id, resolved_class_id)
+                )
+            else:
+                cur.execute(
+                    """
+                    SELECT 
+                        a.title,
+                        ss.score_achieved,
+                        a.total_marks,
+                        ROUND((ss.score_achieved / NULLIF(a.total_marks, 0)) * 100) as score_pct
+                    FROM public.student_scores ss
+                    JOIN public.assessments a ON ss.assessment_id = a.id
+                    WHERE ss.student_id = %s
+                    ORDER BY ss.date_recorded ASC
+                    LIMIT 5;
+                    """,
+                    (student_id,)
+                )
             score_rows = cur.fetchall() or []
 
             student_history = []
@@ -604,6 +661,117 @@ def get_student_analytics(student_id: str, class_id: Optional[str] = None, user:
                     "attendance": att_val
                 })
 
+            # 6. Fetch Recent Activity logs
+            # Query 6.1: Recent Attendance (limit 3)
+            cur.execute(
+                """
+                SELECT 
+                    r.timestamp, 
+                    r.status, 
+                    s.code as subject_code,
+                    c.group_code
+                FROM public.attendance_records r
+                JOIN public.attendance_sessions ses ON r.session_id = ses.id
+                JOIN public.classes c ON ses.class_id = c.id
+                JOIN public.subjects s ON c.subject_id = s.id
+                WHERE r.student_id = %s
+                ORDER BY r.timestamp DESC
+                LIMIT 3;
+                """,
+                (student_id,)
+            )
+            attendance_rows = cur.fetchall() or []
+
+            # Query 6.2: Recent Merit Claims (limit 3)
+            cur.execute(
+                """
+                SELECT title, status, submitted_at, awarded_points
+                FROM public.merit_claims
+                WHERE student_id = %s
+                ORDER BY submitted_at DESC
+                LIMIT 3;
+                """,
+                (student_id,)
+            )
+            merit_rows = cur.fetchall() or []
+
+            # Query 6.3: Recent Interventions (limit 3)
+            cur.execute(
+                """
+                SELECT issue_description, status, created_at
+                FROM public.interventions
+                WHERE student_id = %s
+                ORDER BY created_at DESC
+                LIMIT 3;
+                """,
+                (student_id,)
+            )
+            intervention_rows = cur.fetchall() or []
+
+            activities = []
+            
+            # Format attendance activities
+            for r in attendance_rows:
+                status_str = str(r["status"]).lower()
+                subj = f"{r['subject_code']} ({r['group_code']})"
+                if status_str in ["present", "late"]:
+                    title = "Attendance Logged"
+                    desc = f"Checked in for {subj} session"
+                    icon = "check_circle"
+                else:
+                    title = "Missed Class"
+                    desc = f"Absent from {subj} session"
+                    icon = "clock"
+                
+                activities.append({
+                    "id": f"att-{r['timestamp'].isoformat()}",
+                    "title": title,
+                    "description": desc,
+                    "timestamp": r["timestamp"].isoformat(),
+                    "icon": icon
+                })
+                
+            # Format merit activities
+            for m in merit_rows:
+                status_str = str(m["status"]).lower()
+                if status_str == "approved":
+                    title = "Merit Approved"
+                    desc = f"Awarded {m['awarded_points']} pts for: {m['title']}"
+                    icon = "award"
+                elif status_str == "rejected":
+                    title = "Merit Claim Rejected"
+                    desc = f"Rejected: {m['title']}"
+                    icon = "x"
+                else:
+                    title = "Merit Submitted"
+                    desc = f"Pending verification: {m['title']}"
+                    icon = "award"
+                    
+                activities.append({
+                    "id": f"merit-{m['submitted_at'].isoformat()}",
+                    "title": title,
+                    "description": desc,
+                    "timestamp": m["submitted_at"].isoformat(),
+                    "icon": icon
+                })
+
+            # Format intervention activities
+            for i in intervention_rows:
+                title = "Intervention Case"
+                status_label = str(i["status"]).replace("_", " ").title()
+                desc = f"Status: {status_label} - {i['issue_description']}"
+                activities.append({
+                    "id": f"int-{i['created_at'].isoformat()}",
+                    "title": title,
+                    "description": desc,
+                    "timestamp": i["created_at"].isoformat(),
+                    "icon": "alert_triangle"
+                })
+
+            # Sort combined activities by timestamp DESC and limit to 5
+            activities.sort(key=lambda x: x["timestamp"], reverse=True)
+            activities = activities[:5]
+
             return {
                 "profile": {
                     "id": str(profile["id"]),
@@ -614,7 +782,8 @@ def get_student_analytics(student_id: str, class_id: Optional[str] = None, user:
                 },
                 "enrollment": {
                     "attendance_rate": att_rate,
-                    "class_name": class_label
+                    "class_name": class_label,
+                    "class_id": resolved_class_id
                 },
                 "risk_assessment": {
                     "status": risk_status,
@@ -627,7 +796,9 @@ def get_student_analytics(student_id: str, class_id: Optional[str] = None, user:
                     "pending_count": pending_merits,
                     "approved_history": approved_merits
                 },
-                "student_history": student_history
+                "enrolled_classes": enrolled_classes,
+                "student_history": student_history,
+                "activities": activities
             }
 
     except HTTPException:
@@ -1492,6 +1663,104 @@ def create_student_merit_claim(req: StudentMeritClaimRequest, user: dict = Depen
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=500, detail=f"Create Merit Claim Error: {str(e)}")
+    finally:
+        conn.close()
+
+
+def send_intervention_email(student_email: str, student_name: str, subject_name: str, issue: str):
+    # Print clear message to standard output/logs (this represents sending the email)
+    print("\n" + "="*80)
+    print(f"SMTP SIMULATOR: Sending Email to {student_email}...")
+    print(f"Subject: Academic Intervention Initiated - {subject_name}")
+    print(f"Dear {student_name},\n")
+    print(f"This email is to notify you that an academic intervention case has been created for your class {subject_name}.")
+    print(f"Details/Reason: {issue}")
+    print("\nPlease log into SmartCare PASUM to view the intervention board or contact your lecturer for support.")
+    print("="*80 + "\n")
+
+
+@app.post("/api/interventions")
+def create_intervention(req: InterventionCreateRequest, user: dict = Depends(get_current_user)):
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            user_id = user["id"]
+            user_role = user.get("role", "authenticated")
+
+            # Check authorization: user must be a lecturer (or admin)
+            cur.execute("SELECT role FROM public.profiles WHERE id = %s LIMIT 1;", (user_id,))
+            profile = cur.fetchone()
+            actual_role = profile["role"] if profile else user_role
+            if actual_role not in ["lecturer", "admin"]:
+                raise HTTPException(status_code=403, detail="Access denied: Only lecturers or admins can create interventions")
+
+            # Check that the student exists
+            cur.execute("SELECT full_name, email FROM public.profiles WHERE id = %s LIMIT 1;", (req.student_id,))
+            student = cur.fetchone()
+            if not student:
+                raise HTTPException(status_code=404, detail="Student not found")
+
+            # Check that the class exists
+            cur.execute("""
+                SELECT s.name as subject_name, c.group_code
+                FROM public.classes c
+                JOIN public.subjects s ON c.subject_id = s.id
+                WHERE c.id = %s LIMIT 1;
+            """, (req.class_id,))
+            class_info = cur.fetchone()
+            if not class_info:
+                raise HTTPException(status_code=404, detail="Class not found")
+            subject_name = f"{class_info['subject_name']} ({class_info['group_code']})"
+
+            # Insert the intervention
+            cur.execute(
+                """
+                INSERT INTO public.interventions (
+                    student_id,
+                    class_id,
+                    lecturer_id,
+                    issue_description,
+                    status,
+                    priority,
+                    created_at,
+                    updated_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                RETURNING id, student_id, class_id, lecturer_id, issue_description, status, priority, created_at;
+                """,
+                (req.student_id, req.class_id, user_id, req.issue_description, req.status, req.priority)
+            )
+            intervention = cur.fetchone()
+
+            # Schedule academic advising if requested
+            if req.schedule_advising:
+                cur.execute(
+                    """
+                    INSERT INTO public.alerts (
+                        lecturer_id,
+                        student_id,
+                        class_id,
+                        type,
+                        priority,
+                        message,
+                        is_read,
+                        created_at
+                    ) VALUES (%s, %s, %s, 'academic', %s, %s, false, CURRENT_TIMESTAMP);
+                    """,
+                    (user_id, req.student_id, req.class_id, req.priority, f"Academic advising scheduled for your class: {subject_name}. Please check in with your lecturer.")
+                )
+
+            conn.commit()
+
+            # Send mock email notification
+            send_intervention_email(student["email"], student["full_name"], subject_name, req.issue_description)
+
+            return {"status": "success", "intervention": intervention}
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Create Intervention Error: {str(e)}")
     finally:
         conn.close()
 

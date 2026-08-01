@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../utils/supabase/client";
+import BorderGlow from "../../components/BorderGlow";
 import {
   TrendingDown,
   ChevronLeft,
@@ -232,7 +233,7 @@ export default function StudentHomePage() {
   return (
     <main className="flex-1 overflow-y-auto bg-transparent flex flex-col">
       {/* 3D CAROUSEL */}
-      <div className="relative w-full h-[55vh] min-h-[450px] flex items-center justify-center overflow-hidden bg-slate-900/5 rounded-b-[3rem] shadow-inner mb-10 pt-4">
+      <div className="relative w-full h-[55vh] min-h-[450px] flex items-center justify-center overflow-hidden rounded-b-[3rem] mb-10 pt-4">
         {/* Header Overlay */}
         <div className="absolute top-8 left-10 z-40">
           <h2 className="text-3xl font-semibold text-slate-900">Welcome, {studentName}</h2>
@@ -276,10 +277,15 @@ export default function StudentHomePage() {
               }
 
               return (
-                <div
+                <BorderGlow
                   key={cls.id}
                   onClick={() => !isCenter && setActiveIndex(index)}
-                  className={`absolute w-full max-w-2xl bg-white rounded-3xl border border-slate-200 p-8 transition-all duration-700 ease-[cubic-bezier(0.25,0.8,0.25,1)] ${transformClasses}`}
+                  backgroundColor="#ffffff"
+                  borderRadius={24}
+                  glowColor="220 90 60"
+                  colors={['#3b82f6', '#8b5cf6', '#6366f1']}
+                  animated={isCenter}
+                  className={`absolute w-full max-w-2xl p-8 transition-all duration-700 ease-[cubic-bezier(0.25,0.8,0.25,1)] ${transformClasses}`}
                 >
                   <div className="relative z-10 flex flex-col justify-between h-full gap-6">
                     <div className="flex justify-between items-start">
@@ -307,11 +313,10 @@ export default function StudentHomePage() {
                         <div className="text-2xl font-black text-emerald-700">{cls.latestScore}%</div>
                       </div>
 
-                      <div className={`p-3 rounded-xl border ${
-                        cls.riskStatus === 'critical' ? 'bg-red-50 border-red-100 text-red-700' :
+                      <div className={`p-3 rounded-xl border ${cls.riskStatus === 'critical' ? 'bg-red-50 border-red-100 text-red-700' :
                         cls.riskStatus === 'at-risk' ? 'bg-orange-50 border-orange-100 text-orange-700' :
-                        'bg-emerald-50 border-emerald-100 text-emerald-700'
-                      }`}>
+                          'bg-emerald-50 border-emerald-100 text-emerald-700'
+                        }`}>
                         <div className="flex items-center gap-1.5 text-xs font-bold uppercase mb-1">
                           {cls.riskStatus === 'critical' && <AlertTriangle size={14} />}
                           {cls.riskStatus === 'at-risk' && <TrendingDown size={14} />}
@@ -321,7 +326,7 @@ export default function StudentHomePage() {
                       </div>
                     </div>
                   </div>
-                </div>
+                </BorderGlow>
               );
             })
           ) : (
@@ -346,36 +351,44 @@ export default function StudentHomePage() {
               <Link
                 href={`/student/classes?classId=${item.id}`}
                 key={item.id}
-                className="block bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all group"
+                className="block group rounded-2xl"
               >
-                <div className="flex justify-between items-start mb-4">
-                  <div className={`p-2.5 rounded-xl ${item.type === 'Lecture' ? 'bg-indigo-100 text-indigo-600' :
+                <BorderGlow
+                  backgroundColor="#ffffff"
+                  borderRadius={16}
+                  glowColor="220 90 60"
+                  colors={['#3b82f6', '#8b5cf6', '#6366f1']}
+                  className="p-5 shadow-sm transition-all duration-300"
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div className={`p-2.5 rounded-xl ${item.type === 'Lecture' ? 'bg-indigo-100 text-indigo-600' :
                       item.type === 'Tutorial' ? 'bg-emerald-100 text-emerald-600' :
                         'bg-amber-100 text-amber-600'
-                    }`}>
-                    <Icon size={20} />
-                  </div>
-                  <span className="bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md">
-                    {item.type}
-                  </span>
-                </div>
-
-                <h4 className="font-bold text-slate-900 text-lg leading-tight mb-2 group-hover:text-blue-600 transition-colors">
-                  {item.title}
-                </h4>
-
-                <div className="space-y-2 mt-4 pt-4 border-t border-slate-100">
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <Clock size={16} className="text-slate-400" />
-                    <span className="font-medium">{item.time}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-slate-500">My Attendance</span>
-                    <span className={`font-bold ${item.attendance < 80 ? 'text-red-600' : item.attendance < 90 ? 'text-orange-600' : 'text-emerald-600'}`}>
-                      {item.attendance}%
+                      }`}>
+                      <Icon size={20} />
+                    </div>
+                    <span className="bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md">
+                      {item.type}
                     </span>
                   </div>
-                </div>
+
+                  <h4 className="font-bold text-slate-900 text-lg leading-tight mb-2 group-hover:text-blue-600 transition-colors">
+                    {item.title}
+                  </h4>
+
+                  <div className="space-y-2 mt-4 pt-4 border-t border-slate-100">
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                      <Clock size={16} className="text-slate-400" />
+                      <span className="font-medium">{item.time}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-slate-500">My Attendance</span>
+                      <span className={`font-bold ${item.attendance < 80 ? 'text-red-600' : item.attendance < 90 ? 'text-orange-600' : 'text-emerald-600'}`}>
+                        {item.attendance}%
+                      </span>
+                    </div>
+                  </div>
+                </BorderGlow>
               </Link>
             );
           })}

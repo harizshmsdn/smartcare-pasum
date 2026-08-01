@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import BorderGlow from "../../components/BorderGlow";
 import {
   TrendingUp,
   Award,
@@ -269,7 +270,7 @@ export default function DashboardPage() {
           <h2 className="text-3xl font-semibold text-slate-900">Academic Overview</h2>
           <p className="text-slate-500 mt-1">Subject analytics, merit distributions, and exam trajectories</p>
         </div>
-        <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-xl font-semibold text-sm">
+        <div className="flex items-center gap-2 bg-transparent text-blue-700 px-4 py-2 rounded-xl font-semibold text-sm">
           <GraduationCap size={18} />
           Semester 1, Year 2025/2026
         </div>
@@ -279,7 +280,13 @@ export default function DashboardPage() {
       <div className="flex-1 grid grid-cols-1 md:grid-cols-3 grid-rows-2 gap-6 min-h-0 pb-2">
 
         {/* ROW 1, COL 1 & 2: Assessment vs Attendance (Subject Specific via Class Select Dropdown) */}
-        <div className="md:col-span-2 bg-white rounded-3xl border border-slate-200 p-6 shadow-sm flex flex-col min-h-0 relative">
+        <BorderGlow
+          backgroundColor="#ffffff"
+          borderRadius={24}
+          glowColor="220 90 60"
+          colors={['#3b82f6', '#8b5cf6', '#6366f1']}
+          className="md:col-span-2 p-6 shadow-sm flex flex-col min-h-0 relative"
+        >
           <div className="shrink-0 mb-4 flex justify-between items-center">
             <div>
               <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2">
@@ -333,10 +340,16 @@ export default function DashboardPage() {
               </LineChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </BorderGlow>
 
         {/* ROW 1, COL 3: Condensed Risk Clusters */}
-        <div className="bg-slate-900 rounded-3xl border border-slate-800 p-6 shadow-sm flex flex-col relative overflow-hidden">
+        <BorderGlow
+          backgroundColor="#0f172a"
+          borderRadius={24}
+          glowColor="0 95 60"
+          colors={['#ef4444', '#f97316', '#b91c1c']}
+          className="p-6 shadow-sm flex flex-col relative overflow-hidden"
+        >
           <div className="absolute -right-10 -top-10 w-40 h-40 bg-red-500/20 rounded-full blur-3xl pointer-events-none"></div>
 
           <h3 className="font-bold text-white text-lg flex items-center gap-2 mb-6 z-10 shrink-0">
@@ -368,10 +381,16 @@ export default function DashboardPage() {
           >
             Review Cases <ChevronRight size={16} />
           </Link>
-        </div>
+        </BorderGlow>
 
         {/* ROW 2, COL 1: Raw Merit Scores (0-500) */}
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm flex flex-col min-h-0">
+        <BorderGlow
+          backgroundColor="#ffffff"
+          borderRadius={24}
+          glowColor="38 92 50"
+          colors={['#f59e0b', '#d97706', '#fbbf24']}
+          className="p-6 shadow-sm flex flex-col min-h-0"
+        >
           <div className="shrink-0 mb-4">
             <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
               <Award className="text-amber-500" size={18} />
@@ -391,10 +410,16 @@ export default function DashboardPage() {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </BorderGlow>
 
         {/* ROW 2, COL 2: Merit CGPA Estimates */}
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm flex flex-col min-h-0">
+        <BorderGlow
+          backgroundColor="#ffffff"
+          borderRadius={24}
+          glowColor="142 70 45"
+          colors={['#10b981', '#059669', '#34d399']}
+          className="p-6 shadow-sm flex flex-col min-h-0"
+        >
           <div className="shrink-0 mb-4">
             <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
               <GraduationCap className="text-emerald-500" size={18} />
@@ -419,10 +444,16 @@ export default function DashboardPage() {
               </AreaChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </BorderGlow>
 
         {/* ROW 2, COL 3: Mid-Terms vs Finals Matrix */}
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm flex flex-col min-h-0">
+        <BorderGlow
+          backgroundColor="#ffffff"
+          borderRadius={24}
+          glowColor="199 89 48"
+          colors={['#38bdf8', '#0ea5e9', '#7dd3fc']}
+          className="p-6 shadow-sm flex flex-col min-h-0"
+        >
           <div className="shrink-0 mb-4">
             <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
               <BookOpen className="text-sky-500" size={18} />
@@ -443,7 +474,7 @@ export default function DashboardPage() {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </BorderGlow>
 
       </div>
     </main>

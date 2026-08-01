@@ -60,7 +60,7 @@ export default async function RootLayout({
         <div className="absolute inset-0 -z-50 w-full h-full pointer-events-none">
           <Grainient
             color1="#efe5d3"
-            color2="#e2d9e8"
+            color2="#ddcfe7"
             color3="#c8d4ff"
             timeSpeed={0.8}
             colorBalance={-0.27}

@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import BorderGlow from "../../components/BorderGlow";
 import {
   Users,
   BookOpen,
@@ -152,9 +153,12 @@ export default function AdminDashboardPage() {
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0 overflow-y-auto pb-4 pr-1">
 
         {/* Bento Cell 1: Platform Overview (Col span 2) */}
-        <div
-          className="lg:col-span-2 rounded-3xl border-l-8 border-l-blue-500 border border-slate-800 p-8 shadow-sm text-white flex flex-col justify-between relative overflow-hidden min-h-[220px]"
-          style={{ backgroundColor: "#0b2240" }}
+        <BorderGlow
+          backgroundColor="#0b2240"
+          borderRadius={24}
+          glowColor="220 90 60"
+          colors={['#3b82f6', '#8b5cf6', '#6366f1']}
+          className="lg:col-span-2 border-l-8 border-l-blue-500 p-8 shadow-sm text-white flex flex-col justify-between relative overflow-hidden min-h-[220px]"
         >
           <div className="absolute -right-20 -top-20 w-60 h-60 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -185,12 +189,15 @@ export default function AdminDashboardPage() {
               </div>
             </div>
           </div>
-        </div>
+        </BorderGlow>
 
         {/* Bento Cell 2: Site Visits / DAU & WAU (Col span 1) */}
-        <div
-          className="lg:col-span-1 text-white rounded-3xl border border-slate-800 border-l-8 border-l-indigo-500 p-8 shadow-sm flex flex-col justify-between min-h-[220px]"
-          style={{ backgroundColor: "#1e1b4b" }}
+        <BorderGlow
+          backgroundColor="#1e1b4b"
+          borderRadius={24}
+          glowColor="250 84 54"
+          colors={['#8b5cf6', '#a855f7', '#d8b4fe']}
+          className="lg:col-span-1 text-white border-l-8 border-l-indigo-500 p-8 shadow-sm flex flex-col justify-between min-h-[220px]"
         >
           <div>
             <span className="text-indigo-300 text-xs font-bold uppercase tracking-widest block">Site Analytics</span>
@@ -209,12 +216,15 @@ export default function AdminDashboardPage() {
               <span className="text-5xl font-black text-white">{metrics.active_weekly}</span>
             </div>
           </div>
-        </div>
+        </BorderGlow>
 
         {/* Bento Cell 3: Check-In success (Col span 1) */}
-        <div
-          className="lg:col-span-1 text-white rounded-3xl border border-slate-800 border-l-8 border-l-emerald-400 p-8 shadow-sm flex flex-col justify-between min-h-[220px]"
-          style={{ backgroundColor: "#064e3b" }}
+        <BorderGlow
+          backgroundColor="#064e3b"
+          borderRadius={24}
+          glowColor="142 70 45"
+          colors={['#10b981', '#059669', '#34d399']}
+          className="lg:col-span-1 text-white border-l-8 border-l-emerald-400 p-8 shadow-sm flex flex-col justify-between min-h-[220px]"
         >
           <div>
             <span className="text-emerald-300 text-xs font-bold uppercase tracking-widest block">Check-In Accuracy</span>
@@ -227,10 +237,16 @@ export default function AdminDashboardPage() {
             <span className="text-5xl font-black text-white tracking-tight">{metrics.checkin_success_rate}%</span>
             <p className="text-sm text-slate-200 mt-2 font-medium">Of check-ins successfully verified by Face ID, GPS radius limits or manual overrides.</p>
           </div>
-        </div>
+        </BorderGlow>
 
         {/* Bento Cell 4: Real Database Check-ins Trajectory Chart (Col span 2) */}
-        <div className="lg:col-span-2 bg-white rounded-3xl border-t-8 border-t-blue-600 border border-slate-200 p-8 shadow-sm flex flex-col space-y-6 min-h-[350px]">
+        <BorderGlow
+          backgroundColor="#ffffff"
+          borderRadius={24}
+          glowColor="220 90 60"
+          colors={['#3b82f6', '#8b5cf6', '#6366f1']}
+          className="lg:col-span-2 border-t-8 border-t-blue-600 p-8 shadow-sm flex flex-col space-y-6 min-h-[350px]"
+        >
           <div>
             <h3 className="font-extrabold text-slate-900 text-xl flex items-center gap-2">
               <Activity className="text-blue-600" size={24} />
@@ -260,12 +276,15 @@ export default function AdminDashboardPage() {
               <div className="flex items-center justify-center h-full text-slate-400 text-sm italic">No check-in logs recorded.</div>
             )}
           </div>
-        </div>
+        </BorderGlow>
 
         {/* Bento Cell 5: Database Volume & Resource Indicators (Col span 1) */}
-        <div
-          className="lg:col-span-1 text-white rounded-3xl border border-slate-800 border-l-8 border-l-slate-400 p-8 shadow-sm flex flex-col justify-between min-h-[350px]"
-          style={{ backgroundColor: "#0f172a" }}
+        <BorderGlow
+          backgroundColor="#0f172a"
+          borderRadius={24}
+          glowColor="210 30 40"
+          colors={['#64748b', '#475569', '#94a3b8']}
+          className="lg:col-span-1 text-white border-l-8 border-l-slate-400 p-8 shadow-sm flex flex-col justify-between min-h-[350px]"
         >
           <div>
             <h3 className="font-extrabold text-white text-xl flex items-center gap-2">
@@ -296,10 +315,16 @@ export default function AdminDashboardPage() {
           <div className="bg-slate-800/50 p-4 rounded-2xl flex items-center gap-2 text-xs text-slate-300 font-bold z-10 border border-slate-700/35">
             <CheckCircle size={16} className="text-emerald-400" /> Database Healthy
           </div>
-        </div>
+        </BorderGlow>
 
         {/* Bento Cell 6: Pending Merit Claims (Col span 1) */}
-        <div className="lg:col-span-1 bg-white rounded-3xl border border-slate-200 border-l-8 border-l-amber-500 p-6 shadow-sm flex flex-col space-y-4 min-h-[300px]">
+        <BorderGlow
+          backgroundColor="#ffffff"
+          borderRadius={24}
+          glowColor="38 92 50"
+          colors={['#f59e0b', '#d97706', '#fbbf24']}
+          className="lg:col-span-1 border-l-8 border-l-amber-500 p-6 shadow-sm flex flex-col space-y-4 min-h-[300px]"
+        >
           <div>
             <h4 className="font-extrabold text-slate-900 text-base flex items-center gap-1.5">
               <Award className="text-amber-500" size={20} /> Pending Merit Claims
@@ -325,10 +350,16 @@ export default function AdminDashboardPage() {
               <div className="text-center py-12 text-slate-400 text-xs italic">All claims evaluated.</div>
             )}
           </div>
-        </div>
+        </BorderGlow>
 
         {/* Bento Cell 7: Active Interventions Cases (Col span 1) - Side by Side with Card 6! */}
-        <div className="lg:col-span-1 bg-white rounded-3xl border border-slate-200 border-l-8 border-l-rose-500 p-6 shadow-sm flex flex-col space-y-4 min-h-[300px]">
+        <BorderGlow
+          backgroundColor="#ffffff"
+          borderRadius={24}
+          glowColor="346 84 61"
+          colors={['#ef4444', '#f43f5e', '#fda4af']}
+          className="lg:col-span-1 border-l-8 border-l-rose-500 p-6 shadow-sm flex flex-col space-y-4 min-h-[300px]"
+        >
           <div>
             <h4 className="font-extrabold text-slate-900 text-base flex items-center gap-1.5">
               <ShieldAlert className="text-rose-500" size={20} /> Support & Interventions
@@ -356,7 +387,7 @@ export default function AdminDashboardPage() {
               <div className="text-center py-12 text-slate-400 text-xs italic">No urgent student cases flagged.</div>
             )}
           </div>
-        </div>
+        </BorderGlow>
 
       </div>
 

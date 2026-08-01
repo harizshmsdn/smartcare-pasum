@@ -135,6 +135,7 @@ export default function AlertsPage() {
   const unreadCount = alerts.filter(a => !a.isRead).length;
 
   const markAsRead = async (id: string) => {
+    let success = false;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
@@ -146,21 +147,28 @@ export default function AlertsPage() {
         }
       });
 
-      if (!res.ok) {
-        await supabase
-          .from('alerts')
-          .update({ is_read: true })
-          .eq('id', id);
+      if (res.ok) {
+        success = true;
       }
-
-      setAlerts(prev => prev.map(a => a.id === id ? { ...a, isRead: true } : a));
     } catch (err) {
-      console.error("Error marking alert as read:", err);
-      setAlerts(prev => prev.map(a => a.id === id ? { ...a, isRead: true } : a));
+      console.warn("FastAPI offline or unreachable, falling back to direct Supabase update:", err);
     }
+
+    if (!success) {
+      const { error } = await supabase
+        .from('alerts')
+        .update({ is_read: true })
+        .eq('id', id);
+      if (error) {
+        console.error("Supabase direct mark read error:", error);
+      }
+    }
+
+    setAlerts(prev => prev.map(a => a.id === id ? { ...a, isRead: true } : a));
   };
 
   const markAllAsRead = async () => {
+    let success = false;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
@@ -172,18 +180,24 @@ export default function AlertsPage() {
         }
       });
 
-      if (!res.ok && lecturerId) {
-        await supabase
-          .from('alerts')
-          .update({ is_read: true })
-          .eq('lecturer_id', lecturerId);
+      if (res.ok) {
+        success = true;
       }
-
-      setAlerts(prev => prev.map(a => ({ ...a, isRead: true })));
     } catch (err) {
-      console.error("Error marking all alerts as read:", err);
-      setAlerts(prev => prev.map(a => ({ ...a, isRead: true })));
+      console.warn("FastAPI offline or unreachable, falling back to direct Supabase mark-all-read:", err);
     }
+
+    if (!success && lecturerId) {
+      const { error } = await supabase
+        .from('alerts')
+        .update({ is_read: true })
+        .eq('lecturer_id', lecturerId);
+      if (error) {
+        console.error("Supabase direct mark all read error:", error);
+      }
+    }
+
+    setAlerts(prev => prev.map(a => ({ ...a, isRead: true })));
   };
 
   const filteredAlerts = alerts.filter(a => {
@@ -307,7 +321,13 @@ export default function AlertsPage() {
                   {/* Actions */}
                   <div className="flex flex-col items-end gap-2">
                     {alert.studentUuid && (
-                      <Link href={`/classes/${alert.studentUuid}`} className="flex items-center gap-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors">
+                      <Link 
+                        href={`/interventions?highlightStudentId=${alert.studentUuid}`}
+                        onClick={() => {
+                          if (!alert.isRead) markAsRead(alert.id);
+                        }}
+                        className="flex items-center gap-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors no-underline cursor-pointer"
+                      >
                         Review Case <ArrowRight size={14} />
                       </Link>
                     )}

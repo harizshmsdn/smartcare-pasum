@@ -169,7 +169,7 @@ export default function ClassAssessmentsPage() {
 
   // Calculate metrics
   const totalWeightage = assessments.reduce((sum, a) => sum + (a.weightage || 0), 0);
-  
+
   // Calculate average class score %
   let overallAvgScore = 0;
   if (rosterScores.length > 0 && assessments.length > 0) {
@@ -189,14 +189,14 @@ export default function ClassAssessmentsPage() {
 
   return (
     <main className="flex-1 p-8 h-screen flex flex-col bg-[#FAF9F6] overflow-y-auto">
-      
+
       {/* Header & Navigation */}
       <header className="shrink-0 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <div className="mb-4 sm:mb-5">
+          <div className="mb-4">
             <Link
               href={backUrl}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors bg-white border border-slate-200 px-3.5 py-1.5 rounded-xl shadow-sm"
+              className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600 transition-colors"
             >
               <ArrowLeft size={16} /> Back to Class Roster
             </Link>
@@ -231,9 +231,8 @@ export default function ClassAssessmentsPage() {
                     setSelectedClassName(cls.name);
                     setIsDropdownOpen(false);
                   }}
-                  className={`w-full text-left px-4 py-3 text-sm hover:bg-slate-50 transition-colors cursor-pointer ${
-                    selectedClassId === cls.id ? 'bg-blue-50/50 text-blue-700 font-bold' : 'text-slate-700'
-                  }`}
+                  className={`w-full text-left px-4 py-3 text-sm hover:bg-slate-50 transition-colors cursor-pointer ${selectedClassId === cls.id ? 'bg-blue-50/50 text-blue-700 font-bold' : 'text-slate-700'
+                    }`}
                 >
                   {cls.name}
                 </button>
@@ -288,38 +287,43 @@ export default function ClassAssessmentsPage() {
 
       {/* Main Content Container */}
       <div className="flex-1 min-h-0 bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col overflow-hidden mb-4">
-        
+
         {/* Navigation Tabs */}
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 bg-white shrink-0">
           <div className="flex gap-2">
             <button
               onClick={() => setActiveTab("matrix")}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer border-none ${
-                activeTab === "matrix" ? "bg-slate-900 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100 bg-transparent"
-              }`}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer border-none flex items-center gap-2 ${activeTab === "matrix" ? "bg-slate-900 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100 bg-transparent"
+                }`}
             >
-              Overall Marks Matrix ({rosterScores.length})
+              <span>Overall Marks Matrix</span>
+              <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-bold ${activeTab === "matrix" ? "bg-white text-slate-900" : "bg-slate-100 text-slate-600"
+                }`}>
+                {rosterScores.length}
+              </span>
             </button>
             <button
               onClick={() => setActiveTab("list")}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer border-none ${
-                activeTab === "list" ? "bg-slate-900 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100 bg-transparent"
-              }`}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer border-none flex items-center gap-2 ${activeTab === "list" ? "bg-slate-900 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100 bg-transparent"
+                }`}
             >
-              Set Assessments ({assessments.length})
+              <span>Set Assessments</span>
+              <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-bold ${activeTab === "list" ? "bg-white text-slate-900" : "bg-slate-100 text-slate-600"
+                }`}>
+                {assessments.length}
+              </span>
             </button>
             <button
               onClick={() => setActiveTab("create")}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer border-none flex items-center gap-1.5 ${
-                activeTab === "create" ? "bg-slate-900 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100 bg-transparent"
-              }`}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer border-none flex items-center gap-1.5 ${activeTab === "create" ? "bg-slate-900 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100 bg-transparent"
+                }`}
             >
               <Plus size={16} /> New Assessment
             </button>
           </div>
 
           <div className="text-xs font-medium text-slate-400 hidden sm:block">
-            Auto-saves directly to Supabase & FastAPI database
+            Auto-saves directly to database
           </div>
         </div>
 
@@ -471,11 +475,10 @@ export default function ClassAssessmentsPage() {
                           <div>
                             <div className="flex items-center gap-2 mb-2">
                               <h4 className="font-bold text-slate-900 text-lg">{a.title}</h4>
-                              <span className={`text-xs font-bold uppercase px-2.5 py-0.5 rounded-md ${
-                                a.type === 'Midterm' ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' :
-                                a.type === 'Final' ? 'bg-sky-100 text-sky-700 border border-sky-200' :
-                                'bg-slate-100 text-slate-700 border border-slate-200'
-                              }`}>
+                              <span className={`text-xs font-bold uppercase px-2.5 py-0.5 rounded-md ${a.type === 'Midterm' ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' :
+                                  a.type === 'Final' ? 'bg-sky-100 text-sky-700 border border-sky-200' :
+                                    'bg-slate-100 text-slate-700 border border-slate-200'
+                                }`}>
                                 {a.type}
                               </span>
                             </div>

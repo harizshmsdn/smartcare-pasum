@@ -24,7 +24,10 @@ import {
   BookOpen,
   FileSpreadsheet,
   Plus,
-  Save
+  Save,
+  Mail,
+  Eye,
+  Award
 } from "lucide-react";
 import { createClient } from "../../utils/supabase/client";
 import { useEffect } from "react";
@@ -33,6 +36,7 @@ interface StudentListItem {
   id: string;
   matricId: string;
   name: string;
+  email?: string;
   status: string;
   attendance: number;
   latestScore: number;
@@ -66,6 +70,7 @@ export default function ClassesPage() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [hasAnyActiveSession, setHasAnyActiveSession] = useState(false);
   const [nextSessionTime, setNextSessionTime] = useState<string>("Wed, 10:00 AM");
+  const [activeMenuStudentId, setActiveMenuStudentId] = useState<string | null>(null);
 
   // States for Assessments & Marks Modal
   const [isAssessmentsModalOpen, setIsAssessmentsModalOpen] = useState(false);
@@ -243,7 +248,8 @@ export default function ClassesPage() {
           profiles (
             id,
             full_name,
-            institutional_id
+            institutional_id,
+            email
           )
         `)
         .eq('class_id', selectedClassId);
@@ -261,6 +267,7 @@ export default function ClassesPage() {
             id: profile?.id || '',
             matricId: profile?.institutional_id || '',
             name: profile?.full_name || 'Unknown Student',
+            email: profile?.email || '',
             status,
             attendance,
             latestScore: attendance < 80 ? 45 : attendance < 90 ? 63 : 88,
@@ -376,7 +383,7 @@ export default function ClassesPage() {
       <div className="grid grid-cols-5 gap-5 mb-8" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}>
 
         {/* Card 1: Enrolled Students */}
-        <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4 min-w-0">
+        <div className="bg-white p-3 sm:p-3.5 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-3 min-w-0">
           <div className="bg-blue-50 p-3.5 rounded-2xl text-blue-600 shrink-0">
             <Users size={26} />
           </div>
@@ -411,15 +418,14 @@ export default function ClassesPage() {
         {/* Card 4: Assessments & Marks CTA Button */}
         <Link
           href={`/classes/assessments?classId=${selectedClassId}`}
-          className="bg-[#1e293b] hover:bg-slate-600 p-5 sm:p-6 rounded-3xl shadow-md flex items-center gap-5 sm:gap-6 group transition-all cursor-pointer border-none text-left min-w-0"
-          style={{ backgroundColor: '#1e293b' }}
+          className="bg-slate-900 p-5 sm:p-6 rounded-3xl shadow-md flex items-center gap-5 sm:gap-6 group hover:bg-slate-800 transition-all cursor-pointer min-w-0"
         >
           <div className="bg-white/10 p-3.5 rounded-2xl text-white group-hover:scale-110 group-hover:bg-blue-600 transition-all shrink-0">
             <BookOpen size={26} />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1">Grading & Exams</p>
-            <p className="text-lg sm:text-xl font-bold text-white leading-tight truncate">Assessments & Marks</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Grading & Exams</p>
+            <p className="text-lg sm:text-xl font-bold text-white leading-tight truncate">Assessments</p>
           </div>
         </Link>
 
@@ -483,7 +489,7 @@ export default function ClassesPage() {
             <thead>
               <tr className="bg-slate-50/50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100">
                 <th className="p-4 font-medium">Student</th>
-                <th className="p-4 font-medium">AI Risk Status</th>
+                <th className="p-4 font-medium">Risk Status</th>
                 <th className="p-4 font-medium">Attendance</th>
                 <th className="p-4 font-medium">Latest Score</th>
                 <th className="p-4 font-medium text-right">Actions</th>
@@ -501,7 +507,7 @@ export default function ClassesPage() {
                         </div>
                         <div>
                           <p className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">{student.name}</p>
-                          <p className="text-xs text-slate-500">{student.matricId} • Last seen {student.lastSeen}</p>
+                          <p className="text-xs text-slate-500">{student.matricId}</p>
                         </div>
                       </div>
                     </td>
@@ -535,9 +541,35 @@ export default function ClassesPage() {
                       </span>
                     </td>
                     <td className="p-4 text-right">
-                      <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                        <MoreVertical size={18} />
-                      </button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <a 
+                          href={student.email ? `mailto:${student.email}` : '#'}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!student.email) alert("No email address found for this student.");
+                          }}
+                          title="Send Email"
+                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-150 hover:scale-110 active:scale-95 cursor-pointer inline-flex items-center justify-center border-none bg-transparent"
+                        >
+                          <Mail size={16} />
+                        </a>
+                        <Link 
+                          href={`/interventions?studentId=${student.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          title="Flag for Intervention"
+                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-150 hover:scale-110 active:scale-95 cursor-pointer inline-flex items-center justify-center border-none bg-transparent"
+                        >
+                          <Calendar size={16} />
+                        </Link>
+                        <Link
+                          href={`/classes/${student.id}/merit-requests?classId=${selectedClassId}`}
+                          onClick={(e) => e.stopPropagation()}
+                          title="Verify Merits"
+                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-150 hover:scale-110 active:scale-95 cursor-pointer inline-flex items-center justify-center border-none bg-transparent"
+                        >
+                          <Award size={16} />
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))

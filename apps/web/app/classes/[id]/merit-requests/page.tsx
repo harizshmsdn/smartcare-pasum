@@ -4,17 +4,17 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { 
-  ArrowLeft, 
-  Award, 
-  Clock, 
-  CalendarDays, 
-  Check, 
-  CheckSquare, 
-  Square, 
-  Eye, 
-  FileText, 
-  X, 
+import {
+  ArrowLeft,
+  Award,
+  Clock,
+  CalendarDays,
+  Check,
+  CheckSquare,
+  Square,
+  Eye,
+  FileText,
+  X,
   ExternalLink,
   ShieldCheck
 } from "lucide-react";
@@ -111,7 +111,7 @@ export default function MeritRequestsPage() {
   }, [toastMessage]);
 
   const handleSelectRow = (id: string) => {
-    setSelectedIds(prev => 
+    setSelectedIds(prev =>
       prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
     );
   };
@@ -141,7 +141,7 @@ export default function MeritRequestsPage() {
         return;
       }
 
-      setRequests(prev => 
+      setRequests(prev =>
         prev.map(r => r.id === request.id ? { ...r, status: "verified" } : r)
       );
       setSelectedIds(prev => prev.filter(id => id !== request.id));
@@ -182,7 +182,7 @@ export default function MeritRequestsPage() {
         return;
       }
 
-      setRequests(prev => 
+      setRequests(prev =>
         prev.map(r => selectedIds.includes(r.id) ? { ...r, status: "verified" } : r)
       );
       setSelectedIds([]);
@@ -209,8 +209,8 @@ export default function MeritRequestsPage() {
   }
 
   return (
-    <main className="flex-1 p-8 overflow-y-auto bg-slate-50 relative font-sans">
-      
+    <main className="flex-1 p-8 overflow-y-auto bg-transparent relative font-sans">
+
       {/* Toast Alert Notification */}
       {toastMessage && (
         <div className="fixed top-8 right-8 z-50 flex items-center gap-3 bg-slate-900 border border-slate-800 text-white px-5 py-4 rounded-2xl shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300">
@@ -247,7 +247,7 @@ export default function MeritRequestsPage() {
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-right flex gap-6">
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Pending Claims</span>
-              <span className="text-2xl font-black text-blue-600">{pendingCount} requests</span>
+              <span className="text-2xl font-black text-blue-600">{pendingCount} </span>
             </div>
             <div className="border-l border-slate-200 pl-6">
               <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Approved This Session</span>
@@ -269,13 +269,13 @@ export default function MeritRequestsPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <button 
+            <button
               onClick={() => setSelectedIds([])}
               className="bg-transparent border-none text-slate-400 hover:text-white font-medium text-sm px-4 py-2 cursor-pointer transition-colors"
             >
               Cancel Selection
             </button>
-            <button 
+            <button
               onClick={verifySelectedBulk}
               className="bg-blue-600 hover:bg-blue-500 border-none text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-2"
             >
@@ -291,14 +291,14 @@ export default function MeritRequestsPage() {
           <h2 className="font-extrabold text-slate-900 text-lg">Merit Submissions</h2>
           <span className="text-xs text-slate-400 font-medium font-sans">Verify submissions by inspecting proof files</span>
         </div>
-        
+
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100 font-bold">
                 <th className="p-5 w-12 text-center">
-                  <button 
-                    onClick={handleSelectAll} 
+                  <button
+                    onClick={handleSelectAll}
                     disabled={requests.filter(r => r.status === "pending").length === 0}
                     className="bg-transparent border-none cursor-pointer flex items-center justify-center p-1 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-30"
                   >
@@ -320,22 +320,21 @@ export default function MeritRequestsPage() {
               {requests.map((request) => {
                 const isSelected = selectedIds.includes(request.id);
                 const isPending = request.status === "pending";
-                
+
                 return (
-                  <tr 
-                    key={request.id} 
-                    className={`transition-colors ${
-                      !isPending 
-                        ? "bg-emerald-50/20 hover:bg-emerald-50/30" 
-                        : isSelected 
-                          ? "bg-blue-50/20" 
+                  <tr
+                    key={request.id}
+                    className={`transition-colors ${!isPending
+                        ? "bg-emerald-50/20 hover:bg-emerald-50/30"
+                        : isSelected
+                          ? "bg-blue-50/20"
                           : "hover:bg-slate-50"
-                    }`}
+                      }`}
                   >
                     {/* Checkbox selector */}
                     <td className="p-5 text-center">
                       {isPending ? (
-                        <button 
+                        <button
                           onClick={() => handleSelectRow(request.id)}
                           className="bg-transparent border-none cursor-pointer flex items-center justify-center p-1 text-slate-400 hover:text-blue-600"
                         >
@@ -388,7 +387,7 @@ export default function MeritRequestsPage() {
 
                     {/* Proof Attachment */}
                     <td className="p-5">
-                      <button 
+                      <button
                         onClick={() => setInspectRequest(request)}
                         className="inline-flex items-center gap-2 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-100 hover:bg-blue-100/80 px-3.5 py-2 rounded-xl transition-all cursor-pointer font-sans"
                       >
@@ -400,7 +399,7 @@ export default function MeritRequestsPage() {
                     {/* Verification Status */}
                     <td className="p-5 text-right font-sans">
                       {isPending ? (
-                        <button 
+                        <button
                           onClick={() => verifyIndividual(request)}
                           className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm hover:shadow hover:scale-[1.02] active:scale-95 transition-all border-none cursor-pointer inline-flex items-center gap-1.5"
                         >
@@ -425,10 +424,10 @@ export default function MeritRequestsPage() {
       {inspectRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
-            
+
             {/* Modal Header */}
             <div className="bg-slate-900 p-6 text-white relative font-sans">
-              <button 
+              <button
                 onClick={() => setInspectRequest(null)}
                 className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors border-none cursor-pointer text-white"
               >
@@ -470,19 +469,19 @@ export default function MeritRequestsPage() {
               {/* Document/File Preview */}
               <div>
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Submitted Attachment Proof</h4>
-                
+
                 {inspectRequest.proofType === "image" ? (
                   <div className="relative border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-slate-900 group">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img 
-                      src={inspectRequest.proofUrl} 
-                      alt="Certificate Attachment" 
+                    <img
+                      src={inspectRequest.proofUrl}
+                      alt="Certificate Attachment"
                       className="w-full h-auto max-h-[300px] object-contain mx-auto"
                     />
                     <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <a 
-                        href={inspectRequest.proofUrl} 
-                        target="_blank" 
+                      <a
+                        href={inspectRequest.proofUrl}
+                        target="_blank"
                         rel="noreferrer"
                         className="bg-white hover:bg-slate-100 text-slate-800 px-4 py-2 rounded-xl text-xs font-bold shadow-md inline-flex items-center gap-1.5 no-underline transition-transform scale-95 group-hover:scale-100"
                       >
@@ -497,8 +496,8 @@ export default function MeritRequestsPage() {
                     </div>
                     <h5 className="font-bold text-slate-800 text-sm">Attachment: {inspectRequest.title.toLowerCase().replace(/ /g, "_")}.pdf</h5>
                     <p className="text-xs text-slate-400 mt-1 max-w-xs">PDF Document claims verification has been scanned and pre-approved by the PASUM administration office.</p>
-                    <a 
-                      href="#" 
+                    <a
+                      href="#"
                       onClick={(e) => { e.preventDefault(); alert("Mock download started!"); }}
                       className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 border border-blue-200 bg-white hover:bg-blue-50 px-4 py-2 rounded-xl shadow-sm transition-all"
                     >
@@ -511,14 +510,14 @@ export default function MeritRequestsPage() {
 
             {/* Modal Footer */}
             <div className="bg-slate-50 p-6 flex justify-end gap-3 border-t border-slate-150 font-sans">
-              <button 
+              <button
                 onClick={() => setInspectRequest(null)}
                 className="bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 font-semibold px-5 py-3 rounded-xl transition-all cursor-pointer"
               >
                 Close Inspect
               </button>
               {inspectRequest.status === "pending" && (
-                <button 
+                <button
                   onClick={() => {
                     verifyIndividual(inspectRequest);
                     setInspectRequest(null);

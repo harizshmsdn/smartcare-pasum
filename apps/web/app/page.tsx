@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "../utils/supabase/client";
+import BorderGlow from "../components/BorderGlow";
 import {
   QrCode,
   AlertTriangle,
@@ -328,10 +329,15 @@ export default function HomePage() {
             }
 
             return (
-              <div
+              <BorderGlow
                 key={cls.id}
                 onClick={() => !isCenter && setActiveIndex(index)}
-                className={`absolute w-full max-w-2xl bg-white rounded-3xl border border-slate-200 p-8 transition-all duration-700 ease-[cubic-bezier(0.25,0.8,0.25,1)] ${transformClasses}`}
+                backgroundColor="#ffffff"
+                borderRadius={24}
+                glowColor="220 90 60"
+                colors={['#3b82f6', '#8b5cf6', '#6366f1']}
+                animated={isCenter}
+                className={`absolute w-full max-w-2xl p-8 transition-all duration-700 ease-[cubic-bezier(0.25,0.8,0.25,1)] ${transformClasses}`}
               >
                 <div className="relative z-10 flex flex-col justify-between h-full gap-6">
                   <div className="flex justify-between items-start">
@@ -395,7 +401,7 @@ export default function HomePage() {
                     </div>
                   </div>
                 </div>
-              </div>
+              </BorderGlow>
             );
           })}
         </div>
@@ -417,36 +423,44 @@ export default function HomePage() {
               <Link
                 href={`/classes?classId=${item.id}`}
                 key={item.id}
-                className="block bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all group"
+                className="block group rounded-2xl"
               >
-                <div className="flex justify-between items-start mb-4">
-                  <div className={`p-2.5 rounded-xl ${item.type === 'Lecture' ? 'bg-indigo-100 text-indigo-600' :
-                    item.type === 'Tutorial' ? 'bg-emerald-100 text-emerald-600' :
-                      'bg-amber-100 text-amber-600'
-                    }`}>
-                    <Icon size={20} />
-                  </div>
-                  <span className="bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md">
-                    {item.type}
-                  </span>
-                </div>
-
-                <h4 className="font-bold text-slate-900 text-lg leading-tight mb-2 group-hover:text-blue-600 transition-colors">
-                  {item.title}
-                </h4>
-
-                <div className="space-y-2 mt-4 pt-4 border-t border-slate-100">
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <Clock size={16} className="text-slate-400" />
-                    <span className="font-medium">{item.time}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-slate-500">Overall Attendance</span>
-                    <span className={`font-bold ${item.attendance < 90 ? 'text-orange-600' : 'text-emerald-600'}`}>
-                      {item.attendance}%
+                <BorderGlow
+                  backgroundColor="#ffffff"
+                  borderRadius={16}
+                  glowColor="220 90 60"
+                  colors={['#3b82f6', '#8b5cf6', '#6366f1']}
+                  className="p-5 shadow-sm transition-all duration-300"
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div className={`p-2.5 rounded-xl ${item.type === 'Lecture' ? 'bg-indigo-100 text-indigo-600' :
+                      item.type === 'Tutorial' ? 'bg-emerald-100 text-emerald-600' :
+                        'bg-amber-100 text-amber-600'
+                      }`}>
+                      <Icon size={20} />
+                    </div>
+                    <span className="bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md">
+                      {item.type}
                     </span>
                   </div>
-                </div>
+
+                  <h4 className="font-bold text-slate-900 text-lg leading-tight mb-2 group-hover:text-blue-600 transition-colors">
+                    {item.title}
+                  </h4>
+
+                  <div className="space-y-2 mt-4 pt-4 border-t border-slate-100">
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                      <Clock size={16} className="text-slate-400" />
+                      <span className="font-medium">{item.time}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-slate-500">Overall Attendance</span>
+                      <span className={`font-bold ${item.attendance < 90 ? 'text-orange-600' : 'text-emerald-600'}`}>
+                        {item.attendance}%
+                      </span>
+                    </div>
+                  </div>
+                </BorderGlow>
               </Link>
             );
           })}

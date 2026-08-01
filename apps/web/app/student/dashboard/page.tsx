@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import BorderGlow from "../../../components/BorderGlow";
 import {
   TrendingUp,
   Award,
@@ -216,7 +217,13 @@ export default function StudentDashboardPage() {
       {/* Bento Grid */}
       <div className="flex-1 grid grid-cols-1 md:grid-cols-3 grid-rows-2 gap-6 min-h-0 pb-2">
         {/* Trajectory line chart */}
-        <div className="md:col-span-2 bg-white rounded-3xl border border-slate-200 p-6 shadow-sm flex flex-col min-h-0 relative">
+        <BorderGlow
+          backgroundColor="#ffffff"
+          borderRadius={24}
+          glowColor="220 90 60"
+          colors={['#3b82f6', '#8b5cf6', '#6366f1']}
+          className="md:col-span-2 p-6 shadow-sm flex flex-col min-h-0 relative"
+        >
           <div className="shrink-0 mb-4 flex justify-between items-center">
             <div>
               <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2">
@@ -259,10 +266,16 @@ export default function StudentDashboardPage() {
               <div className="flex items-center justify-center h-full text-slate-400">No trajectory data available.</div>
             )}
           </div>
-        </div>
+        </BorderGlow>
 
         {/* Total Merits Card */}
-        <div className="bg-[#0b2240] rounded-3xl border border-slate-800 p-8 shadow-sm flex flex-col relative overflow-hidden">
+        <BorderGlow
+          backgroundColor="#0b2240"
+          borderRadius={24}
+          glowColor="38 92 50" // amber glow
+          colors={['#f59e0b', '#d97706', '#fbbf24']}
+          className="p-8 shadow-sm flex flex-col relative overflow-hidden"
+        >
           <div className="absolute -right-10 -top-10 w-40 h-40 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
 
           <h3 className="font-bold text-white text-xl flex items-center gap-2 mb-3 z-10 shrink-0">
@@ -286,10 +299,16 @@ export default function StudentDashboardPage() {
           >
             Claim Merit Points <ChevronRight size={16} />
           </Link>
-        </div>
+        </BorderGlow>
 
         {/* CA Performance Chart (Selectable by Class) */}
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm flex flex-col min-h-0">
+        <BorderGlow
+          backgroundColor="#ffffff"
+          borderRadius={24}
+          glowColor="220 90 60"
+          colors={['#3b82f6', '#8b5cf6', '#6366f1']}
+          className="p-6 shadow-sm flex flex-col min-h-0"
+        >
           <div className="shrink-0 mb-4 flex justify-between items-center">
             <div>
               <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
@@ -331,10 +350,16 @@ export default function StudentDashboardPage() {
               <div className="flex items-center justify-center h-full text-slate-400">No data.</div>
             )}
           </div>
-        </div>
+        </BorderGlow>
 
         {/* Best Performing Subjects Progress bars */}
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm flex flex-col min-h-0">
+        <BorderGlow
+          backgroundColor="#ffffff"
+          borderRadius={24}
+          glowColor="142 70 45"
+          colors={['#10b981', '#059669', '#34d399']}
+          className="p-6 shadow-sm flex flex-col min-h-0"
+        >
           <div className="shrink-0 mb-4">
             <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
               <GraduationCap className="text-emerald-500" size={18} />
@@ -365,10 +390,16 @@ export default function StudentDashboardPage() {
               </div>
             ))}
           </div>
-        </div>
+        </BorderGlow>
 
         {/* Mid-term vs Finals Matrix Chart */}
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm flex flex-col min-h-0">
+        <BorderGlow
+          backgroundColor="#ffffff"
+          borderRadius={24}
+          glowColor="199 89 48"
+          colors={['#38bdf8', '#0ea5e9', '#7dd3fc']}
+          className="p-6 shadow-sm flex flex-col min-h-0"
+        >
           <div className="shrink-0 mb-4">
             <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
               <BookOpen className="text-sky-500" size={18} />
@@ -389,7 +420,7 @@ export default function StudentDashboardPage() {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </BorderGlow>
       </div>
     </main>
   );
