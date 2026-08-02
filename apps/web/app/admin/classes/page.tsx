@@ -264,19 +264,29 @@ export default function AdminClassesPage() {
       <div className="flex bg-slate-100 p-1 rounded-2xl w-full sm:w-80 shadow-sm border border-slate-200">
         <button
           onClick={() => setActiveTab("classes")}
-          className={`flex-1 px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${
+          className={`flex-1 px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
             activeTab === "classes" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
           }`}
         >
-          Classes ({classes.length})
+          <span>Classes</span>
+          <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold ${
+            activeTab === "classes" ? "bg-blue-100 text-blue-700" : "bg-slate-200 text-slate-600"
+          }`}>
+            {classes.length}
+          </span>
         </button>
         <button
           onClick={() => setActiveTab("subjects")}
-          className={`flex-1 px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${
+          className={`flex-1 px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
             activeTab === "subjects" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
           }`}
         >
-          Subjects ({subjects.length})
+          <span>Subjects</span>
+          <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold ${
+            activeTab === "subjects" ? "bg-blue-100 text-blue-700" : "bg-slate-200 text-slate-600"
+          }`}>
+            {subjects.length}
+          </span>
         </button>
       </div>
 

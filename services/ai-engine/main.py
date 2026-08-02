@@ -1844,10 +1844,16 @@ class AdminUserCreateRequest(BaseModel):
     full_name: str
     email: str
     role: str
-    institutional_id: Optional[str] = None
+    institutional_id: str
+    affiliation: str
     phone_number: Optional[str] = None
     office_location: Optional[str] = None
-    affiliation: Optional[str] = None
+
+    @validator('full_name', 'email', 'role', 'institutional_id', 'affiliation')
+    def check_mandatory(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Mandatory field cannot be empty')
+        return v.strip()
 
 class AdminUserUpdateRequest(BaseModel):
     full_name: str
@@ -1886,6 +1892,21 @@ class AdminInterventionUpdateRequest(BaseModel):
 class AdminMeritReviewRequest(BaseModel):
     status: str
     awarded_points: float
+
+class AdminSettingsUpdateRequest(BaseModel):
+    attendance_threshold: int = Field(default=80, ge=50, le=100)
+    default_geofence_radius: int = Field(default=50, ge=10, le=500)
+    grade_drop_threshold: int = Field(default=20, ge=5, le=50)
+    mandatory_face_id: bool = True
+    mandatory_location: bool = True
+    max_merit_points_per_claim: float = Field(default=50.0, ge=1.0, le=500.0)
+    default_merit_points_recommended: float = Field(default=10.0, ge=1.0, le=100.0)
+    auto_email_absence_alert: bool = True
+    auto_escalate_intervention_days: int = Field(default=3, ge=1, le=30)
+    maintenance_mode: bool = False
+    default_user_password: str = Field(default="password123", min_length=6)
+    session_timeout_hours: int = Field(default=12, ge=1, le=168)
+    enable_audit_logs: bool = True
 
 def check_user_auth(cur, user_id: str, required_role: Optional[str] = None) -> dict:
     """Verifies that the user exists, returns their profile, and optionally validates their role."""
@@ -2057,6 +2078,9 @@ def create_admin_user(req: AdminUserCreateRequest, user: dict = Depends(get_curr
     try:
         with conn.cursor() as cur:
             check_admin_auth(user, cur)
+            if req.role == 'lecturer' and (not req.office_location or not req.office_location.strip()):
+                raise HTTPException(status_code=400, detail="Office location is mandatory for lecturer accounts.")
+
             # Check if email is already taken
             cur.execute("SELECT id FROM public.profiles WHERE email = %s LIMIT 1;", (req.email,))
             if cur.fetchone():
@@ -2382,6 +2406,79 @@ def review_admin_merit_claim(claim_id: str, req: AdminMeritReviewRequest, user: 
             """, (req.status, req.awarded_points, user["id"], claim_id))
             conn.commit()
             return {"status": "success"}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+
+# ----------------- SYSTEM SETTINGS -----------------
+DEFAULT_SYSTEM_SETTINGS = {
+    "attendance_threshold": 80,
+    "default_geofence_radius": 50,
+    "grade_drop_threshold": 20,
+    "mandatory_face_id": True,
+    "mandatory_location": True,
+    "max_merit_points_per_claim": 50.0,
+    "default_merit_points_recommended": 10.0,
+    "auto_email_absence_alert": True,
+    "auto_escalate_intervention_days": 3,
+    "maintenance_mode": False,
+    "default_user_password": "password123",
+    "session_timeout_hours": 12,
+    "enable_audit_logs": True
+}
+
+def ensure_system_settings_table(cur):
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS public.system_settings (
+            key VARCHAR(100) PRIMARY KEY,
+            value JSONB NOT NULL,
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()) NOT NULL
+        );
+    """)
+
+@app.get("/api/admin/settings")
+def get_admin_settings(user: dict = Depends(get_current_user)):
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            check_admin_auth(user, cur)
+            ensure_system_settings_table(cur)
+            cur.execute("SELECT key, value FROM public.system_settings;")
+            rows = cur.fetchall() or []
+            
+            settings = dict(DEFAULT_SYSTEM_SETTINGS)
+            for r in rows:
+                k = r["key"]
+                v = r["value"]
+                if k in settings:
+                    settings[k] = v
+            return {"settings": settings}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+@app.post("/api/admin/settings")
+def update_admin_settings(req: AdminSettingsUpdateRequest, user: dict = Depends(get_current_user)):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            check_admin_auth(user, cur)
+            ensure_system_settings_table(cur)
+            
+            data = req.dict()
+            for key, value in data.items():
+                cur.execute("""
+                    INSERT INTO public.system_settings (key, value, updated_at)
+                    VALUES (%s, %s, current_timestamp)
+                    ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = current_timestamp;
+                """, (key, json.dumps(value)))
+                
+            conn.commit()
+            return {"status": "success", "message": "System configuration saved successfully."}
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=500, detail=str(e))

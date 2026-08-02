@@ -205,19 +205,29 @@ export default function AdminCasesPage() {
       <div className="flex bg-slate-100 p-1 rounded-2xl w-full sm:w-96 shadow-sm border border-slate-200">
         <button
           onClick={() => setActiveTab("interventions")}
-          className={`flex-1 px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${
+          className={`flex-1 px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
             activeTab === "interventions" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
           }`}
         >
-          Interventions ({interventions.length})
+          <span>Interventions</span>
+          <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold ${
+            activeTab === "interventions" ? "bg-blue-100 text-blue-700" : "bg-slate-200 text-slate-600"
+          }`}>
+            {interventions.length}
+          </span>
         </button>
         <button
           onClick={() => setActiveTab("claims")}
-          className={`flex-1 px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${
+          className={`flex-1 px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
             activeTab === "claims" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
           }`}
         >
-          Merit Claims ({claims.length})
+          <span>Merit Claims</span>
+          <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold ${
+            activeTab === "claims" ? "bg-blue-100 text-blue-700" : "bg-slate-200 text-slate-600"
+          }`}>
+            {claims.length}
+          </span>
         </button>
       </div>
 

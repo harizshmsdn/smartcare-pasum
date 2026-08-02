@@ -27,11 +27,11 @@ function buildBoxShadow(glowColor: string, intensity: number): string {
   const { h, s, l } = parseHSL(glowColor);
   const base = `${h}deg ${s}% ${l}%`;
   const layers: [number, number, number, number, number, boolean][] = [
-    [0, 0, 0, 1, 100, true], [0, 0, 1, 0, 60, true], [0, 0, 3, 0, 50, true],
-    [0, 0, 6, 0, 40, true], [0, 0, 15, 0, 30, true], [0, 0, 25, 2, 20, true],
-    [0, 0, 50, 2, 10, true],
+    [0, 0, 1, 0, 60, true], [0, 0, 3, 0, 50, true],
+    [0, 0, 6, 0, 40, true], [0, 0, 15, 0, 30, true], [0, 0, 25, 0, 20, true],
+    [0, 0, 50, 0, 10, true],
     [0, 0, 1, 0, 60, false], [0, 0, 3, 0, 50, false], [0, 0, 6, 0, 40, false],
-    [0, 0, 15, 0, 30, false], [0, 0, 25, 2, 20, false], [0, 0, 50, 2, 10, false],
+    [0, 0, 15, 0, 30, false], [0, 0, 25, 0, 20, false], [0, 0, 50, 0, 10, false],
   ];
   return layers.map(([x, y, blur, spread, alpha, inset]) => {
     const a = Math.min(alpha * intensity, 100);
@@ -223,7 +223,6 @@ const BorderGlow: React.FC<BorderGlowProps> = ({
       style={{
         borderRadius: borderRadiusStyle,
         transform: 'translate3d(0, 0, 0.01px)',
-        boxShadow: 'rgba(0,0,0,0.08) 0 4px 12px, rgba(0,0,0,0.03) 0 1px 3px',
         ...rest.style
       }}
       {...rest}
@@ -242,11 +241,10 @@ const BorderGlow: React.FC<BorderGlowProps> = ({
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          border: '1px solid transparent',
+          border: '1.5px solid transparent',
           borderRadius: borderRadiusStyle,
           background: [
-            `linear-gradient(${backgroundColor} 0 100%) padding-box`,
-            'linear-gradient(rgb(255 255 255 / 0%) 0% 100%) border-box',
+            `linear-gradient(${backgroundColor}, ${backgroundColor}) padding-box`,
             ...borderBg,
           ].join(', '),
           opacity: borderOpacity,

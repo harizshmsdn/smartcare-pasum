@@ -91,6 +91,14 @@ export default function AdminUsersPage() {
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!fullName.trim() || !email.trim() || !institutionalId.trim() || !affiliation.trim()) {
+      alert("Please fill in all mandatory fields (Full Name, Email, Institutional ID, Affiliation). Only Phone Number is optional.");
+      return;
+    }
+    if (role === 'lecturer' && !officeLocation.trim()) {
+      alert("Office Location is mandatory for lecturer accounts.");
+      return;
+    }
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
@@ -102,13 +110,13 @@ export default function AdminUsersPage() {
           Authorization: `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
-          full_name: fullName,
-          email,
+          full_name: fullName.trim(),
+          email: email.trim(),
           role,
-          institutional_id: institutionalId || null,
-          phone_number: phoneNumber || null,
-          office_location: officeLocation || null,
-          affiliation: affiliation || null
+          institutional_id: institutionalId.trim(),
+          phone_number: phoneNumber.trim() || null,
+          office_location: officeLocation.trim() || null,
+          affiliation: affiliation.trim()
         })
       });
 
@@ -363,7 +371,7 @@ export default function AdminUsersPage() {
             <form onSubmit={handleAddUser} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700">Full Name</label>
+                  <label className="text-xs font-bold text-slate-700">Full Name <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     required
@@ -374,7 +382,7 @@ export default function AdminUsersPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700">Email Address</label>
+                  <label className="text-xs font-bold text-slate-700">Email Address <span className="text-red-500">*</span></label>
                   <input
                     type="email"
                     required
@@ -388,8 +396,9 @@ export default function AdminUsersPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700">Role</label>
+                  <label className="text-xs font-bold text-slate-700">Role <span className="text-red-500">*</span></label>
                   <select
+                    required
                     value={role}
                     onChange={(e) => setRole(e.target.value as any)}
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-slate-800 bg-white"
@@ -400,9 +409,10 @@ export default function AdminUsersPage() {
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700">Institutional ID</label>
+                  <label className="text-xs font-bold text-slate-700">Institutional ID <span className="text-red-500">*</span></label>
                   <input
                     type="text"
+                    required
                     value={institutionalId}
                     onChange={(e) => setInstitutionalId(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-slate-800"
@@ -412,7 +422,7 @@ export default function AdminUsersPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">Phone Number</label>
+                <label className="text-xs font-bold text-slate-700">Phone Number <span className="text-slate-400 font-normal">(Optional)</span></label>
                 <input
                   type="text"
                   value={phoneNumber}
@@ -424,9 +434,10 @@ export default function AdminUsersPage() {
 
               {role === 'lecturer' && (
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700">Office Location</label>
+                  <label className="text-xs font-bold text-slate-700">Office Location <span className="text-red-500">*</span></label>
                   <input
                     type="text"
+                    required
                     value={officeLocation}
                     onChange={(e) => setOfficeLocation(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-slate-800"
@@ -436,9 +447,10 @@ export default function AdminUsersPage() {
               )}
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">Affiliation / Stream / Department</label>
+                <label className="text-xs font-bold text-slate-700">Affiliation / Stream / Department <span className="text-red-500">*</span></label>
                 <input
                   type="text"
+                  required
                   value={affiliation}
                   onChange={(e) => setAffiliation(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-slate-800"

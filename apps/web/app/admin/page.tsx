@@ -141,16 +141,16 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <main className="flex-1 flex flex-col p-8 lg:p-10 bg-transparent h-screen overflow-hidden min-h-0">
+    <main className="flex-1 flex flex-col p-6 lg:p-8 bg-transparent h-screen overflow-hidden min-h-0">
 
       {/* Page Header */}
-      <div className="shrink-0 mb-6">
-        <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">System Performance & Insights</h2>
-        <p className="text-base text-slate-500 mt-1">Platform management console powered entirely by Supabase database metrics.</p>
+      <div className="shrink-0 mb-3">
+        <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">System Performance & Insights</h2>
+        <p className="text-sm text-slate-500 mt-0.5">Platform management console powered entirely by Supabase database metrics.</p>
       </div>
 
-      {/* Flexible, Stretching Bento Grid (3-column layout) */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0 overflow-y-auto pb-4 pr-1">
+      {/* Flexible, Equal-Height Bento Grid (3-column x 3-row layout) */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 lg:grid-rows-[auto_1fr_1fr] gap-4 lg:gap-5 min-h-0 h-full overflow-hidden pb-1 pr-1">
 
         {/* Bento Cell 1: Platform Overview (Col span 2) */}
         <BorderGlow
@@ -158,7 +158,7 @@ export default function AdminDashboardPage() {
           borderRadius={24}
           glowColor="220 90 60"
           colors={['#3b82f6', '#8b5cf6', '#6366f1']}
-          className="lg:col-span-2 border-l-8 border-l-blue-500 p-8 shadow-sm text-white flex flex-col justify-between relative overflow-hidden min-h-[220px]"
+          className="lg:col-span-2 p-6 shadow-sm text-white flex flex-col justify-between relative overflow-hidden h-full"
         >
           <div className="absolute -right-20 -top-20 w-60 h-60 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -197,7 +197,7 @@ export default function AdminDashboardPage() {
           borderRadius={24}
           glowColor="250 84 54"
           colors={['#8b5cf6', '#a855f7', '#d8b4fe']}
-          className="lg:col-span-1 text-white border-l-8 border-l-indigo-500 p-8 shadow-sm flex flex-col justify-between min-h-[220px]"
+          className="lg:col-span-1 text-white p-6 shadow-sm flex flex-col justify-between h-full overflow-hidden"
         >
           <div>
             <span className="text-indigo-300 text-xs font-bold uppercase tracking-widest block">Site Analytics</span>
@@ -224,7 +224,7 @@ export default function AdminDashboardPage() {
           borderRadius={24}
           glowColor="142 70 45"
           colors={['#10b981', '#059669', '#34d399']}
-          className="lg:col-span-1 text-white border-l-8 border-l-emerald-400 p-8 shadow-sm flex flex-col justify-between min-h-[220px]"
+          className="lg:col-span-1 text-white p-6 shadow-sm flex flex-col justify-between h-full overflow-hidden"
         >
           <div>
             <span className="text-emerald-300 text-xs font-bold uppercase tracking-widest block">Check-In Accuracy</span>
@@ -245,7 +245,7 @@ export default function AdminDashboardPage() {
           borderRadius={24}
           glowColor="220 90 60"
           colors={['#3b82f6', '#8b5cf6', '#6366f1']}
-          className="lg:col-span-2 border-t-8 border-t-blue-600 p-8 shadow-sm flex flex-col space-y-6 min-h-[350px]"
+          className="lg:col-span-2 p-6 shadow-sm flex flex-col space-y-3 h-full overflow-hidden"
         >
           <div>
             <h3 className="font-extrabold text-slate-900 text-xl flex items-center gap-2">
@@ -281,39 +281,39 @@ export default function AdminDashboardPage() {
         {/* Bento Cell 5: Database Volume & Resource Indicators (Col span 1) */}
         <BorderGlow
           backgroundColor="#0f172a"
-          borderRadius={24}
+          borderRadius={20}
           glowColor="210 30 40"
           colors={['#64748b', '#475569', '#94a3b8']}
-          className="lg:col-span-1 text-white border-l-8 border-l-slate-400 p-8 shadow-sm flex flex-col justify-between min-h-[350px]"
+          className="lg:col-span-1 text-white p-4 lg:p-5 shadow-sm flex flex-col justify-between h-full overflow-hidden"
         >
           <div>
-            <h3 className="font-extrabold text-white text-xl flex items-center gap-2">
-              <Database size={20} className="text-slate-400" /> Schema Metrics
+            <h3 className="font-extrabold text-white text-base flex items-center gap-2">
+              <Database size={18} className="text-slate-400" /> Schema Metrics
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">Database storage allocation details.</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">Database storage allocation details.</p>
           </div>
 
-          <div className="space-y-4 py-4 z-10">
-            <div className="flex justify-between items-center pb-2.5 border-b border-slate-800">
-              <span className="text-base text-slate-300 font-semibold">User Profiles</span>
-              <span className="font-bold text-white text-xl">{metrics.total_profiles}</span>
+          <div className="space-y-1.5 py-1 z-10">
+            <div className="flex justify-between items-center pb-1 border-b border-slate-800">
+              <span className="text-xs text-slate-300 font-semibold">User Profiles</span>
+              <span className="font-bold text-white text-sm">{metrics.total_profiles}</span>
             </div>
-            <div className="flex justify-between items-center pb-2.5 border-b border-slate-800">
-              <span className="text-base text-slate-300 font-semibold">Active Support Cases</span>
-              <span className="font-bold text-white text-xl">{metrics.active_interventions_count}</span>
+            <div className="flex justify-between items-center pb-1 border-b border-slate-800">
+              <span className="text-xs text-slate-300 font-semibold">Active Support Cases</span>
+              <span className="font-bold text-white text-sm">{metrics.active_interventions_count}</span>
             </div>
-            <div className="flex justify-between items-center pb-2.5 border-b border-slate-800">
-              <span className="text-base text-slate-300 font-semibold">Pending Merit Claims</span>
-              <span className="font-bold text-white text-xl">{metrics.pending_claims_count}</span>
+            <div className="flex justify-between items-center pb-1 border-b border-slate-800">
+              <span className="text-xs text-slate-300 font-semibold">Pending Merit Claims</span>
+              <span className="font-bold text-white text-sm">{metrics.pending_claims_count}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-base text-slate-300 font-semibold">Unread System Alerts</span>
-              <span className="font-bold text-white text-xl">{metrics.unread_alerts_count}</span>
+              <span className="text-xs text-slate-300 font-semibold">Unread System Alerts</span>
+              <span className="font-bold text-white text-sm">{metrics.unread_alerts_count}</span>
             </div>
           </div>
 
-          <div className="bg-slate-800/50 p-4 rounded-2xl flex items-center gap-2 text-xs text-slate-300 font-bold z-10 border border-slate-700/35">
-            <CheckCircle size={16} className="text-emerald-400" /> Database Healthy
+          <div className="bg-slate-800/50 p-2 rounded-xl flex items-center gap-2 text-[11px] text-slate-300 font-bold z-10 border border-slate-700/35">
+            <CheckCircle size={14} className="text-emerald-400" /> Database Healthy
           </div>
         </BorderGlow>
 
@@ -323,7 +323,7 @@ export default function AdminDashboardPage() {
           borderRadius={24}
           glowColor="38 92 50"
           colors={['#f59e0b', '#d97706', '#fbbf24']}
-          className="lg:col-span-1 border-l-8 border-l-amber-500 p-6 shadow-sm flex flex-col space-y-4 min-h-[300px]"
+          className="lg:col-span-1 p-6 shadow-sm flex flex-col space-y-4 h-full overflow-hidden"
         >
           <div>
             <h4 className="font-extrabold text-slate-900 text-base flex items-center gap-1.5">
@@ -358,7 +358,7 @@ export default function AdminDashboardPage() {
           borderRadius={24}
           glowColor="346 84 61"
           colors={['#ef4444', '#f43f5e', '#fda4af']}
-          className="lg:col-span-1 border-l-8 border-l-rose-500 p-6 shadow-sm flex flex-col space-y-4 min-h-[300px]"
+          className="lg:col-span-1 p-6 shadow-sm flex flex-col space-y-4 h-full overflow-hidden"
         >
           <div>
             <h4 className="font-extrabold text-slate-900 text-base flex items-center gap-1.5">
