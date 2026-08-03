@@ -4,11 +4,14 @@ import BottomNav from '../components/BottomNav.jsx'
 import { useApp } from '../AppContext.jsx'
 import { supabase } from '../supabaseClient.js'
 
+const CATEGORIES = ['Academic', 'Leadership', 'Sports', 'Volunteering', 'Others']
+
 export default function AddMerit() {
   const navigate = useNavigate()
   const { addMerit } = useApp()
 
   const [name, setName] = useState('')
+  const [category, setCategory] = useState('')
   const [level, setLevel] = useState('')
   const [roles, setRoles] = useState('')
   const [photo, setPhoto] = useState(null)
@@ -17,7 +20,7 @@ export default function AddMerit() {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!name || !level || !roles) {
+    if (!name || !category || !level || !roles) {
       setError('Please fill in all fields.')
       return
     }
@@ -55,6 +58,7 @@ export default function AddMerit() {
     // Include status: 'pending' so the user knows it is undergoing checking
     await addMerit({ 
       name, 
+      category,
       level, 
       roles, 
       proofUrl, 
@@ -103,6 +107,31 @@ export default function AddMerit() {
               if (error) setError('')
             }} 
           />
+        </div>
+
+        <div className="field">
+          <label>Category</label>
+          <select
+            value={category}
+            onChange={(e) => {
+              setCategory(e.target.value)
+              if (error) setError('')
+            }}
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              borderRadius: '10px',
+              border: '1px solid #d0d7de',
+              backgroundColor: '#fff',
+              fontSize: '14px',
+              color: category ? '#1f2937' : '#6b7280'
+            }}
+          >
+            <option value="" disabled>Select Category</option>
+            {CATEGORIES.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
         </div>
 
         <div className="field">

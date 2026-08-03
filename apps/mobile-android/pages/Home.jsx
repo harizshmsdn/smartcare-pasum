@@ -2,16 +2,98 @@ import { useNavigate } from 'react-router-dom'
 import { useApp } from '../AppContext.jsx'
 import BottomNav from '../components/BottomNav.jsx'
 
+const DAYS_ORDER = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+// Pull the list of days a schedule item recurs on, no matter how the value
+// is stored — an array of day names, a comma-separated string, or a
+// descriptive string like "Every Wednesday". We match by checking which
+// weekday names appear *inside* the stored value rather than requiring an
+// exact match, since "Every Wednesday" !== "Wednesday" as a strict equality.
+function getFrequencyDays(item) {
+  let rawEntries = []
+  if (Array.isArray(item.frequency)) {
+    rawEntries = item.frequency
+  } else if (typeof item.frequency === 'string') {
+    rawEntries = item.frequency.split(',').map((d) => d.trim())
+  }
+
+  return DAYS_ORDER.filter((day) =>
+    rawEntries.some((entry) => typeof entry === 'string' && entry.toLowerCase().includes(day.toLowerCase()))
+  )
+}
+
+// Extract "HH:MM" start/end strings whether the item has explicit
+// startTime/endTime fields or only a combined "HH:MM - HH:MM" time string.
+function getStartTime(item) {
+  if (item.startTime) return item.startTime
+  if (typeof item.time === 'string' && item.time.includes('-')) {
+    return item.time.split('-')[0].trim()
+  }
+  return null
+}
+
+function getEndTime(item) {
+  if (item.endTime) return item.endTime
+  if (typeof item.time === 'string' && item.time.includes('-')) {
+    return item.time.split('-')[1].trim()
+  }
+  return null
+}
+
+function sortSchedule(scheduleList) {
+  const now = new Date()
+  const todayName = now.toLocaleDateString('en-US', { weekday: 'long' })
+  const currentTime = now.toTimeString().slice(0, 5) // "HH:MM", comparable as a string
+  const todayIndex = DAYS_ORDER.indexOf(todayName)
+
+  // How many days away the given day name is from today (0 = today, 1 = tomorrow, ...)
+  function dayDistance(dayName) {
+    const idx = DAYS_ORDER.indexOf(dayName)
+    if (idx === -1) return 999
+    const diff = idx - todayIndex
+    return diff < 0 ? diff + 7 : diff
+  }
+
+  function classify(item) {
+    const days = getFrequencyDays(item)
+    const endTime = getEndTime(item)
+    const isToday = days.includes(todayName)
+    const hasEnded = isToday && endTime && endTime <= currentTime
+
+    if (isToday && !hasEnded) {
+      // Today's classes that haven't finished yet: top of the list.
+      return { group: 0, sortTime: getStartTime(item) || '00:00' }
+    }
+    if (hasEnded) {
+      // Today's classes that already finished: bottom of the list.
+      return { group: 2, sortTime: getStartTime(item) || '00:00' }
+    }
+    // Everything else: ordered by how many days away it is, then by time.
+    const nearestDistance = days.reduce((min, d) => Math.min(min, dayDistance(d)), 999)
+    return { group: 1, sortTime: getStartTime(item) || '00:00', distance: nearestDistance }
+  }
+
+  return [...scheduleList]
+    .map((item) => ({ item, meta: classify(item) }))
+    .sort((a, b) => {
+      if (a.meta.group !== b.meta.group) return a.meta.group - b.meta.group
+      if (a.meta.group === 1 && a.meta.distance !== b.meta.distance) {
+        return a.meta.distance - b.meta.distance
+      }
+      return a.meta.sortTime.localeCompare(b.meta.sortTime)
+    })
+    .map(({ item }) => item)
+}
+
 export default function Home() {
   const navigate = useNavigate()
-  const { user, schedule } = useApp()
+  const { user, schedule, notifications } = useApp()
 
   const userName = user?.name || 'Name'
 
-  const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' })
-  const todaySchedule = (schedule || []).filter(
-    (item) => typeof item.frequency === 'string' && item.frequency.includes(todayName)
-  )
+  const allSchedule = sortSchedule(schedule || [])
+
+  const hasUnreadNotifications = (notifications || []).some((n) => !n.read)
 
   const shortcuts = [
     { 
@@ -108,17 +190,19 @@ export default function Home() {
               <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
               <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
             </svg>
-            <span 
-              style={{
-                position: 'absolute',
-                top: '8px',
-                right: '9px',
-                width: '6px',
-                height: '6px',
-                backgroundColor: '#ef4444',
-                borderRadius: '50%'
-              }}
-            />
+            {hasUnreadNotifications && (
+              <span 
+                style={{
+                  position: 'absolute',
+                  top: '8px',
+                  right: '9px',
+                  width: '6px',
+                  height: '6px',
+                  backgroundColor: '#ef4444',
+                  borderRadius: '50%'
+                }}
+              />
+            )}
           </button>
         </div>
 
@@ -171,12 +255,12 @@ export default function Home() {
 
       <div style={{ padding: '20px 20px 100px 20px' }}>
         <h3 style={{ margin: '0 0 14px 0', fontSize: '16px', fontWeight: '700', color: '#1e293b' }}>
-          Classrooms
+          Schedule
         </h3>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {todaySchedule.length > 0 ? (
-            todaySchedule.map((item, idx) => (
+          {allSchedule.length > 0 ? (
+            allSchedule.map((item, idx) => (
               <div
                 key={item.id || idx}
                 style={{
@@ -199,10 +283,13 @@ export default function Home() {
                 <p style={{ margin: 0, fontSize: '12px', color: '#64748b', fontWeight: '500' }}>
                   {item.time}
                 </p>
+                <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#94a3b8', fontWeight: '500' }}>
+                  {Array.isArray(item.frequency) ? item.frequency.join(', ') : item.frequency}
+                </p>
               </div>
             ))
           ) : (
-            <p style={{ color: '#64748b', fontSize: '13px', textAlign: 'center' }}>No classrooms scheduled today.</p>
+            <p style={{ color: '#64748b', fontSize: '13px', textAlign: 'center' }}>No schedule entries yet.</p>
           )}
         </div>
       </div>
