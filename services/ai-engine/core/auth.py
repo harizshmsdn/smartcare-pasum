@@ -45,3 +45,32 @@ def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
         except Exception as fallback_err:
             print(f"Fallback unverified decode failed: {str(fallback_err)}")
         raise HTTPException(status_code=401, detail=f"Could not validate credentials: {str(e)}")
+
+
+def check_user_auth(cur, user_id: str, required_role: str = None) -> dict:
+    """Verifies that the user exists, returns their profile, and optionally validates their role."""
+    cur.execute(
+        """
+        SELECT id, role, full_name, COALESCE(total_merit_score, 0) as total_merit_score 
+        FROM public.profiles 
+        WHERE id = %s LIMIT 1;
+        """,
+        (user_id,)
+    )
+    profile = cur.fetchone()
+    if not profile:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="User profile not found")
+    if required_role and profile["role"] != required_role:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail=f"Access denied: {profile['role']} role is not authorized")
+    return profile
+
+def check_admin_auth(user: dict, cur):
+    """Verifies that the user has the 'admin' role."""
+    cur.execute("SELECT role FROM public.profiles WHERE id = %s LIMIT 1;", (user["id"],))
+    p = cur.fetchone()
+    role = p.get("role") if isinstance(p, dict) else (p[0] if p else None)
+    if role != 'admin':
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Forbidden: Admin access required.")
