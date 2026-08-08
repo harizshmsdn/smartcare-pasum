@@ -1,65 +1,16 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BottomNav from '../components/BottomNav.jsx'
 import { useApp } from '../AppContext.jsx'
-import { supabase } from '../supabaseClient.js'
+
+const readOnlyInputStyle = {
+  backgroundColor: '#ffffff',
+  color: '#52525b',
+  cursor: 'not-allowed'
+}
 
 export default function StudentInfo() {
   const navigate = useNavigate()
-  const { user, setUser, updateProfile } = useApp()
-  const [error, setError] = useState('')
-  const [successNotice, setSuccessNotice] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  async function handleSubmit(e) {
-    e.preventDefault()
-    if (!user?.name || !user?.matricsNumber || !user?.class || !user?.phone) {
-      setError('Please fill in all fields.')
-      setSuccessNotice('')
-      return
-    }
-
-    setError('')
-    setSuccessNotice('')
-    setIsSubmitting(true)
-
-    try {
-      // Get logged-in user session
-      const { data: { session } } = await supabase.auth.getSession()
-
-      if (!session?.user) {
-        throw new Error('User session not found. Please log in again.')
-      }
-
-      // Upsert student info directly to Supabase profiles table
-      const { error: dbError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: session.user.id,
-          name: user.name,
-          matrics_number: user.matricsNumber,
-          class: user.class,
-          phone: user.phone,
-          updated_at: new Date().toISOString()
-        })
-
-      if (dbError) throw dbError
-
-      // Sync local context state if updateProfile helper exists
-      if (typeof updateProfile === 'function') {
-        await updateProfile(user)
-      } else {
-        setUser({ ...user })
-      }
-
-      setSuccessNotice('Your personal details have been saved successfully!')
-    } catch (err) {
-      console.error(err)
-      setError(err?.message || 'Failed to save to database. Please try again.')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
+  const { user } = useApp()
 
   return (
     <div className="screen">
@@ -83,90 +34,58 @@ export default function StudentInfo() {
         <div className="topbar-spacer"/>
       </div>
 
-      {/* Success Notice Banner */}
-      {successNotice && (
-        <div style={{
-          backgroundColor: '#d1fae5',
-          color: '#065f46',
-          padding: '12px 16px',
-          borderRadius: '12px',
-          marginBottom: '16px',
-          fontSize: '14px',
-          fontWeight: '500',
-          border: '1px solid #a7f3d0'
-        }}>
-          {successNotice}
-        </div>
-      )}
+      {/* Info Banner - explains why fields are locked */}
+      <div style={{
+        backgroundColor: '#eff6ff',
+        color: '#1d4ed8',
+        padding: '12px 16px',
+        borderRadius: '12px',
+        marginBottom: '16px',
+        fontSize: '13px',
+        fontWeight: '500',
+        border: '1px solid #bfdbfe'
+      }}>
+        Your profile details are managed by the admin. Contact them if anything needs to be updated.
+      </div>
 
-      <form onSubmit={handleSubmit}>
-        <div className="field">
-          <label>Full Name</label>
-          <input 
-            placeholder="Insert Full Name Here" 
-            value={user?.name || ''} 
-            onChange={(e) => {
-              setUser({ ...user, name: e.target.value })
-              if (successNotice) setSuccessNotice('')
-            }} 
-          />
-        </div>
-        <div className="field">
-          <label>Matrics Number</label>
-          <input 
-            placeholder="Insert Matrics Number Here" 
-            value={user?.matricsNumber || ''} 
-            onChange={(e) => {
-              setUser({ ...user, matricsNumber: e.target.value })
-              if (successNotice) setSuccessNotice('')
-            }} 
-          />
-        </div>
-        <div className="field">
-          <label>Class</label>
-          <input 
-            placeholder="Insert Class Here" 
-            value={user?.class || ''} 
-            onChange={(e) => {
-              setUser({ ...user, class: e.target.value })
-              if (successNotice) setSuccessNotice('')
-            }} 
-          />
-        </div>
-        <div className="field">
-          <label>Phone Number</label>
-          <input 
-            placeholder="Insert Phone Number Here" 
-            value={user?.phone || ''} 
-            onChange={(e) => {
-              setUser({ ...user, phone: e.target.value })
-              if (successNotice) setSuccessNotice('')
-            }} 
-          />
-        </div>
+      <div className="field">
+        <label>Full Name</label>
+        <input
+          value={user?.name || ''}
+          readOnly
+          disabled
+          style={readOnlyInputStyle}
+        />
+      </div>
+      <div className="field">
+        <label>Matrics Number</label>
+        <input
+          value={user?.matricsNumber || ''}
+          readOnly
+          disabled
+          style={readOnlyInputStyle}
+        />
+      </div>
+      <div className="field">
+        <label>Class</label>
+        <input
+          value={user?.class || ''}
+          readOnly
+          disabled
+          style={readOnlyInputStyle}
+        />
+      </div>
+      <div className="field">
+        <label>Phone Number</label>
+        <input
+          value={user?.phone || ''}
+          readOnly
+          disabled
+          style={readOnlyInputStyle}
+        />
+      </div>
 
-        {error && <p style={{ color: '#d93838', fontSize: 12, margin: '8px 0 0 0' }}>{error}</p>}
-
-        {/* Right-aligned Submit Button */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px', paddingBottom: '90px' }}>
-          <button 
-            type="submit" 
-            disabled={isSubmitting}
-            style={{
-              backgroundColor: isSubmitting ? '#a3d1c3' : '#cde6de',
-              color: '#000000c1',
-              border: 'none',
-              padding: '8px 24px',
-              borderRadius: '16px',
-              fontSize: '16px',
-              fontWeight: '400',
-              cursor: isSubmitting ? 'not-allowed' : 'pointer'
-            }}
-          >
-            {isSubmitting ? 'Saving...' : 'Submit'}
-          </button>
-        </div>
-      </form>
+      <div style={{ paddingBottom: '90px' }} />
 
       <BottomNav />
     </div>

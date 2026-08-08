@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BottomNav from '../components/BottomNav.jsx'
 import { supabase } from '../supabaseClient.js'
@@ -6,10 +6,85 @@ import { supabase } from '../supabaseClient.js'
 export default function Settings() {
   const navigate = useNavigate()
   const [notifications, setNotifications] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  // Load the saved preference on mount so the toggle reflects what's
+  // actually stored — this is also what the backend checks before pushing
+  // a notification to this user.
+  useEffect(() => {
+    async function loadPreference() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) return
+
+      const { data, error: fetchError } = await supabase
+        .from('profiles')
+        .select('notifications_enabled')
+        .eq('id', session.user.id)
+        .single()
+
+      if (!fetchError && data && typeof data.notifications_enabled === 'boolean') {
+        setNotifications(data.notifications_enabled)
+      }
+    }
+    loadPreference()
+  }, [])
 
   async function handleLogout() {
     await supabase.auth.signOut()
     navigate('/login')
+  }
+
+  async function handleToggleNotifications() {
+    const nextValue = !notifications
+    setError('')
+
+    // Turning ON: ask the browser/OS for permission first — if it's
+    // blocked at the system level, there's no point flipping the toggle.
+    if (nextValue && typeof window !== 'undefined' && 'Notification' in window) {
+      const permission = await Notification.requestPermission()
+      if (permission !== 'granted') {
+        setError('Notifications are blocked for this app in your phone/browser settings. Please enable them there first.')
+        return
+      }
+    }
+
+    setIsSaving(true)
+    setNotifications(nextValue)
+
+    try {
+      // Turning OFF: unsubscribe this device from push so no push events
+      // are delivered even if OS-level permission is still "granted".
+      // This is best-effort and safely skipped if push isn't set up.
+      if (!nextValue && 'serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.getRegistration()
+        const subscription = await registration?.pushManager?.getSubscription()
+        if (subscription) {
+          await subscription.unsubscribe()
+        }
+      }
+
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) {
+        throw new Error('User session not found. Please log in again.')
+      }
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: session.user.id,
+          notifications_enabled: nextValue,
+          updated_at: new Date().toISOString()
+        })
+
+      if (updateError) throw updateError
+    } catch (err) {
+      console.error('Failed to update notification preference:', err)
+      setError(err?.message || 'Could not save your preference. Please try again.')
+      setNotifications(!nextValue) // revert the toggle on failure
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -44,16 +119,18 @@ export default function Settings() {
       <div className="toggle-row">
         <div>
           <strong>Notifications</strong>
-          <p style={{ margin: 0, fontSize: 12, color: 'var(--ink-soft)' }}>Enable/Disable Schedule</p>
+          <p style={{ margin: 0, fontSize: 12, color: 'var(--ink-soft)' }}>Enable/Disable Notifications</p>
         </div>
         <button
           className={'toggle' + (notifications ? ' on' : '')}
-          onClick={() => setNotifications(!notifications)}
+          onClick={handleToggleNotifications}
+          disabled={isSaving}
           aria-label="Toggle notifications"
         >
           <span className="knob" />
         </button>
       </div>
+      {error && <p style={{ color: '#d93838', fontSize: 12, margin: '8px 0 0 0' }}>{error}</p>}
 
       <div style={{ marginTop: 24 }}>
         <h3>About</h3>
