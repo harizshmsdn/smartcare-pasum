@@ -1,11 +1,12 @@
-from fastapi import HTTPException
+from fastapi import HTTPException, Depends
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import uuid
 import json
 from datetime import datetime, timedelta
 from models.schemas import *
-from core.auth import check_user_auth, check_admin_auth
+from core.auth import check_user_auth, check_admin_auth, get_current_user
+from core.database import get_db
 
 def get_student_dashboard_analytics(user: dict = Depends(get_current_user), db = Depends(get_db)):
     try:

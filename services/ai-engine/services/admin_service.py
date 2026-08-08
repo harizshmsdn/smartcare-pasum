@@ -1,10 +1,11 @@
-from fastapi import HTTPException
+from fastapi import HTTPException, Depends
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import uuid
 import json
 from models.schemas import *
-from core.auth import check_admin_auth
+from core.auth import check_admin_auth, get_current_user
+from core.database import get_db
 
 def get_admin_users(user: dict = Depends(get_current_user), db = Depends(get_db)):
     try:
@@ -188,7 +189,7 @@ def update_admin_user(user_id: str, req: AdminUserUpdateRequest, user: dict = De
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
-def get_admin_subjects(user: dict = Depends(get_current_user), db = Depends(get_db)):
+def delete_admin_user(user_id: str, user: dict = Depends(get_current_user), db = Depends(get_db)):
     try:
         with db.cursor() as cur:
             check_admin_auth(user, cur)
@@ -201,6 +202,7 @@ def get_admin_subjects(user: dict = Depends(get_current_user), db = Depends(get_
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def get_admin_subjects(user: dict = Depends(get_current_user), db = Depends(get_db)):
 # ----------------- CLASSES & SUBJECTS -----------------
     try:
         with db.cursor(cursor_factory=RealDictCursor) as cur:
@@ -262,7 +264,7 @@ def create_admin_class(req: AdminClassCreateRequest, user: dict = Depends(get_cu
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
-def get_admin_enrollments(user: dict = Depends(get_current_user), db = Depends(get_db)):
+def delete_admin_class(class_id: str, user: dict = Depends(get_current_user), db = Depends(get_db)):
     try:
         with db.cursor() as cur:
             check_admin_auth(user, cur)
@@ -274,6 +276,7 @@ def get_admin_enrollments(user: dict = Depends(get_current_user), db = Depends(g
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def get_admin_enrollments(user: dict = Depends(get_current_user), db = Depends(get_db)):
 # ----------------- SCHEDULES & ENROLLMENTS -----------------
     try:
         with db.cursor(cursor_factory=RealDictCursor) as cur:
@@ -315,7 +318,7 @@ def create_admin_enrollment(req: AdminEnrollmentRequest, user: dict = Depends(ge
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
-def get_admin_interventions(user: dict = Depends(get_current_user), db = Depends(get_db)):
+def delete_admin_enrollment(enrollment_id: str, user: dict = Depends(get_current_user), db = Depends(get_db)):
     try:
         with db.cursor() as cur:
             check_admin_auth(user, cur)
@@ -327,6 +330,7 @@ def get_admin_interventions(user: dict = Depends(get_current_user), db = Depends
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def get_admin_interventions(user: dict = Depends(get_current_user), db = Depends(get_db)):
 # ----------------- INTERVENTIONS & CASES -----------------
     try:
         with db.cursor(cursor_factory=RealDictCursor) as cur:
@@ -349,7 +353,7 @@ def get_admin_interventions(user: dict = Depends(get_current_user), db = Depends
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-def get_admin_merit_claims(user: dict = Depends(get_current_user), db = Depends(get_db)):
+def update_admin_intervention(intervention_id: str, req: AdminInterventionUpdateRequest, user: dict = Depends(get_current_user), db = Depends(get_db)):
     try:
         with db.cursor() as cur:
             check_admin_auth(user, cur)
@@ -365,6 +369,7 @@ def get_admin_merit_claims(user: dict = Depends(get_current_user), db = Depends(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def get_admin_merit_claims(user: dict = Depends(get_current_user), db = Depends(get_db)):
 # ----------------- MERIT CLAIMS -----------------
     try:
         with db.cursor(cursor_factory=RealDictCursor) as cur:

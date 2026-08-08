@@ -26,6 +26,9 @@ def update_admin_user(user_id: str, req: AdminUserUpdateRequest, user: dict = De
     return admin_service.update_admin_user(user_id=user_id, req=req, user=user, db=db)
 
 @router.delete("/api/admin/users/{user_id}")
+def delete_admin_user(user_id: str, user: dict = Depends(get_current_user), db = Depends(get_db)):
+    return admin_service.delete_admin_user(user_id=user_id, user=user, db=db)
+
 @router.get("/api/admin/subjects")
 def get_admin_subjects(user: dict = Depends(get_current_user), db = Depends(get_db)):
     return admin_service.get_admin_subjects(user=user, db=db)
@@ -43,6 +46,9 @@ def create_admin_class(req: AdminClassCreateRequest, user: dict = Depends(get_cu
     return admin_service.create_admin_class(req=req, user=user, db=db)
 
 @router.delete("/api/admin/classes/{class_id}")
+def delete_admin_class(class_id: str, user: dict = Depends(get_current_user), db = Depends(get_db)):
+    return admin_service.delete_admin_class(class_id=class_id, user=user, db=db)
+
 @router.get("/api/admin/enrollments")
 def get_admin_enrollments(user: dict = Depends(get_current_user), db = Depends(get_db)):
     return admin_service.get_admin_enrollments(user=user, db=db)
@@ -52,11 +58,17 @@ def create_admin_enrollment(req: AdminEnrollmentRequest, user: dict = Depends(ge
     return admin_service.create_admin_enrollment(req=req, user=user, db=db)
 
 @router.delete("/api/admin/enrollments/{enrollment_id}")
+def delete_admin_enrollment(enrollment_id: str, user: dict = Depends(get_current_user), db = Depends(get_db)):
+    return admin_service.delete_admin_enrollment(enrollment_id=enrollment_id, user=user, db=db)
+
 @router.get("/api/admin/interventions")
 def get_admin_interventions(user: dict = Depends(get_current_user), db = Depends(get_db)):
     return admin_service.get_admin_interventions(user=user, db=db)
 
 @router.patch("/api/admin/interventions/{intervention_id}")
+def update_admin_intervention(intervention_id: str, req: AdminInterventionUpdateRequest, user: dict = Depends(get_current_user), db = Depends(get_db)):
+    return admin_service.update_admin_intervention(intervention_id=intervention_id, req=req, user=user, db=db)
+
 @router.get("/api/admin/merit-claims")
 def get_admin_merit_claims(user: dict = Depends(get_current_user), db = Depends(get_db)):
     return admin_service.get_admin_merit_claims(user=user, db=db)
