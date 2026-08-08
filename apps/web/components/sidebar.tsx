@@ -5,12 +5,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Settings, ChevronRight, LogOut } from "lucide-react";
 import { createClient } from "../utils/supabase/client";
+import { useAuth } from "./AuthProvider";
 
 export function Sidebar() {
   const pathname = usePathname();
   const isStudent = pathname?.startsWith("/student");
   const isAdmin = pathname?.startsWith("/admin");
 
+  const { user, signOut } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -18,7 +20,6 @@ export function Sidebar() {
     let isMounted = true;
 
     const fetchUnreadCount = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user || !isMounted) return;
 
       let query = supabase
@@ -41,7 +42,9 @@ export function Sidebar() {
       }
     };
 
-    fetchUnreadCount();
+    if (user) {
+      fetchUnreadCount();
+    }
 
     // Subscribe to public.alerts Postgres changes
     const channel = supabase
@@ -59,7 +62,7 @@ export function Sidebar() {
       isMounted = false;
       supabase.removeChannel(channel);
     };
-  }, [isStudent, isAdmin]);
+  }, [isStudent, isAdmin, user]);
 
   // Route map with explicit border classes added for Tailwind's JIT compiler
   const navItems = isAdmin
@@ -151,11 +154,7 @@ export function Sidebar() {
           <Settings size={20} /> Settings
         </Link>
         <button
-          onClick={async () => {
-            const supabase = createClient();
-            await supabase.auth.signOut();
-            window.location.href = "/login";
-          }}
+          onClick={signOut}
           className="flex items-center gap-3 px-5 py-4 rounded-2xl font-medium transition-colors w-full text-left text-red-600 hover:bg-red-50 hover:text-red-700 border-none bg-transparent cursor-pointer"
         >
           <LogOut size={20} /> Log Out

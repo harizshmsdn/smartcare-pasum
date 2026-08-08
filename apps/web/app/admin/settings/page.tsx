@@ -1,4 +1,3 @@
-// apps/web/app/admin/settings/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -16,23 +15,7 @@ import {
   GraduationCap,
   AlertTriangle
 } from "lucide-react";
-import { createClient } from "../../../utils/supabase/client";
-
-interface SystemSettings {
-  attendance_threshold: number;
-  default_geofence_radius: number;
-  grade_drop_threshold: number;
-  mandatory_face_id: boolean;
-  mandatory_location: boolean;
-  max_merit_points_per_claim: number;
-  default_merit_points_recommended: number;
-  auto_email_absence_alert: boolean;
-  auto_escalate_intervention_days: number;
-  maintenance_mode: boolean;
-  default_user_password: string;
-  session_timeout_hours: number;
-  enable_audit_logs: boolean;
-}
+import { adminService, SystemSettings } from "../../../lib/services/admin";
 
 const DEFAULT_SETTINGS: SystemSettings = {
   attendance_threshold: 80,
@@ -50,28 +33,28 @@ const DEFAULT_SETTINGS: SystemSettings = {
   enable_audit_logs: true,
 };
 
+/**
+ * Admin System Settings Page.
+ * Manages global application configuration, attendance thresholds, and security preferences.
+ */
 export default function AdminSettingsPage() {
-  const supabase = createClient();
   const [settings, setSettings] = useState<SystemSettings>(DEFAULT_SETTINGS);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
+  /**
+   * Loads administrative system settings.
+   */
   const fetchSettings = async () => {
     setIsLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const res = await fetch("http://localhost:8000/api/admin/settings", {
-        headers: { Authorization: `Bearer ${session.access_token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
+      const data = await adminService.getSettings();
+      if (data?.settings) {
         setSettings(data.settings);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error fetching system settings:", err);
     } finally {
       setIsLoading(false);
@@ -82,34 +65,21 @@ export default function AdminSettingsPage() {
     fetchSettings();
   }, []);
 
+  /**
+   * Saves updated system configuration settings.
+   */
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     setErrorMessage("");
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const res = await fetch("http://localhost:8000/api/admin/settings", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify(settings)
-      });
-
-      if (res.ok) {
-        setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 3500);
-      } else {
-        const errData = await res.json();
-        setErrorMessage(errData.detail || "Failed to save system configuration.");
-      }
-    } catch (err) {
+      await adminService.updateSettings(settings);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3500);
+    } catch (err: any) {
       console.error("Save settings error:", err);
-      setErrorMessage("Network error while saving settings.");
+      setErrorMessage(err.message || "Failed to save system configuration.");
     } finally {
       setIsSaving(false);
     }

@@ -1,4 +1,3 @@
-// apps/web/app/admin/users/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -15,21 +14,13 @@ import {
   ChevronRight,
   GraduationCap
 } from "lucide-react";
-import { createClient } from "../../../utils/supabase/client";
+import { adminService, UserProfile } from "../../../lib/services/admin";
 
-interface UserProfile {
-  id: string;
-  role: "student" | "lecturer" | "admin";
-  full_name: string;
-  institutional_id: string;
-  email: string;
-  phone_number: string;
-  office_location: string;
-  affiliation: string;
-}
-
+/**
+ * Admin User Management Page.
+ * Handles student and faculty directory management, creation, updates, and deletion.
+ */
 export default function AdminUsersPage() {
-  const supabase = createClient();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserProfile[]>([]);
   const [activeTab, setActiveTab] = useState<"student" | "lecturer">("student");
@@ -50,22 +41,15 @@ export default function AdminUsersPage() {
   const [officeLocation, setOfficeLocation] = useState("");
   const [affiliation, setAffiliation] = useState("");
 
+  /**
+   * Fetches user accounts from the directory service.
+   */
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const res = await fetch("http://localhost:8000/api/admin/users", {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
-        }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setUsers(data.users);
-      }
-    } catch (err) {
+      const data = await adminService.getUsers();
+      setUsers(data.users || []);
+    } catch (err: any) {
       console.error("Error fetching users:", err);
     } finally {
       setIsLoading(false);
@@ -89,6 +73,9 @@ export default function AdminUsersPage() {
     setFilteredUsers(result);
   }, [users, activeTab, searchQuery]);
 
+  /**
+   * Handles user creation form submission.
+   */
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim() || !email.trim() || !institutionalId.trim() || !affiliation.trim()) {
@@ -100,36 +87,21 @@ export default function AdminUsersPage() {
       return;
     }
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const res = await fetch("http://localhost:8000/api/admin/users", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
-          full_name: fullName.trim(),
-          email: email.trim(),
-          role,
-          institutional_id: institutionalId.trim(),
-          phone_number: phoneNumber.trim() || null,
-          office_location: officeLocation.trim() || null,
-          affiliation: affiliation.trim()
-        })
+      await adminService.createUser({
+        full_name: fullName.trim(),
+        email: email.trim(),
+        role,
+        institutional_id: institutionalId.trim(),
+        phone_number: phoneNumber.trim() || null,
+        office_location: officeLocation.trim() || null,
+        affiliation: affiliation.trim()
       });
-
-      if (res.ok) {
-        setShowAddModal(false);
-        resetForm();
-        fetchUsers();
-      } else {
-        const errData = await res.json();
-        alert(errData.detail || "Failed to create user.");
-      }
-    } catch (err) {
+      setShowAddModal(false);
+      resetForm();
+      fetchUsers();
+    } catch (err: any) {
       console.error("Add user error:", err);
+      alert(err.message || "Failed to create user.");
     }
   };
 
@@ -145,63 +117,42 @@ export default function AdminUsersPage() {
     setShowEditModal(true);
   };
 
+  /**
+   * Handles user account detail updates.
+   */
   const handleUpdateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser) return;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const res = await fetch(`http://localhost:8000/api/admin/users/${selectedUser.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
-          full_name: fullName,
-          email,
-          role,
-          institutional_id: institutionalId || null,
-          phone_number: phoneNumber || null,
-          office_location: officeLocation || null,
-          affiliation: affiliation || null
-        })
+      await adminService.updateUser(selectedUser.id, {
+        full_name: fullName,
+        email,
+        role,
+        institutional_id: institutionalId || null,
+        phone_number: phoneNumber || null,
+        office_location: officeLocation || null,
+        affiliation: affiliation || null
       });
-
-      if (res.ok) {
-        setShowEditModal(false);
-        resetForm();
-        fetchUsers();
-      } else {
-        const errData = await res.json();
-        alert(errData.detail || "Failed to update user.");
-      }
-    } catch (err) {
+      setShowEditModal(false);
+      resetForm();
+      fetchUsers();
+    } catch (err: any) {
       console.error("Update user error:", err);
+      alert(err.message || "Failed to update user.");
     }
   };
 
+  /**
+   * Handles deleting user account.
+   */
   const handleDeleteUser = async (userId: string) => {
     if (!confirm("Are you sure you want to delete this user? All associated data will be deleted.")) return;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const res = await fetch(`http://localhost:8000/api/admin/users/${userId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
-        }
-      });
-
-      if (res.ok) {
-        fetchUsers();
-      } else {
-        alert("Failed to delete user.");
-      }
-    } catch (err) {
+      await adminService.deleteUser(userId);
+      fetchUsers();
+    } catch (err: any) {
       console.error("Delete user error:", err);
+      alert(err.message || "Failed to delete user.");
     }
   };
 

@@ -77,8 +77,6 @@ export default function AdminClassesPage() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
 
       // 1. Fetch classes
       const classesRes = await fetch("http://localhost:8000/api/admin/classes", {
@@ -121,8 +119,6 @@ export default function AdminClassesPage() {
   const handleAddSubject = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
 
       const res = await fetch("http://localhost:8000/api/admin/subjects", {
         method: "POST",
@@ -158,8 +154,6 @@ export default function AdminClassesPage() {
       return;
     }
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
 
       // Format times to HH:MM:SS
       const formattedStart = startTime.includes(":") && startTime.split(":").length === 2 ? `${startTime}:00` : startTime;
@@ -201,8 +195,6 @@ export default function AdminClassesPage() {
   const handleDeleteClass = async (classId: string) => {
     if (!confirm("Are you sure you want to delete this class? All attendance logs, student scores, and sessions will be deleted.")) return;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
 
       const res = await fetch(`http://localhost:8000/api/admin/classes/${classId}`, {
         method: "DELETE",

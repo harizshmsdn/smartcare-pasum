@@ -32,7 +32,6 @@ export default function StudentAlertsPage() {
 
   const fetchAlerts = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
       if (session?.user?.id) {
         setStudentId(session.user.id);
@@ -144,7 +143,6 @@ export default function StudentAlertsPage() {
   const markAsRead = async (id: string) => {
     let success = false;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
 
       if (token) {
@@ -176,7 +174,6 @@ export default function StudentAlertsPage() {
   const markAllAsRead = async () => {
     let success = false;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
 
       if (token) {

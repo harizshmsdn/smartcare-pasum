@@ -63,7 +63,6 @@ export default function StudentDashboardPage() {
     const fetchStudentAnalytics = async () => {
       setIsLoading(true);
       try {
-        const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token;
 
         if (token) {

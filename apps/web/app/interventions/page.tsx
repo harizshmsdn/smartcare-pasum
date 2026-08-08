@@ -16,6 +16,7 @@ import {
   X
 } from "lucide-react";
 import { createClient } from "../../utils/supabase/client";
+import { api } from "../../lib/api";
 import BorderGlow from "../../components/BorderGlow";
 
 interface KanbanItem {
@@ -197,32 +198,18 @@ function InterventionsBoardContent() {
 
     setIsSaving(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-
-      // Prefer POST call to FastAPI to execute backend email notifications
-      const res = await fetch("http://localhost:8000/api/interventions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          student_id: addModalStudentId,
-          class_id: addModalClassId,
-          issue_description: issueDescription,
-          status: statusVal,
-          priority: priorityVal,
-          schedule_advising: scheduleAdvising
-        })
+      // Prefer POST call to API client to execute backend email notifications
+      await api.post("/api/interventions", {
+        student_id: addModalStudentId,
+        class_id: addModalClassId,
+        issue_description: issueDescription,
+        status: statusVal,
+        priority: priorityVal,
+        schedule_advising: scheduleAdvising
       });
 
-      if (res.ok) {
-        await loadInterventions();
-        closeModal();
-      } else {
-        await runFallbackInsert();
-      }
+      await loadInterventions();
+      closeModal();
     } catch (err) {
       console.warn("FastAPI creation offline, falling back to direct Supabase insert:", err);
       await runFallbackInsert();

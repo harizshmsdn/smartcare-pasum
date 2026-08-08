@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import BorderGlow from "../../components/BorderGlow";
+import { adminService } from "../../lib/services/admin";
 import {
   Users,
   BookOpen,
@@ -83,49 +84,26 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     let active = true;
 
-    const fetchAdminDashboard = async (token: string) => {
+    const fetchAdminDashboard = async () => {
       try {
-        const res = await fetch("http://localhost:8000/api/admin/dashboard", {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-        if (res.ok && active) {
-          const data = await res.json();
+        const data = await adminService.getDashboard();
+        if (data && active) {
           setStats(data.stats);
           setMetrics(data.metrics);
           setRecentClaims(data.recent_claims);
           setRecentInterventions(data.recent_interventions);
         }
       } catch (err) {
-        console.error("Error fetching admin dashboard:", err);
+        console.error("Error fetching admin dashboard metrics:", err);
       } finally {
         if (active) setIsLoading(false);
       }
     };
 
-    // 1. Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session && active) {
-        fetchAdminDashboard(session.access_token);
-      } else {
-        if (active) setIsLoading(false);
-      }
-    });
-
-    // 2. Subscribe to auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session && active) {
-        setIsLoading(true);
-        fetchAdminDashboard(session.access_token);
-      } else if (!session && active) {
-        if (active) setIsLoading(false);
-      }
-    });
+    fetchAdminDashboard();
 
     return () => {
       active = false;
-      subscription.unsubscribe();
     };
   }, []);
 

@@ -1,4 +1,3 @@
-// apps/web/app/alerts/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -12,6 +11,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import { createClient } from "../../utils/supabase/client";
+import { alertService } from "../../lib/services/alerts";
 
 interface AlertItem {
   id: string;
@@ -26,6 +26,10 @@ interface AlertItem {
   isRead: boolean;
 }
 
+/**
+ * Lecturer Alerts Dashboard Page.
+ * Visualizes automated academic at-risk alerts, low attendance warnings, and notifications.
+ */
 export default function AlertsPage() {
   const supabase = createClient();
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
@@ -33,23 +37,29 @@ export default function AlertsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [lecturerId, setLecturerId] = useState("");
 
+  /**
+   * Fetches alert notifications for the logged in lecturer.
+   */
   const fetchAlerts = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
       if (session?.user?.id) {
         setLecturerId(session.user.id);
       }
 
-      const res = await fetch(`http://localhost:8000/api/alerts`, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setAlerts(data.alerts || []);
+      const data = await alertService.getAlerts();
+      if (data?.alerts) {
+        setAlerts(data.alerts.map((a: any) => ({
+          id: a.id,
+          studentName: a.studentName || a.student?.full_name || "Student",
+          matricId: a.matricId || a.student?.institutional_id || "",
+          studentUuid: a.studentUuid || a.student_id || "",
+          course: a.course || a.subject_name || "General",
+          type: a.type || "system",
+          priority: a.priority || "medium",
+          message: a.message || "",
+          timestamp: a.timestamp || "Recently",
+          isRead: !!a.is_read
+        })));
       } else {
         await fetchFallbackAlerts();
       }
@@ -134,24 +144,16 @@ export default function AlertsPage() {
 
   const unreadCount = alerts.filter(a => !a.isRead).length;
 
+  /**
+   * Marks individual alert as read.
+   */
   const markAsRead = async (id: string) => {
     let success = false;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-
-      const res = await fetch(`http://localhost:8000/api/alerts/${id}/read`, {
-        method: "PATCH",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-
-      if (res.ok) {
-        success = true;
-      }
+      await alertService.markRead(id);
+      success = true;
     } catch (err) {
-      console.warn("FastAPI offline or unreachable, falling back to direct Supabase update:", err);
+      console.warn("FastAPI offline, falling back to direct Supabase update:", err);
     }
 
     if (!success) {
@@ -167,24 +169,16 @@ export default function AlertsPage() {
     setAlerts(prev => prev.map(a => a.id === id ? { ...a, isRead: true } : a));
   };
 
+  /**
+   * Marks all alerts as read.
+   */
   const markAllAsRead = async () => {
     let success = false;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-
-      const res = await fetch(`http://localhost:8000/api/alerts/mark-all-read`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-
-      if (res.ok) {
-        success = true;
-      }
+      await alertService.markAllRead();
+      success = true;
     } catch (err) {
-      console.warn("FastAPI offline or unreachable, falling back to direct Supabase mark-all-read:", err);
+      console.warn("FastAPI offline, falling back to direct Supabase mark-all-read:", err);
     }
 
     if (!success && lecturerId) {

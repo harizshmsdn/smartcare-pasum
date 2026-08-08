@@ -91,7 +91,6 @@ export default function DashboardPage() {
     const fetchDashboardAnalytics = async () => {
       setIsLoading(true);
       try {
-        const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token;
 
         // Call FastAPI Endpoint
@@ -222,7 +221,6 @@ export default function DashboardPage() {
 
     const fetchClassTrajectory = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token;
 
         const res = await fetch(`http://localhost:8000/api/analytics/trajectory?class_id=${selectedClassId}`, {

@@ -15,6 +15,7 @@ import {
   GraduationCap
 } from "lucide-react";
 import { createClient } from "../../../utils/supabase/client";
+import { adminService } from "../../../lib/services/admin";
 
 interface Intervention {
   intervention_id: string;
@@ -67,25 +68,17 @@ export default function AdminCasesPage() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
 
       // 1. Fetch interventions
-      const intRes = await fetch("http://localhost:8000/api/admin/interventions", {
-        headers: { Authorization: `Bearer ${session.access_token}` }
-      });
-      if (intRes.ok) {
-        const d = await intRes.json();
-        setInterventions(d.interventions);
+      const intData = await adminService.getInterventions();
+      if (intData?.interventions) {
+        setInterventions(intData.interventions);
       }
 
       // 2. Fetch merit claims
-      const claimsRes = await fetch("http://localhost:8000/api/admin/merit-claims", {
-        headers: { Authorization: `Bearer ${session.access_token}` }
-      });
-      if (claimsRes.ok) {
-        const d = await claimsRes.json();
-        setClaims(d.claims);
+      const claimsData = await adminService.getMeritClaims();
+      if (claimsData?.claims) {
+        setClaims(claimsData.claims);
       }
     } catch (err) {
       console.error("Error fetching cases data:", err);
@@ -111,30 +104,16 @@ export default function AdminCasesPage() {
     if (!selectedIntervention) return;
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const res = await fetch(`http://localhost:8000/api/admin/interventions/${selectedIntervention.intervention_id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
-          status: intStatus,
-          priority: intPriority,
-          issue_description: intDescription
-        })
+      await adminService.updateIntervention(selectedIntervention.intervention_id, {
+        status: intStatus,
+        priority: intPriority,
+        issue_description: intDescription
       });
-
-      if (res.ok) {
-        setShowEditIntervention(false);
-        fetchData();
-      } else {
-        alert("Failed to update intervention.");
-      }
-    } catch (err) {
+      setShowEditIntervention(false);
+      fetchData();
+    } catch (err: any) {
       console.error("Update intervention error:", err);
+      alert(err.message || "Failed to update intervention.");
     }
   };
 
@@ -148,29 +127,15 @@ export default function AdminCasesPage() {
     if (!selectedClaim) return;
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const res = await fetch(`http://localhost:8000/api/admin/merit-claims/${selectedClaim.claim_id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
-          status,
-          awarded_points: Number(claimPoints)
-        })
+      await adminService.updateMeritClaim(selectedClaim.claim_id, {
+        status,
+        awarded_points: status === "approved" ? claimPoints : 0
       });
-
-      if (res.ok) {
-        setShowReviewClaim(false);
-        fetchData();
-      } else {
-        alert("Failed to process claim review.");
-      }
-    } catch (err) {
+      setShowReviewClaim(false);
+      fetchData();
+    } catch (err: any) {
       console.error("Evaluate claim error:", err);
+      alert(err.message || "Failed to evaluate claim.");
     }
   };
 

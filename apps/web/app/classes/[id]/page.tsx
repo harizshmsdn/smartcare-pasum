@@ -121,7 +121,6 @@ export default function ProfilePage() {
     const fetchStudentData = async () => {
       setIsLoading(true);
       try {
-        const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token;
 
         const res = await fetch(`http://localhost:8000/api/students/${studentId}/analytics${selectedClassId ? `?class_id=${selectedClassId}` : ''}`, {

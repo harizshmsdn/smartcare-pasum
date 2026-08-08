@@ -105,7 +105,6 @@ export default function ClassAssessmentsPage() {
     if (!classId) return;
     setIsLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
 
       const res = await fetch(`http://localhost:8000/api/classes/${classId}/assessments`, {
@@ -410,7 +409,6 @@ export default function ClassAssessmentsPage() {
                                           setIsSavingScore(true);
                                           try {
                                             const scoreVal = parseFloat(String(currentScore));
-                                            const { data: { session } } = await supabase.auth.getSession();
                                             const token = session?.access_token;
 
                                             const res = await fetch(`http://localhost:8000/api/assessments/${a.id}/scores`, {
@@ -504,7 +502,6 @@ export default function ClassAssessmentsPage() {
                   onSubmit={async (e) => {
                     e.preventDefault();
                     try {
-                      const { data: { session } } = await supabase.auth.getSession();
                       const token = session?.access_token;
 
                       const res = await fetch(`http://localhost:8000/api/classes/${selectedClassId}/assessments`, {

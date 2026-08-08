@@ -160,7 +160,6 @@ export default function ClassesPage() {
   // Fetch class assessments and gradebook scores from FastAPI
   const fetchClassAssessments = async (classId: string) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
 
       const res = await fetch(`http://localhost:8000/api/classes/${classId}/assessments`, {
