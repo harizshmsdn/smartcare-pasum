@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BottomNav from '../components/BottomNav.jsx'
 import { useApp } from '../AppContext.jsx'
-import { supabase } from '../supabaseClient.js'
 
 export default function EmergencyContact() {
   const navigate = useNavigate()
@@ -11,10 +10,10 @@ export default function EmergencyContact() {
   const [successNotice, setSuccessNotice] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const [emergency, setEmergency] = useState({ 
-    name: user?.emergencyName || '', 
-    relationship: user?.emergencyRelationship || '', 
-    phone: user?.emergencyPhone || '' 
+  const [emergency, setEmergency] = useState({
+    name: user?.emergencyName || '',
+    relationship: user?.emergencyRelationship || '',
+    phone: user?.emergencyPhone || ''
   })
 
   async function handleSubmit(e) {
@@ -30,27 +29,16 @@ export default function EmergencyContact() {
     setIsSubmitting(true)
 
     try {
-      // Get logged-in user session
-      const { data: { session } } = await supabase.auth.getSession()
-
-      if (!session?.user) {
-        throw new Error('User session not found. Please log in again.')
-      }
-
-      // Upsert emergency details into Supabase profiles table
-      const { error: dbError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: session.user.id,
-          emergency_name: emergency.name,
-          emergency_relationship: emergency.relationship,
-          emergency_phone: emergency.phone,
-          updated_at: new Date().toISOString()
-        })
-
-      if (dbError) throw dbError
-
-      // Update local React App context
+      // FIXED: this used to also fire its own
+      // supabase.from('profiles').upsert({ emergency_name, emergency_relationship,
+      // emergency_phone, ... }) directly — those column names don't match the
+      // actual schema (the real columns are emergency_contact_name /
+      // _relationship / _phone, per AppContext.jsx's updateProfile). That
+      // upsert threw a "column does not exist" error on every single submit,
+      // and the correct updateProfile() call below was never reached.
+      // updateProfile() is the one validated write path for this table now —
+      // going through it means these fields get the same length checks as
+      // every other profile edit, instead of being written raw and twice.
       await updateProfile({
         ...user,
         emergencyName: emergency.name,
