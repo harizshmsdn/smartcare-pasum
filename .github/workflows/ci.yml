@@ -26,7 +26,7 @@ jobs:
       # NOTE: setup-node `cache: npm` is omitted because it runs
       # `npm config get cache` before we can upgrade, tripping
       # EBADDEVENGINES on the local package.json.
-      - run: npm install -g npm@11
+      - run: npm install -g npm@11.6.2
       - uses: actions/cache@v4
         with:
           path: ~/.npm
@@ -43,7 +43,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install -g npm@11
+      - run: npm install -g npm@11.6.2
       - uses: actions/cache@v4
         with:
           path: ~/.npm
@@ -60,7 +60,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install -g npm@11
+      - run: npm install -g npm@11.6.2
       - uses: actions/cache@v4
         with:
           path: ~/.npm
@@ -77,7 +77,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install -g npm@11
+      - run: npm install -g npm@11.6.2
       - uses: actions/cache@v4
         with:
           path: ~/.npm
