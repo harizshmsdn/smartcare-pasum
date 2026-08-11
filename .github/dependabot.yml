@@ -1,0 +1,63 @@
+version: 2
+updates:
+  # Root npm dependencies and workspaces (apps/*, packages/*).
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      # Roll up patch and minor updates into a single PR to reduce noise.
+      # Major updates get their own PRs since they can break the build.
+      npm-minor:
+        update-types:
+          - minor
+          - patch
+
+  # apps/web
+  - package-ecosystem: npm
+    directory: /apps/web
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      npm-minor:
+        update-types:
+          - minor
+          - patch
+
+  # apps/mobile-android
+  - package-ecosystem: npm
+    directory: /apps/mobile-android
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      npm-minor:
+        update-types:
+          - minor
+          - patch
+
+  # packages/ui
+  - package-ecosystem: npm
+    directory: /packages/ui
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      npm-minor:
+        update-types:
+          - minor
+          - patch
+
+  # Keep the GitHub Actions used in our workflows up to date.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      actions:
+        update-types:
+          - minor
+          - patch
