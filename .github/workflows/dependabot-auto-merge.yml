@@ -1,0 +1,55 @@
+name: Dependabot auto-merge
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# Only one auto-merge run per PR at a time.
+concurrency:
+  group: dependabot-auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+
+jobs:
+  auto-merge:
+    # Only auto-merge PRs opened by Dependabot.
+    if: github.event.pull_request.user.login == 'dependabot[bot]' || github.event.pull_request.user.login == 'dependabot-preview[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for all checks to complete
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          # Block until every status/check on the PR finishes. Exits non-zero
+          # (and fails the job) if any check fails, which prevents the merge.
+          gh pr checks "$PR_NUMBER" --watch --interval 15 --fail-fast
+
+      - name: Verify the PR has no merge conflicts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          # mergeStateStatus must be "CLEAN" (no conflicts and branch protection
+          # requirements satisfiable). "BLOCKED" or "DIRTY" means we must not merge.
+          state=$(gh pr view "$PR_NUMBER" --json mergeable,mergeStateStatus --jq '.mergeStateStatus')
+          echo "Merge state: $state"
+          if [ "$state" != "CLEAN" ]; then
+            echo "PR is not cleanly mergeable (state=$state). Skipping auto-merge."
+            exit 0
+          fi
+
+      - name: Enable auto-merge (squash)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          # --auto lets GitHub merge the PR the moment it becomes fully
+          # mergeable, which covers the race between checks finishing and the
+          # mergeable state settling.
+          gh pr merge "$PR_NUMBER" --squash --auto
+          echo "Auto-merge enabled for Dependabot PR #$PR_NUMBER."
