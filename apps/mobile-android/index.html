@@ -6,12 +6,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>SmartCare Student Portal</title>
     <script>
+      // FIXED: this used to alert() the raw error message/file/line to the
+      // end user on every uncaught JS error and unhandled promise rejection
+      // — a blocking popup on any production hiccup, and an info-disclosure
+      // smell (stack details shown to whoever's holding the phone, not just
+      // the developer). Logging to console keeps this useful for debugging
+      // (open devtools) without interrupting real users. If you want a
+      // user-facing "something went wrong" notice, use the same in-app
+      // banner pattern already used elsewhere (see the notification banners
+      // in Merits.jsx / AdminSchedule.jsx) instead of a native alert().
       window.onerror = function(message, source, lineno, colno, error) {
-        alert("JS Error: " + message + " at " + source + ":" + lineno + ":" + colno);
-        return false;
+        console.error('[Unhandled error]', message, 'at', source + ':' + lineno + ':' + colno, error)
+        return false
       };
       window.addEventListener('unhandledrejection', function(event) {
-        alert("Unhandled Promise Rejection: " + event.reason);
+        console.error('[Unhandled promise rejection]', event.reason)
       });
     </script>
   </head>

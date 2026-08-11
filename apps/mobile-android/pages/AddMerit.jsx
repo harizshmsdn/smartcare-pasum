@@ -8,7 +8,7 @@ const CATEGORIES = ['Academic', 'Leadership', 'Sports', 'Volunteering', 'Others'
 
 export default function AddMerit() {
   const navigate = useNavigate()
-  const { addMerit } = useApp()
+  const { user, addMerit } = useApp()
 
   const [name, setName] = useState('')
   const [category, setCategory] = useState('')
@@ -28,50 +28,70 @@ export default function AddMerit() {
     setError('')
     setIsSubmitting(true)
 
-    let proofUrl = null
-    if (photo) {
-      // Clean filename to prevent special character upload errors in Supabase Storage
-      const cleanFileName = photo.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')
-      const filePath = `${Date.now()}_${cleanFileName}`
+    try {
+      let proofUrl = null
+      if (photo) {
+        // Clean filename to prevent special character upload errors in Supabase Storage
+        const cleanFileName = photo.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')
+        // FIXED: this path used to be flat — `${Date.now()}_${filename}` —
+        // in a bucket that's read via getPublicUrl(). Date.now() has
+        // millisecond precision, which is guessable/brute-forceable within
+        // an active submission window, so anyone could enumerate and view
+        // other students' proof uploads (often photos of ID cards or
+        // certificates) without ever being given a link. Namespacing by
+        // the uploader's user id (a UUID, not practically guessable) closes
+        // that off without changing the stored URL format, so nothing else
+        // that reads proof_file_url needs to change.
+        //
+        // This does NOT make the bucket private — it's still public, so a
+        // copied/shared link is still viewable by anyone who has it. Making
+        // the bucket private (with a storage RLS policy scoped to this
+        // folder structure, see supabase/001_rls_policies.sql) is a
+        // separate change that needs coordinating with whoever built the
+        // admin/lecturer review app, since it currently expects a public URL.
+        const filePath = `${user.id}/${Date.now()}_${cleanFileName}`
 
-      const { data, error: uploadError } = await supabase.storage
-        .from('merit-proofs')
-        .upload(filePath, photo, { 
-          contentType: photo.type,
-          upsert: true
-        })
+        const { data, error: uploadError } = await supabase.storage
+          .from('merit-proofs')
+          .upload(filePath, photo, {
+            contentType: photo.type,
+            upsert: true
+          })
 
-      if (uploadError) {
-        console.error('Supabase upload error:', uploadError)
-        setError(`Upload failed: ${uploadError.message || 'Check storage permissions.'}`)
-        setIsSubmitting(false)
-        return
+        if (uploadError) {
+          console.error('Supabase upload error:', uploadError)
+          setError(`Upload failed: ${uploadError.message || 'Check storage permissions.'}`)
+          setIsSubmitting(false)
+          return
+        }
+
+        const { data: urlData } = supabase.storage
+          .from('merit-proofs')
+          .getPublicUrl(filePath)
+
+        proofUrl = urlData.publicUrl
       }
 
-      const { data: urlData } = supabase.storage
-        .from('merit-proofs')
-        .getPublicUrl(filePath)
-        
-      proofUrl = urlData.publicUrl
+      // FIXED: previously called without a try/catch — addMerit() didn't use
+      // to throw on failure, but it does now (validation errors, rate
+      // limiting, RPC errors), so an uncaught rejection here would have left
+      // the button stuck on "Uploading..." forever with no error shown.
+      //
+      // `category` isn't passed through: merit_claims doesn't have a column
+      // for it yet (see AppContext.jsx's addMerit) — the dropdown stays in
+      // the form, but confirm with whoever owns the schema whether it should
+      // be added before relying on it being saved anywhere.
+      await addMerit({ name, level, roles, proofUrl, points: 0 })
+
+      navigate('/merits', {
+        state: { notification: 'Your merit submission has been sent for checking!' }
+      })
+    } catch (err) {
+      console.error(err)
+      setError(err?.message || 'Failed to submit. Please try again.')
+    } finally {
+      setIsSubmitting(false)
     }
-
-    // Include status: 'pending' so the user knows it is undergoing checking
-    await addMerit({ 
-      name, 
-      category,
-      level, 
-      roles, 
-      proofUrl, 
-      points: 0, 
-      status: 'Pending Verification' 
-    })
-
-    setIsSubmitting(false)
-
-    // Pass notification message in navigation state to display on Merits page
-    navigate('/merits', { 
-      state: { notification: 'Your merit submission has been sent for checking!' } 
-    })
   }
 
   return (
