@@ -22,9 +22,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
       # The repo's devEngines requires npm 11.x; Node 22 bundles 10.x.
+      # NOTE: setup-node `cache: npm` is omitted because it runs
+      # `npm config get cache` before we can upgrade, tripping
+      # EBADDEVENGINES on the local package.json.
       - run: npm install -g npm@11
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-22-npm11-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: ${{ runner.os }}-node-22-npm11-
       - run: npm ci
       - run: npm run build
 
@@ -36,8 +43,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
       - run: npm install -g npm@11
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-22-npm11-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: ${{ runner.os }}-node-22-npm11-
       - run: npm ci
       - run: npm run lint
 
@@ -49,8 +60,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
       - run: npm install -g npm@11
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-22-npm11-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: ${{ runner.os }}-node-22-npm11-
       - run: npm ci
       - run: npm run check-types
 
@@ -62,7 +77,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
       - run: npm install -g npm@11
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-22-npm11-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: ${{ runner.os }}-node-22-npm11-
       - run: npm ci
       - run: npm --workspace web run test
