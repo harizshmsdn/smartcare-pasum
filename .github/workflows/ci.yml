@@ -15,6 +15,7 @@ permissions:
 
 jobs:
   build:
+    name: CI / build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,6 +38,7 @@ jobs:
         # TODO: remove once pre-existing build/type errors are fixed
 
   lint:
+    name: CI / lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -55,6 +57,7 @@ jobs:
         # TODO: remove once the 152 lint warnings are resolved
 
   check-types:
+    name: CI / check-types
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -73,6 +76,7 @@ jobs:
         # TODO: remove once pre-existing type errors are fixed
 
   test:
+    name: CI / test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
