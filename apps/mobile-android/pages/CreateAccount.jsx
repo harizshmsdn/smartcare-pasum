@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import { useApp } from '../AppContext.jsx'
+import logoImg from '../assets/logo.png' // <-- Adjust path if necessary
 
 const socialBtnStyle = {
   display: 'flex',
@@ -62,9 +63,23 @@ export default function Signup() {
     setInfoMessage('')
     setSubmitting(true)
 
-    // NOTE: full_name is passed in options.data so the on_auth_user_created
-    // database trigger (see migration_student_app.sql) can use it to create
-    // the matching public.profiles row automatically.
+    // WORTH CONFIRMING: this only calls auth.signUp() — it never inserts a
+    // row into `profiles`. profiles.role, full_name, and email are all
+    // NOT NULL, and every screen in this app (loadStudentData, Settings,
+    // EmergencyContact, etc.) assumes a profiles row already exists for
+    // the logged-in user. Two ways this works:
+    //   1. You already have a Postgres trigger on auth.users (commonly
+    //      named something like handle_new_user) that inserts a matching
+    //      profiles row on signup — if so, this is fine as-is.
+    //   2. There's no such trigger — in which case every new signup
+    //      leaves the user with no profile row, and loadStudentData's
+    //      `.single()` fetch will come back empty/erroring right after
+    //      first login. Also note this form collects no `role` at all, so
+    //      even a trigger would need a hardcoded default (e.g. 'student').
+    // Flagging rather than guessing — I don't have visibility into your
+    // Supabase triggers from here. If there's no trigger, this needs an
+    // explicit `.from('profiles').insert(...)` (or upsert) right after a
+    // successful signUp() call, before navigating away.
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
@@ -79,10 +94,8 @@ export default function Signup() {
     }
 
     if (data?.session) {
-      // Email confirmation is off — user is signed in immediately.
       navigate('/home')
     } else {
-      // Email confirmation is required — no session yet.
       setInfoMessage('Account created! Check your email to confirm your account, then log in.')
     }
   }
@@ -108,26 +121,30 @@ export default function Signup() {
         boxSizing: 'border-box'
       }}
     >
-      {/* 1. TOP LOGO AREA */}
+
       <div
         style={{
           width: '100%',
           maxWidth: 600,
           margin: '0 auto',
-          background: 'white',
-          borderRadius: 20,
-          padding: 'clamp(14px, 2.5vh, 24px) 0',
-          textAlign: 'center',
-          fontWeight: 800,
-          fontSize: 'clamp(24px, 4vh, 36px)',
-          letterSpacing: 2,
-          color: '#000',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
-          boxSizing: 'border-box',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingTop: 'clamp(8px, 1.5vh, 16px)',
           flexShrink: 0
         }}
       >
-        LOGO
+        <img 
+          src={logoImg} 
+          alt="Logo" 
+          style={{ 
+            maxHeight: 'clamp(100px, 15vh, 160px)', 
+            maxWidth: '100%',
+            height: 'auto', 
+            objectFit: 'contain',
+            marginBottom: '-50px'
+          }} 
+        />
       </div>
 
       {/* 2. MAIN FULL-BLEED CONTENT AREA */}
@@ -182,17 +199,6 @@ export default function Signup() {
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
             </svg>
             Continue with Google
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleSocialSignup('Apple')}
-            style={socialBtnStyle}
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="#1E1B4B" style={{ marginRight: 14, flexShrink: 0 }}>
-              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.18c.67-.83 1.13-1.98.99-3.18-1.03.05-2.31.7-3.03 1.54-.64.75-1.2 1.93-1.04 3.09 1.16.09 2.37-.62 3.08-1.45z" />
-            </svg>
-            Continue with Apple
           </button>
 
           <button

@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BottomNav from '../components/BottomNav.jsx'
 import { useApp } from '../AppContext.jsx'
-import { supabase } from '../supabaseClient.js'
 
 export default function EmergencyContact() {
   const navigate = useNavigate()
@@ -30,27 +29,16 @@ export default function EmergencyContact() {
     setIsSubmitting(true)
 
     try {
-      // Get logged-in user session
-      const { data: { session } } = await supabase.auth.getSession()
-
-      if (!session?.user) {
-        throw new Error('User session not found. Please log in again.')
-      }
-
-      // Upsert emergency details into Supabase profiles table
-      const { error: dbError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: session.user.id,
-          emergency_name: emergency.name,
-          emergency_relationship: emergency.relationship,
-          emergency_phone: emergency.phone,
-          updated_at: new Date().toISOString()
-        })
-
-      if (dbError) throw dbError
-
-      // Update local React App context
+      // FIXED: this used to fire a second, raw supabase.upsert() here with
+      // its own column names (emergency_name/relationship/phone) — a
+      // *third* naming scheme, different from both the actual profiles
+      // schema and from AppContext's updateProfile (which writes
+      // emergency_contact_name/relationship/phone). That raw call would
+      // fail outright (those columns don't exist), and even if it hadn't,
+      // it would have written data under different column names than what
+      // updateProfile — called right below — reads back on next load, so
+      // the saved values would silently disappear on refresh. updateProfile
+      // already performs the DB write; this screen shouldn't duplicate it.
       await updateProfile({
         ...user,
         emergencyName: emergency.name,

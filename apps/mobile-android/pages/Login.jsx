@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import { useApp } from '../AppContext.jsx'
+import logoImg from '../assets/logo.png' // <-- Adjust path if necessary
 
 const inputStyle = {
   width: '100%',
@@ -45,34 +46,38 @@ export default function Login() {
       style={{
         display: 'flex',
         flexDirection: 'column',
-        minHeight: '100dvh', // Dynamic viewport height prevents iOS bar issues
+        minHeight: '100dvh',
         width: '100vw',
-        backgroundColor: '#E8E9FF', // Background color extended to full page
+        backgroundColor: '#E8E9FF',
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
         padding: 'clamp(16px, 3vh, 32px) clamp(20px, 5vw, 48px)',
         boxSizing: 'border-box'
       }}
     >
-      {/* 1. TOP LOGO AREA */}
+      {/* 1. TOP LOGO AREA (Without white container) */}
       <div
         style={{
           width: '100%',
           maxWidth: 600,
           margin: '0 auto',
-          background: 'white',
-          borderRadius: 20,
-          padding: 'clamp(14px, 2.5vh, 24px) 0',
-          textAlign: 'center',
-          fontWeight: 800,
-          fontSize: 'clamp(24px, 4vh, 36px)',
-          letterSpacing: 2,
-          color: '#000',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
-          boxSizing: 'border-box',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingTop: 'clamp(8px, 1.5vh, 16px)',
           flexShrink: 0
         }}
       >
-        LOGO
+        <img 
+          src={logoImg} 
+          alt="Logo" 
+          style={{ 
+            maxHeight: 'clamp(100px, 15vh, 160px)', 
+            maxWidth: '100%',
+            height: 'auto', 
+            objectFit: 'contain',
+            marginBottom: '-350px'
+          }} 
+        />
       </div>
 
       {/* 2. MAIN FULL-BLEED CONTENT AREA */}
@@ -84,7 +89,7 @@ export default function Login() {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
-          flexGrow: 1, // Expands to take all remaining vertical space
+          flexGrow: 1,
           paddingTop: 'clamp(16px, 3vh, 32px)',
           paddingBottom: 'clamp(16px, 3vh, 32px)',
           boxSizing: 'border-box'
@@ -168,21 +173,21 @@ export default function Login() {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
             <button
-            type="button"
-            onClick={() => {/* handle forgot password */}}
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              color: '#4F46E5',
-              fontSize: 'clamp(13px, 1.6vh, 14px)',
-              fontWeight: 600,
-              cursor: 'pointer',
-              outline: 'none'
+              type="button"
+              onClick={() => {/* handle forgot password */}}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                color: '#4F46E5',
+                fontSize: 'clamp(13px, 1.6vh, 14px)',
+                fontWeight: 600,
+                cursor: 'pointer',
+                outline: 'none'
               }}
-              >
-                Forgot Password?
-                </button>
+            >
+              Forgot Password?
+            </button>
 
             <button
               type="submit"

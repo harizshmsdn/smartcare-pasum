@@ -1,7 +1,19 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
+import { requireString, optionalString, requireUrl, requireDescriptorArray, requireWeekdayList, requireTime } from './Validators.js'
 
 const AppContext = createContext(null)
+
+// alerts has no `title` column — this fills in a short, human title based
+// on `type` for display in Notification.jsx/Home.jsx. Extend as you add
+// more notification types (and check these strings are valid values for
+// the alerts.type enum — see the note in loadStudentData).
+const ALERT_TYPE_TITLES = {
+  schedule: 'Schedule Updated',
+  merits: 'Merit Submitted',
+  assessment: 'New Assessment',
+  general: 'Notification',
+}
 
 export function AppProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -52,7 +64,6 @@ export function AppProvider({ children }) {
         setUser({
           id: profile.id,
           name: profile.full_name || '',
-          identificationNumber: profile.identification_number || '',
           matricsNumber: profile.institutional_id || '',
           class: profile.class_group || '',
           email: profile.email || '',
@@ -208,11 +219,22 @@ export function AppProvider({ children }) {
         setAssessmentData(formattedAssessments)
       }
 
-      // FIXED: Notification.jsx expected notifications/markAsRead/markAllAsRead/
-      // deleteNotification/clearAllNotifications from context, but none of that
-      // existed anywhere. Added a real notifications table + fetch here.
+      // DECISION: reusing `alerts` instead of a separate `notifications`
+      // table. One real blocker for this: alerts.lecturer_id is NOT NULL
+      // (FK -> profiles), but self-generated notifications like "Merit
+      // Submitted" have no lecturer to attribute them to — this requires
+      // making lecturer_id nullable (see suggested_migration.sql). alerts
+      // also has no `title` column, so a short title is derived from
+      // `type` on the client instead of adding one — swap in a real title
+      // column later if you want more control over the wording than the
+      // generic map below gives you.
+      // WORTH CHECKING: alerts.type and alerts.priority are enum
+      // (USER-DEFINED) columns — the schema dump doesn't list their
+      // allowed values, so double-check 'schedule'/'merits'/'general' (used
+      // below) and 'low' (used as priority for self-generated alerts in
+      // triggerNotification) are actually valid values for those enums.
       const { data: notifs } = await supabase
-        .from('notifications')
+        .from('alerts')
         .select('*')
         .eq('student_id', userId)
         .order('created_at', { ascending: false })
@@ -220,10 +242,10 @@ export function AppProvider({ children }) {
       if (notifs) {
         setNotifications(notifs.map((n) => ({
           id: n.id,
-          title: n.title,
+          title: ALERT_TYPE_TITLES[n.type] || 'Notification',
           message: n.message,
           type: n.type,
-          read: n.read,
+          read: n.is_read,
           time: new Date(n.created_at).toLocaleString(),
         })))
       }
@@ -237,26 +259,37 @@ export function AppProvider({ children }) {
 
   // 3. Database Action Mutations
 
+  // RESOLVED per your migration: profiles now has class_group and
+  // emergency_contact_* (identification_number dropped — unused in the UI
+  // and confirmed not needed). Wired through Validators.js here since
+  // that file's own header says every AppContext write should run through
+  // it — this was the one mutation still skipping it entirely.
   async function updateProfile(updatedData) {
     if (!user) throw new Error('No active session — please log in again.')
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          id: user.id,
-          full_name: updatedData.name,
-          identification_number: updatedData.identificationNumber,
-          institutional_id: updatedData.matricsNumber,
-          class_group: updatedData.class,
-          phone_number: updatedData.phone,
-          emergency_contact_name: updatedData.emergencyName,
-          emergency_contact_relationship: updatedData.emergencyRelationship,
-          emergency_contact_phone: updatedData.emergencyPhone,
-          updated_at: new Date().toISOString()
-        })
+      const payload = {
+        id: user.id,
+        full_name: requireString(updatedData.name, 'name', { maxLength: 120 }),
+        institutional_id: optionalString(updatedData.matricsNumber, 'matricsNumber', { maxLength: 40 }),
+        class_group: optionalString(updatedData.class, 'class', { maxLength: 40 }),
+        phone_number: optionalString(updatedData.phone, 'phone', { maxLength: 30 }),
+        emergency_contact_name: optionalString(updatedData.emergencyName, 'emergencyName', { maxLength: 120 }),
+        emergency_contact_relationship: optionalString(updatedData.emergencyRelationship, 'emergencyRelationship', { maxLength: 60 }),
+        emergency_contact_phone: optionalString(updatedData.emergencyPhone, 'emergencyPhone', { maxLength: 30 }),
+        updated_at: new Date().toISOString()
+      }
+
+      const { error } = await supabase.from('profiles').upsert(payload)
 
       if (error) throw error
-      await loadStudentData(user.id)
+
+      // PERF FIX: this used to call loadStudentData(user.id) here, which
+      // re-runs all 6+ relational queries (schedule, attendance, merits,
+      // scores, notifications) just to reflect a profile edit. We already
+      // have the exact next-state from the caller (every screen that calls
+      // updateProfile passes `{ ...user, <changed fields> }`), so just
+      // merge it into state directly — no extra network round trip.
+      setUser((prev) => ({ ...prev, ...updatedData }))
     } catch (err) {
       console.error('Profile update write failure:', err)
       throw err
@@ -265,16 +298,23 @@ export function AppProvider({ children }) {
 
   // FIXED: brand new — FaceEnrollment.jsx calls this on capture, but it
   // was never defined anywhere in context, so Face ID setup threw immediately.
+  // SCHEMA MISMATCH — your profiles table has `face_hash` (varchar), not
+  // `face_descriptor`. This write will fail as-is. Also worth deciding:
+  // a face-api.js descriptor is a 128-length float array (~1-2KB as JSON),
+  // which doesn't fit naturally in a varchar named "hash" — either widen
+  // face_hash to a jsonb/numeric[] column, or add a dedicated
+  // face_descriptor column, rather than reusing face_hash as-is.
   async function saveFaceDescriptor(descriptorArray) {
     if (!user) throw new Error('No active session — please log in again.')
     try {
+      const validated = requireDescriptorArray(descriptorArray, 'faceDescriptor')
       const { error } = await supabase
         .from('profiles')
-        .update({ face_descriptor: descriptorArray })
+        .update({ face_descriptor: validated })
         .eq('id', user.id)
 
       if (error) throw error
-      setUser((prev) => ({ ...prev, faceDescriptor: descriptorArray }))
+      setUser((prev) => ({ ...prev, faceDescriptor: validated }))
     } catch (err) {
       console.error('Error saving face descriptor:', err)
       throw err
@@ -283,75 +323,216 @@ export function AppProvider({ children }) {
 
   async function addMerit(entry) {
     if (!user) return
-    const { data, error } = await supabase
-      .from('merit_claims')
-      .insert([
-        {
-          student_id: user.id,
-          title: entry.name,
-          // FIXED: `level`/`role` need to be added to merit_claims (see
-          // migration.sql) — the base schema doesn't have them yet, and
-          // your AddMerit form collects both.
-          level: entry.level,
-          role: entry.roles,
-          // FIXED: the real column is `proof_file_url`, not `proof_url`.
-          proof_file_url: entry.proofUrl,
-          awarded_points: Number(entry.points || 0),
-          status: 'pending'
-        }
-      ])
-      .select()
+    try {
+      const payload = {
+        student_id: user.id,
+        title: requireString(entry.name, 'name', { maxLength: 150 }),
+        // RESOLVED: your migration added merit_level/merit_roles (not
+        // level/role — Postgres reserves neither word, but merit_roles
+        // avoids colliding with profiles.role in any future joined query).
+        merit_level: requireString(entry.level, 'level', { maxLength: 60 }),
+        merit_roles: requireString(entry.roles, 'roles', { maxLength: 120 }),
+        // proofUrl comes from Supabase Storage's own getPublicUrl() in
+        // AddMerit.jsx, so it's already a real https URL — requireUrl
+        // still catches anything unexpected (e.g. someone forcing a
+        // relative/http path in past a future refactor) before it's stored.
+        proof_file_url: entry.proofUrl ? requireUrl(entry.proofUrl, 'proofUrl') : null,
+        awarded_points: 0, // students don't award their own points — always 0 until a reviewer sets it
+        status: 'pending'
+      }
 
-    if (!error && data) {
-      setMerits((prev) => [
-        ...prev,
-        { id: data[0].id, name: data[0].title, points: data[0].awarded_points, status: 'pending' }
-      ])
-      await triggerNotification('Merit Submitted', `Your claim for "${entry.name}" is pending review.`, 'merits')
+      const { data, error } = await supabase.from('merit_claims').insert([payload]).select()
+      if (error) throw error
+
+      if (data) {
+        setMerits((prev) => [
+          ...prev,
+          { id: data[0].id, name: data[0].title, points: data[0].awarded_points, status: 'pending' }
+        ])
+        await triggerNotification('Merit Submitted', `Your claim for "${entry.name}" is pending review.`, 'merits')
+      }
+    } catch (err) {
+      console.error('Error submitting merit claim:', err)
+      throw err
+    }
+  }
+
+  // RESOLVED (item 1 from last review): AddSchedule.jsx is now a picker
+  // over classes the lecturer side already created, matching
+  // classes.lecturer_id being NOT NULL. Returns classes the student isn't
+  // already enrolled in.
+  async function fetchAvailableClasses() {
+    if (!user) return []
+    try {
+      const enrolledClassIds = schedule.map((s) => s.id)
+      let query = supabase
+        .from('classes')
+        .select('id, group_code, type, day_of_week, start_time, end_time, location, semester, subjects (name, code)')
+        .order('day_of_week', { ascending: true })
+
+      if (enrolledClassIds.length > 0) {
+        query = query.not('id', 'in', `(${enrolledClassIds.join(',')})`)
+      }
+
+      const { data, error } = await query
+      if (error) throw error
+      return (data || []).filter((c) => c.subjects)
+    } catch (err) {
+      console.error('Error fetching available classes:', err)
+      throw err
     }
   }
 
   async function addSchedule(entry) {
     if (!user) return
     try {
-      if (entry.subject && entry.class) {
-        const { data: subData, error: subErr } = await supabase
+      let classIds = []
+
+      if (entry.classId) {
+        // Picker path — enrolling into a class that already exists.
+        classIds = [entry.classId]
+      } else if (entry.subject && entry.class) {
+        // RESTORED per your note: there's no lecturer/admin app populating
+        // classes yet, so students have to be able to bootstrap their own.
+        //
+        // IMPORTANT — this is find-or-create, not plain create. If every
+        // student who types "Calculus I" got their own private classes
+        // row, no two students could ever share an attendance_sessions
+        // row for it — QR/PIN check-in is meaningless if you're the only
+        // person who can ever be "in" that class. So this looks for an
+        // existing subject (by name) and class (by subject + group code +
+        // day) before creating new ones, so students converge on one
+        // shared class the same way they'd converge on a real one.
+        // Second-order effect: subjects.code has a UNIQUE constraint —
+        // plain create-every-time would eventually collide once two
+        // students pick the same generated code anyway.
+        //
+        // classes.lecturer_id/semester and subjects.credit_hours are now
+        // nullable (see suggested_migration.sql) — a self-authored class
+        // has lecturer_id = null until/unless a real lecturer later
+        // claims it via the admin app; that's a real product hook worth
+        // having (an actual instructor can "claim" a class students
+        // already organized themselves around), not just a workaround.
+        const subjectName = requireString(entry.subject, 'subject', { maxLength: 120 })
+        const groupCode = requireString(entry.class, 'class', { maxLength: 40 })
+        const classType = requireString(entry.type || 'Lecture', 'type', { maxLength: 30 })
+        const days = requireWeekdayList(entry.frequency, 'frequency')
+        const startTime = requireTime(entry.startTime, 'startTime')
+        const endTime = requireTime(entry.endTime, 'endTime')
+        const location = optionalString(entry.location, 'location', { maxLength: 120 })
+
+        let { data: existingSubject } = await supabase
           .from('subjects')
-          .insert([{ name: entry.subject, code: entry.subject.substring(0, 4).toUpperCase() + '101' }])
-          .select()
+          .select('id')
+          .ilike('name', subjectName)
+          .maybeSingle()
+
+        let subjectId = existingSubject?.id
+        if (!subjectId) {
+          const generatedCode = subjectName.replace(/[^a-zA-Z]/g, '').substring(0, 4).toUpperCase() + Math.floor(100 + Math.random() * 900)
+          const { data: newSubject, error: subErr } = await supabase
+            .from('subjects')
+            .insert([{ name: subjectName, code: generatedCode }])
+            .select('id')
+            .single()
+          // A duplicate-name race (two students creating the same brand
+          // new subject at once) fails on the code's uniqueness — treat
+          // that as "someone else just created it", not a hard error.
+          if (subErr) {
+            const { data: retrySubject } = await supabase.from('subjects').select('id').ilike('name', subjectName).maybeSingle()
+            if (!retrySubject) throw subErr
+            subjectId = retrySubject.id
+          } else {
+            subjectId = newSubject.id
+          }
+        }
+
+        for (const day of days) {
+          let { data: existingClass } = await supabase
+            .from('classes')
+            .select('id')
+            .eq('subject_id', subjectId)
+            .eq('group_code', groupCode)
+            .eq('day_of_week', day)
+            .maybeSingle()
+
+          let classId = existingClass?.id
+          if (!classId) {
+            const { data: newClass, error: classErr } = await supabase
+              .from('classes')
+              .insert([{
+                subject_id: subjectId,
+                group_code: groupCode,
+                type: classType,
+                day_of_week: day,
+                start_time: `${startTime}:00`,
+                end_time: `${endTime}:00`,
+                location: location || null,
+                lecturer_id: null,
+                semester: null
+              }])
+              .select('id')
+              .single()
+            if (classErr) throw classErr
+            classId = newClass.id
+          }
+          classIds.push(classId)
+        }
+      } else {
+        throw new Error('No class selected to add.')
+      }
+
+      for (const classId of classIds) {
+        // Avoid duplicate enrollment rows — enrollments has no unique
+        // constraint on (student_id, class_id) in the schema, so this
+        // guards it at the app level instead.
+        const { data: alreadyEnrolled } = await supabase
+          .from('enrollments')
+          .select('id')
+          .eq('student_id', user.id)
+          .eq('class_id', classId)
+          .maybeSingle()
+
+        if (alreadyEnrolled) continue
+
+        const { error: enrollError } = await supabase
+          .from('enrollments')
+          // FIXED: enrollments only has (student_id, class_id,
+          // current_attendance_rate). sessions_total/sessions_attended
+          // don't exist on this table — that insert was failing outright.
+          // current_attendance_rate defaults to 0, no need to set it here.
+          .insert([{ student_id: user.id, class_id: classId }])
+
+        if (enrollError) throw enrollError
+
+        // PERF FIX: this used to call loadStudentData(user.id) — a full
+        // re-fetch of schedule + attendance + merits + scores + notifications
+        // — just to show one new class. Instead, fetch only the one class
+        // just enrolled in and merge it into local state.
+        const { data: classData, error: classFetchError } = await supabase
+          .from('classes')
+          .select('id, group_code, type, day_of_week, start_time, end_time, location, subjects (name, code)')
+          .eq('id', classId)
           .single()
 
-        if (subErr || !subData) throw new Error(subErr?.message || "Subject build failure")
-
-        for (const day of entry.frequency) {
-          const { data: classData, error: classErr } = await supabase
-            .from('classes')
-            .insert([{
-              subject_id: subData.id,
-              group_code: entry.class,
-              type: entry.type || 'Lecture',
-              day_of_week: day,
-              start_time: `${entry.startTime}:00`,
-              end_time: `${entry.endTime}:00`,
-              location: entry.location || 'Main Hall'
-            }])
-            .select()
-            .single()
-
-          if (classErr || !classData) throw new Error(classErr?.message || "Class configuration failure")
-
-          await supabase
-            .from('enrollments')
-            .insert([{ student_id: user.id, class_id: classData.id, sessions_total: 0, sessions_attended: 0 }])
+        if (!classFetchError && classData) {
+          setSchedule((prev) => [
+            ...prev,
+            {
+              id: classData.id,
+              subject: classData.subjects?.name,
+              class: classData.group_code,
+              time: classData.start_time && classData.end_time
+                ? `${classData.start_time.substring(0, 5)} - ${classData.end_time.substring(0, 5)}`
+                : 'N/A',
+              frequency: `Every ${classData.day_of_week}`,
+              location: classData.location,
+              type: classData.type
+            }
+          ])
         }
       }
-      else if (entry.classId) {
-        await supabase
-          .from('enrollments')
-          .insert([{ student_id: user.id, class_id: entry.classId, sessions_total: 0, sessions_attended: 0 }])
-      }
 
-      await loadStudentData(user.id)
       await triggerNotification('Schedule Updated', `${entry.subject || 'A class'} was added to your schedule.`, 'schedule')
     } catch (err) {
       console.error('Error adding schedule blocks:', err)
@@ -369,113 +550,98 @@ export function AppProvider({ children }) {
         .eq('class_id', classId)
 
       if (error) throw error
-      await loadStudentData(user.id)
+
+      // PERF FIX: local removal instead of a full reload — we already know
+      // exactly which class was removed. Note schedule entries are keyed
+      // by class id, but attendanceData entries are keyed by enrollment id
+      // (see loadStudentData above) — pull the enrollmentId off the
+      // matching schedule item before it's removed so both lists stay
+      // in sync.
+      setSchedule((prev) => {
+        const removed = prev.find((item) => item.id === classId)
+        if (removed?.enrollmentId) {
+          setAttendanceData((att) => att.filter((item) => item.id !== removed.enrollmentId))
+        }
+        return prev.filter((item) => item.id !== classId)
+      })
     } catch (err) {
       console.error('Error deleting schedule item:', err)
     }
   }
 
-  async function addAssessment(entry) {
-    if (!user) return
-    try {
-      const { error } = await supabase
-        .from('assessments')
-        .insert([
-          {
-            student_id: user.id,
-            subject_name: entry.subject,
-            title: entry.title,
-            score: Number(entry.score),
-            possible_score: Number(entry.totalPossible)
-          }
-        ])
+  // REMOVED addAssessment(). Checked ContinuousAssessment.jsx — it's
+  // display-only, no add-a-score form calls this, which matches "read-only
+  // for students." That's actually already how the read side works:
+  // assessmentData (above, in loadStudentData) already pulls real,
+  // lecturer-authored records from student_scores/assessments — correct
+  // schema, no changes needed there. This function was the only thing
+  // trying to let a student write their own score, into the wrong table
+  // no less (assessments is a class-level definition, not a per-student
+  // result). Deleted rather than leaving a dead, broken export around;
+  // personal_grade_logs isn't needed either unless you want a genuinely
+  // separate "just for me" tracker later — happy to build that as its own
+  // feature if so, but it'd be additive, not a fix to this screen.
 
-      if (error) throw error
-      await loadStudentData(user.id)
-    } catch (err) {
-      console.error('Error adding assessment log entry:', err)
-      throw err
-    }
-  }
-
-  async function logAttendance(enrollmentId, sessionId, faceVerified = false, locationVerified = false) {
+  // SECURITY: this used to compute face/location "verified" flags entirely
+  // client-side (in ScanAttendance.jsx) and then trust them, plus compute
+  // and write the new attendance rate itself via direct table writes.
+  // Anyone with a valid session JWT could call the Supabase client (or a
+  // raw REST/RPC request) directly and skip the whole scan flow — insert
+  // whatever face_verified/location_verified they wanted, or set their own
+  // current_attendance_rate outright. Now this calls a SECURITY DEFINER
+  // Postgres function (see supabase/002_mark_attendance_rpc.sql) that
+  // re-derives both verdicts server-side from raw evidence (coordinates,
+  // face descriptor) and does the insert + rate recalculation atomically,
+  // in one round trip. For this to actually close the hole, direct
+  // INSERT/UPDATE grants on attendance_records/enrollments must be
+  // revoked from the authenticated role (also in that file) — the RPC
+  // alone doesn't help if the table is still directly writable.
+  async function logAttendance(sessionId, { latitude, longitude, faceDescriptor } = {}) {
     if (!user) throw new Error('No active session — please log in again.')
     try {
-      const { error: insertError } = await supabase
-        .from('attendance_records')
-        .insert({
-          session_id: sessionId,
-          student_id: user.id,
-          face_verified: faceVerified,
-          location_verified: locationVerified,
-          status: 'Present'
-        })
+      const { data, error } = await supabase.rpc('mark_attendance', {
+        p_session_id: sessionId,
+        p_lat: latitude ?? null,
+        p_lng: longitude ?? null,
+        p_face_descriptor: faceDescriptor ?? null,
+      })
 
-      if (insertError) throw insertError
+      if (error) throw error
 
-      // 2. Fetch the class ID for this enrollment
-      const { data: enrollment, error: fetchEnrollError } = await supabase
-        .from('enrollments')
-        .select('class_id')
-        .eq('id', enrollmentId)
-        .single()
-
-      if (fetchEnrollError || !enrollment) throw fetchEnrollError || new Error('Enrollment not found')
-
-      // 3. Fetch all sessions for this class
-      const { data: sessions, error: fetchSessionsError } = await supabase
-        .from('attendance_sessions')
-        .select('id')
-        .eq('class_id', enrollment.class_id)
-
-      if (fetchSessionsError) throw fetchSessionsError
-
-      const sessionIds = (sessions || []).map((s) => s.id)
-
-      // 4. Fetch all checked-in records for this student in these sessions
-      const { data: records, error: fetchRecordsError } = await supabase
-        .from('attendance_records')
-        .select('id')
-        .eq('student_id', user.id)
-        .in('session_id', sessionIds)
-
-      if (fetchRecordsError) throw fetchRecordsError
-
-      const totalSessions = sessionIds.length
-      const attendedSessions = (records || []).length
-      const newRate = totalSessions > 0 ? Math.round((attendedSessions / totalSessions) * 100) : 100
-
-      // 5. Update the enrollment's attendance rate
-      const { error: updateError } = await supabase
-        .from('enrollments')
-        .update({
-          current_attendance_rate: newRate
-        })
-        .eq('id', enrollmentId)
-
-      if (updateError) throw updateError
-
-      await loadStudentData(user.id)
+      setAttendanceData((prev) =>
+        prev.map((item) =>
+          item.id === data.enrollmentId
+            ? { ...item, percent: data.newRate, total: data.total, attended: data.attended, absent: data.total - data.attended }
+            : item
+        )
+      )
+      return data
     } catch (err) {
       console.error('Error logging attendance session:', err)
       throw err
     }
   }
 
-  // FIXED: brand new — this whole feature was referenced by Notification.jsx
-  // and StudentInfo.jsx but never actually implemented anywhere.
+  // DECISION: writes to `alerts` now instead of a separate table.
+  // `title` param is kept for callers' convenience but not persisted
+  // (alerts has no title column) — ALERT_TYPE_TITLES derives it from
+  // `type` on read instead, so pass a `type` that's actually in
+  // ALERT_TYPE_TITLES if you want a specific label to show.
   async function triggerNotification(title, message, type = 'general') {
     if (!user) return
     try {
       const { data, error } = await supabase
-        .from('notifications')
-        .insert([{ student_id: user.id, title, message, type, read: false }])
+        .from('alerts')
+        // lecturer_id intentionally omitted — requires the nullable-lecturer_id
+        // migration (see suggested_migration.sql) since this is student-generated,
+        // not lecturer-generated.
+        .insert([{ student_id: user.id, message, type, priority: 'low', is_read: false }])
         .select()
         .single()
 
       if (error) throw error
       setNotifications((prev) => [
-        { id: data.id, title: data.title, message: data.message, type: data.type, read: false, time: new Date(data.created_at).toLocaleString() },
+        { id: data.id, title: ALERT_TYPE_TITLES[data.type] || title, message: data.message, type: data.type, read: false, time: new Date(data.created_at).toLocaleString() },
         ...prev
       ])
     } catch (err) {
@@ -485,27 +651,27 @@ export function AppProvider({ children }) {
 
   async function markAsRead(id) {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
-    const { error } = await supabase.from('notifications').update({ read: true }).eq('id', id)
+    const { error } = await supabase.from('alerts').update({ is_read: true }).eq('id', id)
     if (error) console.error('Error marking notification read:', error)
   }
 
   async function markAllAsRead() {
     if (!user) return
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
-    const { error } = await supabase.from('notifications').update({ read: true }).eq('student_id', user.id)
+    const { error } = await supabase.from('alerts').update({ is_read: true }).eq('student_id', user.id)
     if (error) console.error('Error marking all notifications read:', error)
   }
 
   async function deleteNotification(id) {
     setNotifications((prev) => prev.filter((n) => n.id !== id))
-    const { error } = await supabase.from('notifications').delete().eq('id', id)
+    const { error } = await supabase.from('alerts').delete().eq('id', id)
     if (error) console.error('Error deleting notification:', error)
   }
 
   async function clearAllNotifications() {
     if (!user) return
     setNotifications([])
-    const { error } = await supabase.from('notifications').delete().eq('student_id', user.id)
+    const { error } = await supabase.from('alerts').delete().eq('student_id', user.id)
     if (error) console.error('Error clearing notifications:', error)
   }
 
@@ -516,12 +682,12 @@ export function AppProvider({ children }) {
     saveFaceDescriptor,
     schedule,
     addSchedule,
+    fetchAvailableClasses,
     deleteSchedule,
     merits,
     addMerit,
     totalMerits: merits.reduce((sum, m) => sum + Number(m.points || 0), 0),
     assessmentData,
-    addAssessment,
     attendanceData,
     logAttendance,
     loadStudentData,
