@@ -20,9 +20,6 @@ const LOCATION_RADIUS_METERS = 100
 // distance check essentially at random.
 const MAX_ACCEPTABLE_ACCURACY_METERS = 75
 
-// OffscreenCanvas + Worker support gate. Falls back to the old main-thread
-// decode loop on browsers that don't support it (older iOS Safari mainly);
-// virtually all modern Android WebView/Chrome targets support it.
 const SUPPORTS_QR_WORKER =
   typeof Worker !== 'undefined' &&
   typeof OffscreenCanvas !== 'undefined' &&
@@ -54,14 +51,9 @@ export default function ScanAttendance() {
   const [locationResult, setLocationResult] = useState(null) // null | 'skipped' | { ok, distance }
   const [capturedCoords, setCapturedCoords] = useState(null)
 
-  // Manual PIN Code States
   const [isManualPin, setIsManualPin] = useState(false)
   const [pinCode, setPinCode] = useState('')
 
-  // Proactive permission state, checked before we ever call
-  // getUserMedia/getCurrentPosition, so we can show a clear message instead
-  // of waiting for the browser to throw a generic error.
-  // 'unknown' | 'granted' | 'denied' | 'prompt'
   const [cameraPermission, setCameraPermission] = useState('unknown')
   const [locationPermission, setLocationPermission] = useState('unknown')
 
@@ -76,10 +68,6 @@ export default function ScanAttendance() {
     canvasRef.current = document.createElement('canvas')
   }
 
-  // Proactively check permission state on mount. This doesn't prompt the
-  // user — it just reads whatever the browser already knows — so it's safe
-  // to run immediately and lets us render a "camera access is blocked, open
-  // Settings" message instead of a confusing silent failure.
   useEffect(() => {
     if (navigator.permissions?.query) {
       navigator.permissions.query({ name: 'camera' }).then((status) => {
@@ -94,11 +82,8 @@ export default function ScanAttendance() {
     }
   }, [])
 
-  // Spin up the QR decode worker once, tear it down on unmount.
   useEffect(() => {
     if (!SUPPORTS_QR_WORKER) return
-    // Module worker — qrWorker.js does `import jsQR from 'jsqr'`, which
-    // Vite bundles the same way it bundles any other module import.
     const worker = new Worker(new URL('../qrWorker.js', import.meta.url), { type: 'module' })
     qrWorkerRef.current = worker
     return () => {
@@ -107,9 +92,7 @@ export default function ScanAttendance() {
     }
   }, [])
 
-  // Camera Management
   useEffect(() => {
-    // Stop camera in Stage 3 or when switching to manual PIN input
     if (stage === 3 || (stage === 1 && isManualPin)) {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop())
@@ -179,7 +162,6 @@ export default function ScanAttendance() {
     }
   }, [stage, isManualPin, cameraPermission])
 
-  // Load face-api models once in background
   useEffect(() => {
     let cancelled = false
     async function loadModels() {
@@ -247,22 +229,6 @@ export default function ScanAttendance() {
     }
   }, [schedule])
 
-  // Stage 1: QR Code Scanner Tick Loop
-  //
-  // PERF: this used to call ctx.getImageData() + jsQR() synchronously on
-  // every animation frame at up to 1280x720 — both are CPU-bound and run
-  // on the main thread, so on mid/low-tier Android this was the single
-  // biggest source of dropped frames and jank while scanning (worse than
-  // the one-shot face-api.js calls in Stage 2, which only run once per
-  // attempt, not every frame).
-  //
-  // Fix: hand each frame to qrWorker.js as a transferable ImageBitmap.
-  // The worker does the drawImage/getImageData/jsQR work on its own
-  // OffscreenCanvas, completely off the main thread. We still capture the
-  // bitmap once per rAF tick (createImageBitmap is comparatively cheap —
-  // it's the decode that was expensive), and we only queue a new frame
-  // once the worker has replied, so we never pile up backlog if a phone's
-  // decode is slower than its frame rate.
   useEffect(() => {
     if (stage !== 1 || isManualPin || matchedClass || busy) return
     setErrorText('')
@@ -320,8 +286,6 @@ export default function ScanAttendance() {
       }
     }
 
-    // Fallback path for browsers without OffscreenCanvas/Worker support —
-    // same behavior as before, main-thread decode.
     function tickFallback() {
       const video = videoRef.current
       const canvas = canvasRef.current
@@ -348,7 +312,6 @@ export default function ScanAttendance() {
     }
   }, [stage, isManualPin, matchedClass, busy, verifyScannedPin])
 
-  // Manual PIN Submission Handler
   const handlePinSubmit = async (e) => {
     e.preventDefault()
     setErrorText('')
@@ -359,7 +322,6 @@ export default function ScanAttendance() {
     await verifyScannedPin(pinCode.trim())
   }
 
-  // Stage 2: Face Matching
   const attemptFaceMatch = useCallback(async () => {
     if (!videoRef.current) return
     if (!user?.faceDescriptor) {
@@ -370,14 +332,6 @@ export default function ScanAttendance() {
     setErrorText('')
     setStatusText('Scanning your face…')
 
-    // PERF: this is a single one-shot call (not a per-frame loop like the QR
-    // scanner), so it isn't the main jank source — but on low-end Android
-    // the default inputSize (416) can still cause a visible stutter. Since
-    // the video frame is already centered/cropped to a face, 224 is plenty
-    // accurate here and meaningfully cheaper. True off-main-thread inference
-    // would need face-api's models re-loaded inside a worker with an
-    // OffscreenCanvas-backed WebGL context — doable, but a bigger lift than
-    // this file alone; flag if you want that taken further.
     const detection = await faceapi
       .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
       .withFaceLandmarks()
@@ -394,11 +348,6 @@ export default function ScanAttendance() {
 
     if (distance <= FACE_MATCH_THRESHOLD) {
       setFaceMatched(true)
-      // Kept for the server-side RPC to verify independently — see
-      // handleNext below. Don't treat the client-computed `distance` check
-      // above as the real proof; a modified client could always report a
-      // match. The RPC re-runs this same comparison server-side against
-      // profiles.face_descriptor before it'll accept the check-in.
       setCapturedDescriptor(Array.from(detection.descriptor))
       setStatusText('Matched!')
       setErrorText('')
@@ -419,10 +368,8 @@ export default function ScanAttendance() {
     } else {
       setStatusText('Loading face recognition…')
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage, modelsLoaded, matchedClass])
 
-  // Stage 3: Location Verification
   const checkLocation = useCallback(() => {
     if (matchedClass && !matchedClass.locationRequired) {
       setLocationResult('skipped')
@@ -438,9 +385,6 @@ export default function ScanAttendance() {
       setErrorText('Location services are not available on this device.')
       return
     }
-    // Proactive check: if we already know permission was denied, don't
-    // even call getCurrentPosition — show actionable guidance immediately
-    // instead of the browser's generic failure a few seconds later.
     if (locationPermission === 'denied') {
       setErrorText('Location access is blocked for this app. Enable it in your browser/site settings, then retry.')
       return
@@ -453,13 +397,6 @@ export default function ScanAttendance() {
         setBusy(false)
         const { accuracy } = position.coords
 
-        // A coarse (network/cell-tower) fix can be off by hundreds or
-        // thousands of meters — enableHighAccuracy asks for GPS but some
-        // devices still hand back a low-quality fix. Reject those rather
-        // than silently comparing against a geofence they can't reliably
-        // satisfy — this was previously missing, so valid students on a
-        // weak GPS lock could be rejected (or worse, spuriously accepted)
-        // without ever knowing why.
         if (accuracy != null && accuracy > MAX_ACCEPTABLE_ACCURACY_METERS) {
           setLocationResult({ ok: false, distance: null })
           setErrorText(
@@ -475,12 +412,6 @@ export default function ScanAttendance() {
           matchedClass.longitude
         )
         const allowedRadius = matchedClass.geoRadius || LOCATION_RADIUS_METERS
-        // Kept for the server-side RPC to re-check independently — see
-        // handleNext below. The client-side distance/threshold check here
-        // is UX only; a modified client could always report `ok: true`
-        // without this, so the RPC re-runs the same haversine comparison
-        // server-side against attendance_sessions.geo_lat/geo_lng before
-        // it'll accept the check-in.
         setCapturedCoords({ latitude: position.coords.latitude, longitude: position.coords.longitude })
         if (distance <= allowedRadius) {
           setLocationResult({ ok: true, distance })
@@ -498,15 +429,12 @@ export default function ScanAttendance() {
           setErrorText('Could not get your location. Check permissions and try again.')
         }
       },
-      // enableHighAccuracy was already set here — the accuracy check above
-      // is the actual missing piece, not this flag.
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     )
   }, [matchedClass, locationPermission])
 
   useEffect(() => {
     if (stage === 3) checkLocation()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage])
 
   const locationOk =
@@ -523,19 +451,7 @@ export default function ScanAttendance() {
     }
 
     setBusy(true)
-    try {
-      // SECURITY: this used to send faceMatched/locationResult.ok straight
-      // through as booleans, which the old logAttendance() trusted
-      // completely and wrote directly to attendance_records/enrollments.
-      // Since Supabase writes go through the client's own session, nothing
-      // stopped a modified client (or a raw API call with a valid student
-      // JWT) from just claiming face_verified/location_verified: true
-      // without ever scanning a face or being anywhere near the room —
-      // effectively self-reported attendance. Now we send the raw
-      // evidence (coordinates, face descriptor) and a Postgres RPC
-      // (mark_attendance — see supabase/002_mark_attendance_rpc.sql)
-      // re-derives both verdicts server-side before writing anything; see
-      // that file for why direct table access needs to be revoked too.
+try {
       await logAttendance(matchedClass.sessionId, {
         latitude: matchedClass.locationRequired ? capturedCoords?.latitude : undefined,
         longitude: matchedClass.locationRequired ? capturedCoords?.longitude : undefined,
@@ -567,7 +483,6 @@ export default function ScanAttendance() {
         {stage === 3 ? 'YOUR LOCATION' : isManualPin ? '● PIN CODE ENTRY' : '● CAMERA FEED'}
       </div>
 
-      {/* DISPLAY AREA (Camera vs Manual PIN vs Location) */}
       <div className="camera-box" style={{ position: 'relative', overflow: 'hidden' }}>
         {stage === 3 ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 13, color: 'var(--ink-soft)' }}>
@@ -619,8 +534,7 @@ export default function ScanAttendance() {
           />
         )}
       </div>
-
-      {/* STAGE 1 TOGGLE: QR SCANNER vs MANUAL PIN ENTRY */}
+      
       {stage === 1 && (
         <div style={{ textAlign: 'center', marginTop: 10 }}>
           <button

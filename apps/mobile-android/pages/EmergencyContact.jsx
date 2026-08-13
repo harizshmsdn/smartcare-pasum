@@ -29,16 +29,6 @@ export default function EmergencyContact() {
     setIsSubmitting(true)
 
     try {
-      // FIXED: this used to fire a second, raw supabase.upsert() here with
-      // its own column names (emergency_name/relationship/phone) — a
-      // *third* naming scheme, different from both the actual profiles
-      // schema and from AppContext's updateProfile (which writes
-      // emergency_contact_name/relationship/phone). That raw call would
-      // fail outright (those columns don't exist), and even if it hadn't,
-      // it would have written data under different column names than what
-      // updateProfile — called right below — reads back on next load, so
-      // the saved values would silently disappear on refresh. updateProfile
-      // already performs the DB write; this screen shouldn't duplicate it.
       await updateProfile({
         ...user,
         emergencyName: emergency.name,
@@ -77,7 +67,6 @@ export default function EmergencyContact() {
         <div className="topbar-spacer"/>
       </div>
 
-      {/* Success Notice Banner */}
       {successNotice && (
         <div style={{
           backgroundColor: '#d1fae5',
@@ -130,7 +119,6 @@ export default function EmergencyContact() {
 
         {error && <p style={{ color: '#d93838', fontSize: 12, margin: '8px 0 0 0' }}>{error}</p>}
 
-        {/* Right-aligned Submit Button */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px', paddingBottom: '90px' }}>
           <button 
             type="submit" 

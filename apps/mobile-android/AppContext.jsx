@@ -4,10 +4,6 @@ import { requireString, optionalString, requireUrl, requireDescriptorArray, requ
 
 const AppContext = createContext(null)
 
-// alerts has no `title` column — this fills in a short, human title based
-// on `type` for display in Notification.jsx/Home.jsx. Extend as you add
-// more notification types (and check these strings are valid values for
-// the alerts.type enum — see the note in loadStudentData).
 const ALERT_TYPE_TITLES = {
   schedule: 'Schedule Updated',
   merits: 'Merit Submitted',
@@ -22,9 +18,6 @@ export function AppProvider({ children }) {
   const [attendanceData, setAttendanceData] = useState([])
   const [assessmentData, setAssessmentData] = useState([])
   const [notifications, setNotifications] = useState([])
-  // FIXED: renamed the *initial auth check* flag so it's clearly separate
-  // from any later data-loading. This one should resolve almost instantly
-  // (it just reads local session storage) and only gates the very first paint.
   const [authChecked, setAuthChecked] = useState(false)
 
   // 1. Monitor Authentication State Change
@@ -51,7 +44,6 @@ export function AppProvider({ children }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  // 2. Fetch all real relational data for the student
   async function loadStudentData(userId) {
     try {
       const { data: profile } = await supabase
@@ -77,10 +69,6 @@ export function AppProvider({ children }) {
         })
       }
 
-      // FIXED: added pincode/latitude/longitude — ScanAttendance.jsx matches
-      // scanned codes against `item.pincode` and geofences against
-      // `matchedClass.latitude`/`longitude`, but these were never selected
-      // here, so both checks were silently working with `undefined`.
       const { data: enrollments } = await supabase
         .from('enrollments')
         .select(`
@@ -119,7 +107,6 @@ export function AppProvider({ children }) {
           }))
         setSchedule(formattedSchedule)
 
-        // Fetch counts dynamically for total sessions and attended sessions
         const classIds = enrollments.map(en => en.classes?.id).filter(Boolean)
         const { data: allSessions } = await supabase
           .from('attendance_sessions')
@@ -219,20 +206,6 @@ export function AppProvider({ children }) {
         setAssessmentData(formattedAssessments)
       }
 
-      // DECISION: reusing `alerts` instead of a separate `notifications`
-      // table. One real blocker for this: alerts.lecturer_id is NOT NULL
-      // (FK -> profiles), but self-generated notifications like "Merit
-      // Submitted" have no lecturer to attribute them to — this requires
-      // making lecturer_id nullable (see suggested_migration.sql). alerts
-      // also has no `title` column, so a short title is derived from
-      // `type` on the client instead of adding one — swap in a real title
-      // column later if you want more control over the wording than the
-      // generic map below gives you.
-      // WORTH CHECKING: alerts.type and alerts.priority are enum
-      // (USER-DEFINED) columns — the schema dump doesn't list their
-      // allowed values, so double-check 'schedule'/'merits'/'general' (used
-      // below) and 'low' (used as priority for self-generated alerts in
-      // triggerNotification) are actually valid values for those enums.
       const { data: notifs } = await supabase
         .from('alerts')
         .select('*')
@@ -257,13 +230,6 @@ export function AppProvider({ children }) {
     }
   }
 
-  // 3. Database Action Mutations
-
-  // RESOLVED per your migration: profiles now has class_group and
-  // emergency_contact_* (identification_number dropped — unused in the UI
-  // and confirmed not needed). Wired through Validators.js here since
-  // that file's own header says every AppContext write should run through
-  // it — this was the one mutation still skipping it entirely.
   async function updateProfile(updatedData) {
     if (!user) throw new Error('No active session — please log in again.')
     try {
@@ -283,12 +249,6 @@ export function AppProvider({ children }) {
 
       if (error) throw error
 
-      // PERF FIX: this used to call loadStudentData(user.id) here, which
-      // re-runs all 6+ relational queries (schedule, attendance, merits,
-      // scores, notifications) just to reflect a profile edit. We already
-      // have the exact next-state from the caller (every screen that calls
-      // updateProfile passes `{ ...user, <changed fields> }`), so just
-      // merge it into state directly — no extra network round trip.
       setUser((prev) => ({ ...prev, ...updatedData }))
     } catch (err) {
       console.error('Profile update write failure:', err)
@@ -296,14 +256,6 @@ export function AppProvider({ children }) {
     }
   }
 
-  // FIXED: brand new — FaceEnrollment.jsx calls this on capture, but it
-  // was never defined anywhere in context, so Face ID setup threw immediately.
-  // SCHEMA MISMATCH — your profiles table has `face_hash` (varchar), not
-  // `face_descriptor`. This write will fail as-is. Also worth deciding:
-  // a face-api.js descriptor is a 128-length float array (~1-2KB as JSON),
-  // which doesn't fit naturally in a varchar named "hash" — either widen
-  // face_hash to a jsonb/numeric[] column, or add a dedicated
-  // face_descriptor column, rather than reusing face_hash as-is.
   async function saveFaceDescriptor(descriptorArray) {
     if (!user) throw new Error('No active session — please log in again.')
     try {
@@ -327,17 +279,10 @@ export function AppProvider({ children }) {
       const payload = {
         student_id: user.id,
         title: requireString(entry.name, 'name', { maxLength: 150 }),
-        // RESOLVED: your migration added merit_level/merit_roles (not
-        // level/role — Postgres reserves neither word, but merit_roles
-        // avoids colliding with profiles.role in any future joined query).
         merit_level: requireString(entry.level, 'level', { maxLength: 60 }),
         merit_roles: requireString(entry.roles, 'roles', { maxLength: 120 }),
-        // proofUrl comes from Supabase Storage's own getPublicUrl() in
-        // AddMerit.jsx, so it's already a real https URL — requireUrl
-        // still catches anything unexpected (e.g. someone forcing a
-        // relative/http path in past a future refactor) before it's stored.
         proof_file_url: entry.proofUrl ? requireUrl(entry.proofUrl, 'proofUrl') : null,
-        awarded_points: 0, // students don't award their own points — always 0 until a reviewer sets it
+        awarded_points: 0,
         status: 'pending'
       }
 
@@ -357,10 +302,6 @@ export function AppProvider({ children }) {
     }
   }
 
-  // RESOLVED (item 1 from last review): AddSchedule.jsx is now a picker
-  // over classes the lecturer side already created, matching
-  // classes.lecturer_id being NOT NULL. Returns classes the student isn't
-  // already enrolled in.
   async function fetchAvailableClasses() {
     if (!user) return []
     try {
@@ -389,30 +330,8 @@ export function AppProvider({ children }) {
       let classIds = []
 
       if (entry.classId) {
-        // Picker path — enrolling into a class that already exists.
         classIds = [entry.classId]
       } else if (entry.subject && entry.class) {
-        // RESTORED per your note: there's no lecturer/admin app populating
-        // classes yet, so students have to be able to bootstrap their own.
-        //
-        // IMPORTANT — this is find-or-create, not plain create. If every
-        // student who types "Calculus I" got their own private classes
-        // row, no two students could ever share an attendance_sessions
-        // row for it — QR/PIN check-in is meaningless if you're the only
-        // person who can ever be "in" that class. So this looks for an
-        // existing subject (by name) and class (by subject + group code +
-        // day) before creating new ones, so students converge on one
-        // shared class the same way they'd converge on a real one.
-        // Second-order effect: subjects.code has a UNIQUE constraint —
-        // plain create-every-time would eventually collide once two
-        // students pick the same generated code anyway.
-        //
-        // classes.lecturer_id/semester and subjects.credit_hours are now
-        // nullable (see suggested_migration.sql) — a self-authored class
-        // has lecturer_id = null until/unless a real lecturer later
-        // claims it via the admin app; that's a real product hook worth
-        // having (an actual instructor can "claim" a class students
-        // already organized themselves around), not just a workaround.
         const subjectName = requireString(entry.subject, 'subject', { maxLength: 120 })
         const groupCode = requireString(entry.class, 'class', { maxLength: 40 })
         const classType = requireString(entry.type || 'Lecture', 'type', { maxLength: 30 })
@@ -435,9 +354,6 @@ export function AppProvider({ children }) {
             .insert([{ name: subjectName, code: generatedCode }])
             .select('id')
             .single()
-          // A duplicate-name race (two students creating the same brand
-          // new subject at once) fails on the code's uniqueness — treat
-          // that as "someone else just created it", not a hard error.
           if (subErr) {
             const { data: retrySubject } = await supabase.from('subjects').select('id').ilike('name', subjectName).maybeSingle()
             if (!retrySubject) throw subErr
@@ -483,9 +399,6 @@ export function AppProvider({ children }) {
       }
 
       for (const classId of classIds) {
-        // Avoid duplicate enrollment rows — enrollments has no unique
-        // constraint on (student_id, class_id) in the schema, so this
-        // guards it at the app level instead.
         const { data: alreadyEnrolled } = await supabase
           .from('enrollments')
           .select('id')
@@ -497,18 +410,10 @@ export function AppProvider({ children }) {
 
         const { error: enrollError } = await supabase
           .from('enrollments')
-          // FIXED: enrollments only has (student_id, class_id,
-          // current_attendance_rate). sessions_total/sessions_attended
-          // don't exist on this table — that insert was failing outright.
-          // current_attendance_rate defaults to 0, no need to set it here.
           .insert([{ student_id: user.id, class_id: classId }])
 
         if (enrollError) throw enrollError
 
-        // PERF FIX: this used to call loadStudentData(user.id) — a full
-        // re-fetch of schedule + attendance + merits + scores + notifications
-        // — just to show one new class. Instead, fetch only the one class
-        // just enrolled in and merge it into local state.
         const { data: classData, error: classFetchError } = await supabase
           .from('classes')
           .select('id, group_code, type, day_of_week, start_time, end_time, location, subjects (name, code)')
@@ -551,12 +456,6 @@ export function AppProvider({ children }) {
 
       if (error) throw error
 
-      // PERF FIX: local removal instead of a full reload — we already know
-      // exactly which class was removed. Note schedule entries are keyed
-      // by class id, but attendanceData entries are keyed by enrollment id
-      // (see loadStudentData above) — pull the enrollmentId off the
-      // matching schedule item before it's removed so both lists stay
-      // in sync.
       setSchedule((prev) => {
         const removed = prev.find((item) => item.id === classId)
         if (removed?.enrollmentId) {
@@ -568,34 +467,6 @@ export function AppProvider({ children }) {
       console.error('Error deleting schedule item:', err)
     }
   }
-
-  // REMOVED addAssessment(). Checked ContinuousAssessment.jsx — it's
-  // display-only, no add-a-score form calls this, which matches "read-only
-  // for students." That's actually already how the read side works:
-  // assessmentData (above, in loadStudentData) already pulls real,
-  // lecturer-authored records from student_scores/assessments — correct
-  // schema, no changes needed there. This function was the only thing
-  // trying to let a student write their own score, into the wrong table
-  // no less (assessments is a class-level definition, not a per-student
-  // result). Deleted rather than leaving a dead, broken export around;
-  // personal_grade_logs isn't needed either unless you want a genuinely
-  // separate "just for me" tracker later — happy to build that as its own
-  // feature if so, but it'd be additive, not a fix to this screen.
-
-  // SECURITY: this used to compute face/location "verified" flags entirely
-  // client-side (in ScanAttendance.jsx) and then trust them, plus compute
-  // and write the new attendance rate itself via direct table writes.
-  // Anyone with a valid session JWT could call the Supabase client (or a
-  // raw REST/RPC request) directly and skip the whole scan flow — insert
-  // whatever face_verified/location_verified they wanted, or set their own
-  // current_attendance_rate outright. Now this calls a SECURITY DEFINER
-  // Postgres function (see supabase/002_mark_attendance_rpc.sql) that
-  // re-derives both verdicts server-side from raw evidence (coordinates,
-  // face descriptor) and does the insert + rate recalculation atomically,
-  // in one round trip. For this to actually close the hole, direct
-  // INSERT/UPDATE grants on attendance_records/enrollments must be
-  // revoked from the authenticated role (also in that file) — the RPC
-  // alone doesn't help if the table is still directly writable.
   async function logAttendance(sessionId, { latitude, longitude, faceDescriptor } = {}) {
     if (!user) throw new Error('No active session — please log in again.')
     try {
@@ -621,20 +492,11 @@ export function AppProvider({ children }) {
       throw err
     }
   }
-
-  // DECISION: writes to `alerts` now instead of a separate table.
-  // `title` param is kept for callers' convenience but not persisted
-  // (alerts has no title column) — ALERT_TYPE_TITLES derives it from
-  // `type` on read instead, so pass a `type` that's actually in
-  // ALERT_TYPE_TITLES if you want a specific label to show.
   async function triggerNotification(title, message, type = 'general') {
     if (!user) return
     try {
       const { data, error } = await supabase
         .from('alerts')
-        // lecturer_id intentionally omitted — requires the nullable-lecturer_id
-        // migration (see suggested_migration.sql) since this is student-generated,
-        // not lecturer-generated.
         .insert([{ student_id: user.id, message, type, priority: 'low', is_read: false }])
         .select()
         .single()
@@ -699,13 +561,6 @@ export function AppProvider({ children }) {
     clearAllNotifications,
   }
 
-  // FIXED: this used to be `{!loading && children}`, which hid the ENTIRE
-  // app — including the Login page — until the initial session check
-  // resolved. If that check ever hung (e.g. because supabaseClient.js
-  // threw during construction), you'd get a permanent blank page with
-  // no visible error. Children now always render; only add a loading
-  // screen here if you want one, and even then it will resolve in
-  // milliseconds since it's a local check, not blocking navigation.
   if (!authChecked) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', fontFamily: 'sans-serif', color: '#64748b' }}>
