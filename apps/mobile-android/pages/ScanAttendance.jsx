@@ -14,10 +14,6 @@ const STAGES = [
 
 const FACE_MATCH_THRESHOLD = 0.6
 const LOCATION_RADIUS_METERS = 100
-// Reject a GPS fix that's too coarse to trust for a ~100m geofence — a
-// network-based fallback position can easily report accuracy in the
-// hundreds/thousands of meters, which would otherwise pass or fail the
-// distance check essentially at random.
 const MAX_ACCEPTABLE_ACCURACY_METERS = 75
 
 const SUPPORTS_QR_WORKER =
@@ -48,7 +44,7 @@ export default function ScanAttendance() {
   const [modelsLoaded, setModelsLoaded] = useState(false)
   const [faceMatched, setFaceMatched] = useState(false)
   const [capturedDescriptor, setCapturedDescriptor] = useState(null)
-  const [locationResult, setLocationResult] = useState(null) // null | 'skipped' | { ok, distance }
+  const [locationResult, setLocationResult] = useState(null)
   const [capturedCoords, setCapturedCoords] = useState(null)
 
   const [isManualPin, setIsManualPin] = useState(false)
@@ -73,7 +69,7 @@ export default function ScanAttendance() {
       navigator.permissions.query({ name: 'camera' }).then((status) => {
         setCameraPermission(status.state)
         status.onchange = () => setCameraPermission(status.state)
-      }).catch(() => setCameraPermission('unknown')) // some browsers don't support querying 'camera'
+      }).catch(() => setCameraPermission('unknown'))
 
       navigator.permissions.query({ name: 'geolocation' }).then((status) => {
         setLocationPermission(status.state)
