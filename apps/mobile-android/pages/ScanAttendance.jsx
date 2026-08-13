@@ -13,15 +13,13 @@ const STAGES = [
 ]
 
 const FACE_MATCH_THRESHOLD = 0.6
-// Default geofence radius when a session doesn't set its own
-// geo_radius_meters. 50m keeps check-ins tight to wherever the QR code /
-// session was actually generated. A session can still override this by
-// setting geo_radius_meters explicitly — see matchedClass.geoRadius below
-// and mark_attendance's server-side coalesce in
-// supabase/002_mark_attendance_rpc.sql, which must match this value or the
-// client-side "you're too far" message and the server's actual accept/reject
-// decision can disagree.
-const LOCATION_RADIUS_METERS = 50
+const LOCATION_RADIUS_METERS = 100
+const MAX_ACCEPTABLE_ACCURACY_METERS = 75
+
+const SUPPORTS_QR_WORKER =
+  typeof Worker !== 'undefined' &&
+  typeof OffscreenCanvas !== 'undefined' &&
+  typeof createImageBitmap !== 'undefined'
 
 function haversineMeters(lat1, lon1, lat2, lon2) {
   const R = 6371000
@@ -45,24 +43,52 @@ export default function ScanAttendance() {
   const [busy, setBusy] = useState(false)
   const [modelsLoaded, setModelsLoaded] = useState(false)
   const [faceMatched, setFaceMatched] = useState(false)
-  const [locationResult, setLocationResult] = useState(null) // null | 'skipped' | { ok, distance, lat, lng }
+  const [capturedDescriptor, setCapturedDescriptor] = useState(null)
+  const [locationResult, setLocationResult] = useState(null)
+  const [capturedCoords, setCapturedCoords] = useState(null)
 
-  // Manual PIN Code States
   const [isManualPin, setIsManualPin] = useState(false)
   const [pinCode, setPinCode] = useState('')
+
+  const [cameraPermission, setCameraPermission] = useState('unknown')
+  const [locationPermission, setLocationPermission] = useState('unknown')
 
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const streamRef = useRef(null)
   const rafRef = useRef(null)
+  const qrWorkerRef = useRef(null)
+  const qrDecodeInFlightRef = useRef(false)
 
   if (!canvasRef.current && typeof document !== 'undefined') {
     canvasRef.current = document.createElement('canvas')
   }
 
-  // Camera Management
   useEffect(() => {
-    // Stop camera in Stage 3 or when switching to manual PIN input
+    if (navigator.permissions?.query) {
+      navigator.permissions.query({ name: 'camera' }).then((status) => {
+        setCameraPermission(status.state)
+        status.onchange = () => setCameraPermission(status.state)
+      }).catch(() => setCameraPermission('unknown'))
+
+      navigator.permissions.query({ name: 'geolocation' }).then((status) => {
+        setLocationPermission(status.state)
+        status.onchange = () => setLocationPermission(status.state)
+      }).catch(() => setLocationPermission('unknown'))
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!SUPPORTS_QR_WORKER) return
+    const worker = new Worker(new URL('../qrWorker.js', import.meta.url), { type: 'module' })
+    qrWorkerRef.current = worker
+    return () => {
+      worker.terminate()
+      qrWorkerRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
     if (stage === 3 || (stage === 1 && isManualPin)) {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop())
@@ -79,12 +105,12 @@ export default function ScanAttendance() {
         streamRef.current = null
       }
 
-      // Stage 1 (QR/PIN scan) always requests the BACK camera
-      // ('environment') — you're pointing it at a QR code on a wall/screen,
-      // not at yourself. Stage 2 (face recognition) always requests the
-      // FRONT camera ('user') for the obvious reason. Stage 3 has no camera
-      // (handled by the early-return above, before this function runs).
       const targetFacingMode = stage === 1 ? 'environment' : 'user'
+
+      if (cameraPermission === 'denied') {
+        setErrorText('Camera access is blocked for this app. Enable it in your browser/site settings, then reload.')
+        return
+      }
 
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -130,9 +156,8 @@ export default function ScanAttendance() {
         streamRef.current.getTracks().forEach((t) => t.stop())
       }
     }
-  }, [stage, isManualPin])
+  }, [stage, isManualPin, cameraPermission])
 
-  // Load face-api models once in background
   useEffect(() => {
     let cancelled = false
     async function loadModels() {
@@ -154,65 +179,110 @@ export default function ScanAttendance() {
     }
   }, [])
 
-  // FIXED: this used to run
-  //   supabase.from('attendance_sessions').select('..., geo_lat, geo_lng, ...').eq('session_pin', scannedPin)
-  // directly from the browser, with no rate limiting and no server-side
-  // enrollment check ("You are not enrolled" was a client-side .find() over
-  // `schedule`, not a real access control). That made the session PIN
-  // brute-forceable — a 4-digit PIN is only 10,000 guesses — and handed back
-  // the exact GPS coordinates of the classroom to anyone who found it,
-  // enrolled or not.
-  //
-  // verify_session_pin (supabase/002_mark_attendance_rpc.sql) now does the
-  // enrollment check and rate limiting server-side, and returns nothing at
-  // all for both "wrong PIN" and "right PIN, not enrolled" so a client can't
-  // even distinguish the two while guessing.
   const verifyScannedPin = useCallback(async (scannedPin) => {
     setBusy(true)
     setErrorText('')
     setStatusText('Verifying PIN...')
     try {
-      const { data, error: rpcError } = await supabase.rpc('verify_session_pin', { p_pin: scannedPin })
-      if (rpcError) throw rpcError
+      const { data: session, error: sessionError } = await supabase
+        .from('attendance_sessions')
+        .select('id, class_id, geo_lat, geo_lng, geo_radius_meters, online_mode, face_id_required, location_required')
+        .eq('session_pin', scannedPin)
+        .is('closed_at', null)
+        .maybeSingle()
 
-      const row = Array.isArray(data) ? data[0] : data
-      if (!row) {
-        setErrorText('Invalid PIN code, or you are not enrolled in this class.')
+      if (sessionError) throw sessionError
+
+      if (!session) {
+        setErrorText('Invalid PIN code. Please check with your lecturer.')
+        setMatchedClass(null)
+        return
+      }
+
+      const match = (schedule || []).find((item) => item.id === session.class_id)
+      if (!match) {
+        setErrorText("You are not enrolled in this class.")
         setMatchedClass(null)
         return
       }
 
       setMatchedClass({
-        id: row.class_id,
-        enrollmentId: row.enrollment_id,
-        sessionId: row.session_id,
-        subject: row.subject,
-        class: row.class_group,
-        latitude: row.geo_lat,
-        longitude: row.geo_lng,
-        geoRadius: row.geo_radius_meters,
-        faceIdRequired: row.face_id_required,
-        locationRequired: row.location_required,
+        ...match,
+        sessionId: session.id,
+        latitude: session.geo_lat || match.latitude,
+        longitude: session.geo_lng || match.longitude,
+        geoRadius: session.geo_radius_meters,
+        faceIdRequired: session.face_id_required,
+        locationRequired: session.location_required,
       })
-      setStatusText(`PIN Verified! ${row.subject} — ${row.class_group}`)
+      setStatusText(`PIN Verified! ${match.subject} — ${match.class}`)
       setErrorText('')
     } catch (err) {
       console.error(err)
-      setErrorText(err.message?.includes('RATE_LIMITED')
-        ? "Too many attempts — please wait a minute and try again."
-        : (err.message || 'Error verifying PIN. Please try again.'))
+      setErrorText(err.message || 'Error verifying PIN. Please try again.')
     } finally {
       setBusy(false)
     }
-  }, [])
+  }, [schedule])
 
-  // Stage 1: QR Code Scanner Tick Loop
   useEffect(() => {
     if (stage !== 1 || isManualPin || matchedClass || busy) return
     setErrorText('')
     setStatusText('Point your camera at the classroom QR code…')
 
-    function tick() {
+    let cancelled = false
+
+    if (SUPPORTS_QR_WORKER && qrWorkerRef.current) {
+      const worker = qrWorkerRef.current
+      let requestCounter = 0
+
+      const handleMessage = (event) => {
+        qrDecodeInFlightRef.current = false
+        if (cancelled) return
+        const { data } = event.data
+        if (data) {
+          verifyScannedPin(data.trim())
+          return
+        }
+        rafRef.current = requestAnimationFrame(tick)
+      }
+      worker.addEventListener('message', handleMessage)
+
+      function tick() {
+        const video = videoRef.current
+        if (
+          video &&
+          video.readyState === video.HAVE_ENOUGH_DATA &&
+          !qrDecodeInFlightRef.current
+        ) {
+          qrDecodeInFlightRef.current = true
+          createImageBitmap(video)
+            .then((bitmap) => {
+              if (cancelled) {
+                bitmap.close()
+                qrDecodeInFlightRef.current = false
+                return
+              }
+              worker.postMessage({ bitmap, requestId: ++requestCounter }, [bitmap])
+            })
+            .catch(() => {
+              qrDecodeInFlightRef.current = false
+              rafRef.current = requestAnimationFrame(tick)
+            })
+        } else {
+          rafRef.current = requestAnimationFrame(tick)
+        }
+      }
+
+      rafRef.current = requestAnimationFrame(tick)
+      return () => {
+        cancelled = true
+        worker.removeEventListener('message', handleMessage)
+        if (rafRef.current) cancelAnimationFrame(rafRef.current)
+      }
+    }
+
+    function tickFallback() {
       const video = videoRef.current
       const canvas = canvasRef.current
       if (video && canvas && video.readyState === video.HAVE_ENOUGH_DATA) {
@@ -228,16 +298,16 @@ export default function ScanAttendance() {
           return
         }
       }
-      rafRef.current = requestAnimationFrame(tick)
+      rafRef.current = requestAnimationFrame(tickFallback)
     }
 
-    rafRef.current = requestAnimationFrame(tick)
+    rafRef.current = requestAnimationFrame(tickFallback)
     return () => {
+      cancelled = true
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
     }
   }, [stage, isManualPin, matchedClass, busy, verifyScannedPin])
 
-  // Manual PIN Submission Handler
   const handlePinSubmit = async (e) => {
     e.preventDefault()
     setErrorText('')
@@ -248,7 +318,6 @@ export default function ScanAttendance() {
     await verifyScannedPin(pinCode.trim())
   }
 
-  // Stage 2: Face Matching
   const attemptFaceMatch = useCallback(async () => {
     if (!videoRef.current) return
     if (!user?.faceDescriptor) {
@@ -260,7 +329,7 @@ export default function ScanAttendance() {
     setStatusText('Scanning your face…')
 
     const detection = await faceapi
-      .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
+      .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
       .withFaceLandmarks()
       .withFaceDescriptor()
 
@@ -275,6 +344,7 @@ export default function ScanAttendance() {
 
     if (distance <= FACE_MATCH_THRESHOLD) {
       setFaceMatched(true)
+      setCapturedDescriptor(Array.from(detection.descriptor))
       setStatusText('Matched!')
       setErrorText('')
     } else {
@@ -294,10 +364,8 @@ export default function ScanAttendance() {
     } else {
       setStatusText('Loading face recognition…')
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage, modelsLoaded, matchedClass])
 
-  // Stage 3: Location Verification
   const checkLocation = useCallback(() => {
     if (matchedClass && !matchedClass.locationRequired) {
       setLocationResult('skipped')
@@ -313,37 +381,56 @@ export default function ScanAttendance() {
       setErrorText('Location services are not available on this device.')
       return
     }
+    if (locationPermission === 'denied') {
+      setErrorText('Location access is blocked for this app. Enable it in your browser/site settings, then retry.')
+      return
+    }
     setBusy(true)
     setErrorText('')
     setStatusText('Checking your location…')
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setBusy(false)
-        const { latitude, longitude } = position.coords
-        const distance = haversineMeters(latitude, longitude, matchedClass.latitude, matchedClass.longitude)
+        const { accuracy } = position.coords
+
+        if (accuracy != null && accuracy > MAX_ACCEPTABLE_ACCURACY_METERS) {
+          setLocationResult({ ok: false, distance: null })
+          setErrorText(
+            `Your location fix is too imprecise (±${Math.round(accuracy)}m) to verify reliably. Move to an open area or enable high-accuracy/GPS mode and retry.`
+          )
+          return
+        }
+
+        const distance = haversineMeters(
+          position.coords.latitude,
+          position.coords.longitude,
+          matchedClass.latitude,
+          matchedClass.longitude
+        )
         const allowedRadius = matchedClass.geoRadius || LOCATION_RADIUS_METERS
+        setCapturedCoords({ latitude: position.coords.latitude, longitude: position.coords.longitude })
         if (distance <= allowedRadius) {
-          // lat/lng are kept here (not just the ok/distance verdict) so the
-          // final submit can send the raw coordinates for the server to
-          // independently re-check — see the comment on handleNext below.
-          setLocationResult({ ok: true, distance, lat: latitude, lng: longitude })
+          setLocationResult({ ok: true, distance })
           setStatusText('Location Verified!')
         } else {
-          setLocationResult({ ok: false, distance, lat: latitude, lng: longitude })
+          setLocationResult({ ok: false, distance })
           setErrorText(`You're about ${Math.round(distance)}m from the classroom — too far to check in.`)
         }
       },
-      () => {
+      (geoErr) => {
         setBusy(false)
-        setErrorText('Could not get your location. Check permissions and try again.')
+        if (geoErr.code === geoErr.PERMISSION_DENIED) {
+          setErrorText('Location access was denied. Enable it in your browser/site settings, then retry.')
+        } else {
+          setErrorText('Could not get your location. Check permissions and try again.')
+        }
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     )
-  }, [matchedClass])
+  }, [matchedClass, locationPermission])
 
   useEffect(() => {
     if (stage === 3) checkLocation()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage])
 
   const locationOk =
@@ -360,22 +447,12 @@ export default function ScanAttendance() {
     }
 
     setBusy(true)
-    try {
-      // FIXED: this used to send a pre-computed `location_verified` boolean
-      // that logAttendance trusted outright — meaning "verified: true" could
-      // be sent straight from devtools with no GPS check at all. Raw
-      // coordinates are sent instead now, and the server (mark_attendance
-      // RPC) recomputes the distance itself against the session's
-      // registered location before accepting the check-in. face_verified is
-      // still sent as a plain boolean — see the comment in
-      // AppContext.jsx's logAttendance for why that gap remains open for now.
-      const hasCoords = locationResult && typeof locationResult === 'object'
-      await logAttendance(
-        matchedClass.enrollmentId,
-        matchedClass.sessionId,
-        matchedClass.faceIdRequired ? faceMatched : false,
-        matchedClass.locationRequired && hasCoords ? { lat: locationResult.lat, lng: locationResult.lng } : null
-      )
+try {
+      await logAttendance(matchedClass.sessionId, {
+        latitude: matchedClass.locationRequired ? capturedCoords?.latitude : undefined,
+        longitude: matchedClass.locationRequired ? capturedCoords?.longitude : undefined,
+        faceDescriptor: matchedClass.faceIdRequired ? capturedDescriptor : undefined,
+      })
       alert('Attendance submitted!')
       navigate('/home')
     } catch (err) {
@@ -402,7 +479,6 @@ export default function ScanAttendance() {
         {stage === 3 ? 'YOUR LOCATION' : isManualPin ? '● PIN CODE ENTRY' : '● CAMERA FEED'}
       </div>
 
-      {/* DISPLAY AREA (Camera vs Manual PIN vs Location) */}
       <div className="camera-box" style={{ position: 'relative', overflow: 'hidden' }}>
         {stage === 3 ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 13, color: 'var(--ink-soft)' }}>
@@ -450,22 +526,11 @@ export default function ScanAttendance() {
             autoPlay
             muted
             playsInline
-            // Front camera (stage 2, face recognition) is mirrored with
-            // scaleX(-1) so it behaves like looking in a mirror — natural
-            // for a selfie view, matches every phone camera app. Back
-            // camera (stage 1, QR scan) is left un-mirrored: you're reading
-            // a QR code / the room in front of you, not yourself, so
-            // mirroring it would show everything backwards. This is purely
-            // a CSS preview effect either way — jsQR reads frames straight
-            // off the video track via canvas.drawImage(), which is
-            // unaffected by this transform, so mirroring never changes what
-            // gets scanned or submitted.
             style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit', transform: stage === 2 ? 'scaleX(-1)' : 'none' }}
           />
         )}
       </div>
-
-      {/* STAGE 1 TOGGLE: QR SCANNER vs MANUAL PIN ENTRY */}
+      
       {stage === 1 && (
         <div style={{ textAlign: 'center', marginTop: 10 }}>
           <button

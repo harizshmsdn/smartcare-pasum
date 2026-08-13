@@ -10,10 +10,10 @@ export default function EmergencyContact() {
   const [successNotice, setSuccessNotice] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const [emergency, setEmergency] = useState({
-    name: user?.emergencyName || '',
-    relationship: user?.emergencyRelationship || '',
-    phone: user?.emergencyPhone || ''
+  const [emergency, setEmergency] = useState({ 
+    name: user?.emergencyName || '', 
+    relationship: user?.emergencyRelationship || '', 
+    phone: user?.emergencyPhone || '' 
   })
 
   async function handleSubmit(e) {
@@ -29,16 +29,6 @@ export default function EmergencyContact() {
     setIsSubmitting(true)
 
     try {
-      // FIXED: this used to also fire its own
-      // supabase.from('profiles').upsert({ emergency_name, emergency_relationship,
-      // emergency_phone, ... }) directly — those column names don't match the
-      // actual schema (the real columns are emergency_contact_name /
-      // _relationship / _phone, per AppContext.jsx's updateProfile). That
-      // upsert threw a "column does not exist" error on every single submit,
-      // and the correct updateProfile() call below was never reached.
-      // updateProfile() is the one validated write path for this table now —
-      // going through it means these fields get the same length checks as
-      // every other profile edit, instead of being written raw and twice.
       await updateProfile({
         ...user,
         emergencyName: emergency.name,
@@ -77,7 +67,6 @@ export default function EmergencyContact() {
         <div className="topbar-spacer"/>
       </div>
 
-      {/* Success Notice Banner */}
       {successNotice && (
         <div style={{
           backgroundColor: '#d1fae5',
@@ -130,7 +119,6 @@ export default function EmergencyContact() {
 
         {error && <p style={{ color: '#d93838', fontSize: 12, margin: '8px 0 0 0' }}>{error}</p>}
 
-        {/* Right-aligned Submit Button */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px', paddingBottom: '90px' }}>
           <button 
             type="submit" 

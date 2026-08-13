@@ -1,17 +1,15 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
-import {
-  optionalString,
-  requireString,
-  requireNumber,
-  requireUrl,
-  pickAllowed,
-  requireDescriptorArray,
-  requireWeekdayList,
-  requireTime,
-} from './validators'
+import { requireString, optionalString, requireUrl, requireDescriptorArray, requireWeekdayList, requireTime } from './Validators.js'
 
 const AppContext = createContext(null)
+
+const ALERT_TYPE_TITLES = {
+  schedule: 'Schedule Updated',
+  merits: 'Merit Submitted',
+  assessment: 'New Assessment',
+  general: 'Notification',
+}
 
 export function AppProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -46,7 +44,6 @@ export function AppProvider({ children }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  // 2. Fetch all real relational data for the student
   async function loadStudentData(userId) {
     try {
       const { data: profile } = await supabase
@@ -59,7 +56,6 @@ export function AppProvider({ children }) {
         setUser({
           id: profile.id,
           name: profile.full_name || '',
-          identificationNumber: profile.identification_number || '',
           matricsNumber: profile.institutional_id || '',
           class: profile.class_group || '',
           email: profile.email || '',
@@ -67,25 +63,12 @@ export function AppProvider({ children }) {
           emergencyName: profile.emergency_contact_name || '',
           emergencyRelationship: profile.emergency_contact_relationship || '',
           emergencyPhone: profile.emergency_contact_phone || '',
-          // SECURITY NOTE: this raw biometric descriptor is shipped to the
-          // browser on every load (FaceEnrollment reads it to show "already
-          // enrolled" state). Nothing in the check-in flow needs it anymore —
-          // verify_session_pin / mark_attendance never touch it — so consider
-          // replacing this column with a `has_face_id` boolean derived
-          // server-side and dropping face_descriptor from this select
-          // entirely, once you're ready to also stop sending it up from
-          // FaceEnrollment.jsx.
+          // FIXED: was never fetched, so user?.faceDescriptor was always
+          // undefined — FaceEnrollment and ScanAttendance both depend on it.
           faceDescriptor: profile.face_descriptor || null,
         })
       }
 
-      // NOTE: pincode/geo columns are intentionally NOT selected here.
-      // ScanAttendance.jsx no longer reads PIN/geofence data from this
-      // client-side `schedule` list at all — it gets that per-session, from
-      // the server, via the verify_session_pin RPC (supabase/002). Keeping
-      // it out of this select means a logged-in student's browser never
-      // holds every future session's PIN/coordinates at once, only the one
-      // they just scanned.
       const { data: enrollments } = await supabase
         .from('enrollments')
         .select(`
@@ -179,14 +162,6 @@ export function AppProvider({ children }) {
         setMerits(formattedMerits)
       }
 
-      // NOTE (unverified — flagged in SECURITY_REVIEW.md): this reads from
-      // `student_scores` (score_achieved / total_marks, reached through
-      // assessments -> classes -> subjects). addAssessment() below writes to
-      // a *different* table, `assessments`, with different column names
-      // (subject_name, score, possible_score) and no relation back to this
-      // query. As shipped, nothing logged via addAssessment ever appears
-      // here. Confirm with whoever owns the schema whether `assessments` is
-      // a separate personal-tracker table or simply the wrong target.
       const { data: scores, error: scoresError } = await supabase
         .from('student_scores')
         .select(`
@@ -215,7 +190,7 @@ export function AppProvider({ children }) {
           }
           const score = Number(current.score_achieved) || 0
           const possible = Number(current.assessments?.total_marks) || 100
-
+          
           acc[subjectName].items.push([current.assessments?.title || 'Assessment', `${score}/${possible}`])
           acc[subjectName].totalScore += score
           acc[subjectName].totalPossible += possible
@@ -232,7 +207,7 @@ export function AppProvider({ children }) {
       }
 
       const { data: notifs } = await supabase
-        .from('notifications')
+        .from('alerts')
         .select('*')
         .eq('student_id', userId)
         .order('created_at', { ascending: false })
@@ -240,10 +215,10 @@ export function AppProvider({ children }) {
       if (notifs) {
         setNotifications(notifs.map((n) => ({
           id: n.id,
-          title: n.title,
+          title: ALERT_TYPE_TITLES[n.type] || 'Notification',
           message: n.message,
           type: n.type,
-          read: n.read,
+          read: n.is_read,
           time: new Date(n.created_at).toLocaleString(),
         })))
       }
@@ -255,43 +230,26 @@ export function AppProvider({ children }) {
     }
   }
 
-  // 3. Database Action Mutations
-  //
-  // VALIDATION NOTE: every function below runs its input through
-  // validators.js before touching Supabase — this rejects bad shapes/sizes
-  // fast with a friendly message. It is defense-in-depth, not the real
-  // backstop: RLS policies (supabase/001_rls_policies.sql) and the
-  // SECURITY DEFINER RPCs (supabase/002_mark_attendance_rpc.sql) are what
-  // actually protect the database from a user who bypasses this file
-  // entirely and calls supabase-js directly from DevTools.
-
   async function updateProfile(updatedData) {
     if (!user) throw new Error('No active session — please log in again.')
     try {
-      const clean = pickAllowed(updatedData, [
-        'name', 'identificationNumber', 'matricsNumber', 'class', 'phone',
-        'emergencyName', 'emergencyRelationship', 'emergencyPhone',
-        // allow-but-ignore: callers often spread the whole `user` object in
-        'id', 'email', 'faceDescriptor',
-      ])
-
       const payload = {
         id: user.id,
-        full_name: optionalString(clean.name, 'name', { maxLength: 100 }),
-        identification_number: optionalString(clean.identificationNumber, 'identificationNumber', { maxLength: 30 }),
-        institutional_id: optionalString(clean.matricsNumber, 'matricsNumber', { maxLength: 30 }),
-        class_group: optionalString(clean.class, 'class', { maxLength: 50 }),
-        phone_number: optionalString(clean.phone, 'phone', { maxLength: 30 }),
-        emergency_contact_name: optionalString(clean.emergencyName, 'emergencyName', { maxLength: 100 }),
-        emergency_contact_relationship: optionalString(clean.emergencyRelationship, 'emergencyRelationship', { maxLength: 50 }),
-        emergency_contact_phone: optionalString(clean.emergencyPhone, 'emergencyPhone', { maxLength: 30 }),
+        full_name: requireString(updatedData.name, 'name', { maxLength: 120 }),
+        institutional_id: optionalString(updatedData.matricsNumber, 'matricsNumber', { maxLength: 40 }),
+        class_group: optionalString(updatedData.class, 'class', { maxLength: 40 }),
+        phone_number: optionalString(updatedData.phone, 'phone', { maxLength: 30 }),
+        emergency_contact_name: optionalString(updatedData.emergencyName, 'emergencyName', { maxLength: 120 }),
+        emergency_contact_relationship: optionalString(updatedData.emergencyRelationship, 'emergencyRelationship', { maxLength: 60 }),
+        emergency_contact_phone: optionalString(updatedData.emergencyPhone, 'emergencyPhone', { maxLength: 30 }),
         updated_at: new Date().toISOString()
       }
 
       const { error } = await supabase.from('profiles').upsert(payload)
 
       if (error) throw error
-      await loadStudentData(user.id)
+
+      setUser((prev) => ({ ...prev, ...updatedData }))
     } catch (err) {
       console.error('Profile update write failure:', err)
       throw err
@@ -301,119 +259,185 @@ export function AppProvider({ children }) {
   async function saveFaceDescriptor(descriptorArray) {
     if (!user) throw new Error('No active session — please log in again.')
     try {
-      // face-api.js's FaceRecognitionNet always emits a 128-length
-      // Float32Array — reject anything else before it reaches the DB.
-      const descriptor = requireDescriptorArray(descriptorArray, 'faceDescriptor', { length: 128 })
-
+      const validated = requireDescriptorArray(descriptorArray, 'faceDescriptor')
       const { error } = await supabase
         .from('profiles')
-        .update({ face_descriptor: descriptor })
+        .update({ face_descriptor: validated })
         .eq('id', user.id)
 
       if (error) throw error
-      setUser((prev) => ({ ...prev, faceDescriptor: descriptor }))
+      setUser((prev) => ({ ...prev, faceDescriptor: validated }))
     } catch (err) {
       console.error('Error saving face descriptor:', err)
       throw err
     }
   }
 
-  // HARDENED: this used to be a raw `.insert()` into merit_claims, trusting
-  // whatever `entry.points` the caller passed, with no rate limit. It now
-  // goes through the submit_merit_claim() RPC (SECURITY DEFINER), which
-  // re-validates server-side, clamps points to a sane range, and
-  // rate-limits per student. See supabase/002_mark_attendance_rpc.sql.
   async function addMerit(entry) {
     if (!user) return
     try {
-      const clean = pickAllowed(entry, ['name', 'level', 'roles', 'proofUrl', 'points'])
-      const title = requireString(clean.name, 'name', { maxLength: 200 })
-      const level = optionalString(clean.level, 'level', { maxLength: 100 })
-      const role = optionalString(clean.roles, 'roles', { maxLength: 100 })
-      const points = requireNumber(clean.points ?? 0, 'points', { min: 0, max: 100 })
-      const proofUrl = clean.proofUrl
-        ? requireUrl(clean.proofUrl, 'proofUrl') // tighten with { allowedHosts: [...] } once the merit-proofs bucket's hostname is fixed (see AddMerit.jsx / 001_rls_policies.sql)
-        : null
+      const payload = {
+        student_id: user.id,
+        title: requireString(entry.name, 'name', { maxLength: 150 }),
+        merit_level: requireString(entry.level, 'level', { maxLength: 60 }),
+        merit_roles: requireString(entry.roles, 'roles', { maxLength: 120 }),
+        proof_file_url: entry.proofUrl ? requireUrl(entry.proofUrl, 'proofUrl') : null,
+        awarded_points: 0,
+        status: 'pending'
+      }
 
-      const { data, error } = await supabase.rpc('submit_merit_claim', {
-        p_title: title,
-        p_level: level,
-        p_role: role,
-        p_proof_file_url: proofUrl,
-        p_points: points,
-      })
-
+      const { data, error } = await supabase.from('merit_claims').insert([payload]).select()
       if (error) throw error
 
-      setMerits((prev) => [
-        ...prev,
-        { id: data.id, name: data.title, points: data.awarded_points, status: data.status }
-      ])
-      await triggerNotification('Merit Submitted', `Your claim for "${entry.name}" is pending review.`, 'merits')
+      if (data) {
+        setMerits((prev) => [
+          ...prev,
+          { id: data[0].id, name: data[0].title, points: data[0].awarded_points, status: 'pending' }
+        ])
+        await triggerNotification('Merit Submitted', `Your claim for "${entry.name}" is pending review.`, 'merits')
+      }
     } catch (err) {
-      console.error('Error adding merit claim:', err)
+      console.error('Error submitting merit claim:', err)
       throw err
     }
   }
 
-  // NOTE (product decision, not silently changed here): this inserts
-  // directly into the SHARED `subjects` and `classes` tables — the same
-  // tables the lecturer/admin app and every other student's schedule read
-  // from. See the "classes / subjects" block in
-  // supabase/001_rls_policies.sql for the two ways to close this off, and
-  // pick one before this ships. Validation added below either way, since
-  // the field values were previously unbounded.
+  async function fetchAvailableClasses() {
+    if (!user) return []
+    try {
+      const enrolledClassIds = schedule.map((s) => s.id)
+      let query = supabase
+        .from('classes')
+        .select('id, group_code, type, day_of_week, start_time, end_time, location, semester, subjects (name, code)')
+        .order('day_of_week', { ascending: true })
+
+      if (enrolledClassIds.length > 0) {
+        query = query.not('id', 'in', `(${enrolledClassIds.join(',')})`)
+      }
+
+      const { data, error } = await query
+      if (error) throw error
+      return (data || []).filter((c) => c.subjects)
+    } catch (err) {
+      console.error('Error fetching available classes:', err)
+      throw err
+    }
+  }
+
   async function addSchedule(entry) {
     if (!user) return
     try {
-      const clean = pickAllowed(entry, ['id', 'subject', 'class', 'location', 'type', 'startTime', 'endTime', 'time', 'frequency', 'classId'])
-      const days = requireWeekdayList(clean.frequency, 'frequency')
-      const location = optionalString(clean.location, 'location', { maxLength: 100 })
+      let classIds = []
 
-      if (clean.subject && clean.class) {
-        const subjectName = requireString(clean.subject, 'subject', { maxLength: 150 })
-        const groupCode = requireString(clean.class, 'class', { maxLength: 50 })
-        const classType = optionalString(clean.type, 'type', { maxLength: 30 }) || 'Lecture'
-        const startTime = requireTime(clean.startTime, 'startTime')
-        const endTime = requireTime(clean.endTime, 'endTime')
+      if (entry.classId) {
+        classIds = [entry.classId]
+      } else if (entry.subject && entry.class) {
+        const subjectName = requireString(entry.subject, 'subject', { maxLength: 120 })
+        const groupCode = requireString(entry.class, 'class', { maxLength: 40 })
+        const classType = requireString(entry.type || 'Lecture', 'type', { maxLength: 30 })
+        const days = requireWeekdayList(entry.frequency, 'frequency')
+        const startTime = requireTime(entry.startTime, 'startTime')
+        const endTime = requireTime(entry.endTime, 'endTime')
+        const location = optionalString(entry.location, 'location', { maxLength: 120 })
 
-        const { data: subData, error: subErr } = await supabase
+        let { data: existingSubject } = await supabase
           .from('subjects')
-          .insert([{ name: subjectName, code: subjectName.substring(0, 4).toUpperCase() + '101' }])
-          .select()
-          .single()
+          .select('id')
+          .ilike('name', subjectName)
+          .maybeSingle()
 
-        if (subErr || !subData) throw new Error(subErr?.message || "Subject build failure")
+        let subjectId = existingSubject?.id
+        if (!subjectId) {
+          const generatedCode = subjectName.replace(/[^a-zA-Z]/g, '').substring(0, 4).toUpperCase() + Math.floor(100 + Math.random() * 900)
+          const { data: newSubject, error: subErr } = await supabase
+            .from('subjects')
+            .insert([{ name: subjectName, code: generatedCode }])
+            .select('id')
+            .single()
+          if (subErr) {
+            const { data: retrySubject } = await supabase.from('subjects').select('id').ilike('name', subjectName).maybeSingle()
+            if (!retrySubject) throw subErr
+            subjectId = retrySubject.id
+          } else {
+            subjectId = newSubject.id
+          }
+        }
 
         for (const day of days) {
-          const { data: classData, error: classErr } = await supabase
+          let { data: existingClass } = await supabase
             .from('classes')
-            .insert([{
-              subject_id: subData.id,
-              group_code: groupCode,
-              type: classType,
-              day_of_week: day,
-              start_time: `${startTime}:00`,
-              end_time: `${endTime}:00`,
-              location: location || 'Main Hall'
-            }])
-            .select()
-            .single()
+            .select('id')
+            .eq('subject_id', subjectId)
+            .eq('group_code', groupCode)
+            .eq('day_of_week', day)
+            .maybeSingle()
 
-          if (classErr || !classData) throw new Error(classErr?.message || "Class configuration failure")
+          let classId = existingClass?.id
+          if (!classId) {
+            const { data: newClass, error: classErr } = await supabase
+              .from('classes')
+              .insert([{
+                subject_id: subjectId,
+                group_code: groupCode,
+                type: classType,
+                day_of_week: day,
+                start_time: `${startTime}:00`,
+                end_time: `${endTime}:00`,
+                location: location || null,
+                lecturer_id: null,
+                semester: null
+              }])
+              .select('id')
+              .single()
+            if (classErr) throw classErr
+            classId = newClass.id
+          }
+          classIds.push(classId)
+        }
+      } else {
+        throw new Error('No class selected to add.')
+      }
 
-          await supabase
-            .from('enrollments')
-            .insert([{ student_id: user.id, class_id: classData.id, sessions_total: 0, sessions_attended: 0 }])
+      for (const classId of classIds) {
+        const { data: alreadyEnrolled } = await supabase
+          .from('enrollments')
+          .select('id')
+          .eq('student_id', user.id)
+          .eq('class_id', classId)
+          .maybeSingle()
+
+        if (alreadyEnrolled) continue
+
+        const { error: enrollError } = await supabase
+          .from('enrollments')
+          .insert([{ student_id: user.id, class_id: classId }])
+
+        if (enrollError) throw enrollError
+
+        const { data: classData, error: classFetchError } = await supabase
+          .from('classes')
+          .select('id, group_code, type, day_of_week, start_time, end_time, location, subjects (name, code)')
+          .eq('id', classId)
+          .single()
+
+        if (!classFetchError && classData) {
+          setSchedule((prev) => [
+            ...prev,
+            {
+              id: classData.id,
+              subject: classData.subjects?.name,
+              class: classData.group_code,
+              time: classData.start_time && classData.end_time
+                ? `${classData.start_time.substring(0, 5)} - ${classData.end_time.substring(0, 5)}`
+                : 'N/A',
+              frequency: `Every ${classData.day_of_week}`,
+              location: classData.location,
+              type: classData.type
+            }
+          ])
         }
       }
-      else if (clean.classId) {
-        await supabase
-          .from('enrollments')
-          .insert([{ student_id: user.id, class_id: clean.classId, sessions_total: 0, sessions_attended: 0 }])
-      }
 
-      await loadStudentData(user.id)
       await triggerNotification('Schedule Updated', `${entry.subject || 'A class'} was added to your schedule.`, 'schedule')
     } catch (err) {
       console.error('Error adding schedule blocks:', err)
@@ -431,110 +455,55 @@ export function AppProvider({ children }) {
         .eq('class_id', classId)
 
       if (error) throw error
-      await loadStudentData(user.id)
+
+      setSchedule((prev) => {
+        const removed = prev.find((item) => item.id === classId)
+        if (removed?.enrollmentId) {
+          setAttendanceData((att) => att.filter((item) => item.id !== removed.enrollmentId))
+        }
+        return prev.filter((item) => item.id !== classId)
+      })
     } catch (err) {
       console.error('Error deleting schedule item:', err)
     }
   }
-
-  // NOTE: see the comment above the student_scores/assessments read in
-  // loadStudentData — this writes to a table the read path never looks at.
-  async function addAssessment(entry) {
-    if (!user) return
-    try {
-      const clean = pickAllowed(entry, ['subject', 'title', 'score', 'totalPossible'])
-      const subjectName = requireString(clean.subject, 'subject', { maxLength: 150 })
-      const title = requireString(clean.title, 'title', { maxLength: 150 })
-      const score = requireNumber(clean.score, 'score', { min: 0, max: 100000 })
-      const possible = requireNumber(clean.totalPossible, 'totalPossible', { min: 0, max: 100000 })
-
-      const { error } = await supabase
-        .from('assessments')
-        .insert([
-          {
-            student_id: user.id,
-            subject_name: subjectName,
-            title,
-            score,
-            possible_score: possible
-          }
-        ])
-
-      if (error) throw error
-      await loadStudentData(user.id)
-    } catch (err) {
-      console.error('Error adding assessment log entry:', err)
-      throw err
-    }
-  }
-
-  // HARDENED: this used to insert straight into attendance_records with
-  // client-computed `faceVerified`/`locationVerified` booleans, and
-  // separately UPDATE the enrollment's attendance rate — meaning anyone
-  // with DevTools open could call
-  //   useApp().logAttendance(anyEnrollmentId, anySessionId, true, true)
-  // and get marked Present for a class they aren't even enrolled in, with
-  // zero verification, as many times as they liked.
-  //
-  // It now calls mark_attendance() (SECURITY DEFINER, see
-  // supabase/002_mark_attendance_rpc.sql), which:
-  //   - confirms the enrollment actually belongs to the calling student
-  //   - confirms the session belongs to that enrollment's class
-  //   - refuses duplicate check-ins for the same session
-  //   - rate-limits check-in attempts per student
-  //   - if this session requires location, RECOMPUTES the distance itself
-  //     from the raw lat/lng passed in `locationPayload` — the client can no
-  //     longer just assert "location_verified: true"
-  //   - recomputes the attendance rate itself (client can no longer set it)
-  //
-  // `faceVerified` is still a plain client-reported boolean — the RPC can
-  // reject `false` when the session requires Face ID, but it can't catch a
-  // client that lies and sends `true` without actually matching, since the
-  // comparison itself (face-api.js) runs entirely in the browser. Closing
-  // that gap for real means sending the live face descriptor to the server
-  // and comparing it against profiles.face_descriptor there (a euclidean
-  // distance check is straightforward in plpgsql, no ML infra needed) —
-  // left as a follow-up rather than done blind here, since it also touches
-  // FaceEnrollment.jsx and how much biometric data you want transiting the
-  // network per scan.
-  async function logAttendance(enrollmentId, sessionId, faceVerified, locationPayload) {
+  async function logAttendance(sessionId, { latitude, longitude, faceDescriptor } = {}) {
     if (!user) throw new Error('No active session — please log in again.')
     try {
       const { data, error } = await supabase.rpc('mark_attendance', {
-        p_enrollment_id: enrollmentId,
         p_session_id: sessionId,
-        p_face_verified: !!faceVerified,
-        p_latitude: locationPayload?.lat ?? null,
-        p_longitude: locationPayload?.lng ?? null,
+        p_lat: latitude ?? null,
+        p_lng: longitude ?? null,
+        p_face_descriptor: faceDescriptor ?? null,
       })
 
       if (error) throw error
 
-      await loadStudentData(user.id)
+      setAttendanceData((prev) =>
+        prev.map((item) =>
+          item.id === data.enrollmentId
+            ? { ...item, percent: data.newRate, total: data.total, attended: data.attended, absent: data.total - data.attended }
+            : item
+        )
+      )
       return data
     } catch (err) {
       console.error('Error logging attendance session:', err)
       throw err
     }
   }
-
   async function triggerNotification(title, message, type = 'general') {
     if (!user) return
     try {
-      const clean = {
-        title: requireString(title, 'title', { maxLength: 150 }),
-        message: requireString(message, 'message', { maxLength: 500 }),
-        type: optionalString(type, 'type', { maxLength: 30 }) || 'general',
-      }
       const { data, error } = await supabase
-        .from('notifications')
-        .insert([{ student_id: user.id, ...clean, read: false }])
+        .from('alerts')
+        .insert([{ student_id: user.id, message, type, priority: 'low', is_read: false }])
         .select()
         .single()
 
       if (error) throw error
       setNotifications((prev) => [
-        { id: data.id, title: data.title, message: data.message, type: data.type, read: false, time: new Date(data.created_at).toLocaleString() },
+        { id: data.id, title: ALERT_TYPE_TITLES[data.type] || title, message: data.message, type: data.type, read: false, time: new Date(data.created_at).toLocaleString() },
         ...prev
       ])
     } catch (err) {
@@ -542,46 +511,29 @@ export function AppProvider({ children }) {
     }
   }
 
-  // FIXED (IDOR): these previously matched on `id` alone, with no check
-  // that the notification belonged to the calling student. Any logged-in
-  // user who could guess/enumerate a notification id could mark it read or
-  // delete it — someone else's notification, not their own. Both now scope
-  // to `student_id = user.id` too. This must ALSO be enforced in your
-  // notifications RLS policy (see supabase/001_rls_policies.sql) — this
-  // client-side filter is a defense-in-depth backstop, not the real fix.
   async function markAsRead(id) {
-    if (!user) return
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
-    const { error } = await supabase
-      .from('notifications')
-      .update({ read: true })
-      .eq('id', id)
-      .eq('student_id', user.id)
+    const { error } = await supabase.from('alerts').update({ is_read: true }).eq('id', id)
     if (error) console.error('Error marking notification read:', error)
   }
 
   async function markAllAsRead() {
     if (!user) return
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
-    const { error } = await supabase.from('notifications').update({ read: true }).eq('student_id', user.id)
+    const { error } = await supabase.from('alerts').update({ is_read: true }).eq('student_id', user.id)
     if (error) console.error('Error marking all notifications read:', error)
   }
 
   async function deleteNotification(id) {
-    if (!user) return
     setNotifications((prev) => prev.filter((n) => n.id !== id))
-    const { error } = await supabase
-      .from('notifications')
-      .delete()
-      .eq('id', id)
-      .eq('student_id', user.id)
+    const { error } = await supabase.from('alerts').delete().eq('id', id)
     if (error) console.error('Error deleting notification:', error)
   }
 
   async function clearAllNotifications() {
     if (!user) return
     setNotifications([])
-    const { error } = await supabase.from('notifications').delete().eq('student_id', user.id)
+    const { error } = await supabase.from('alerts').delete().eq('student_id', user.id)
     if (error) console.error('Error clearing notifications:', error)
   }
 
@@ -592,19 +544,12 @@ export function AppProvider({ children }) {
     saveFaceDescriptor,
     schedule,
     addSchedule,
+    fetchAvailableClasses,
     deleteSchedule,
     merits,
     addMerit,
-    // FIXED: previously summed every claim's points regardless of status,
-    // so a self-submitted, not-yet-reviewed claim inflated this total
-    // immediately. Now only counts claims the admin has actually approved.
-    // CONFIRM the exact status string your admin app writes on approval —
-    // this assumes 'approved' (case-insensitive); update if yours differs.
-    totalMerits: merits
-      .filter((m) => (m.status || '').toLowerCase() === 'approved')
-      .reduce((sum, m) => sum + Number(m.points || 0), 0),
+    totalMerits: merits.reduce((sum, m) => sum + Number(m.points || 0), 0),
     assessmentData,
-    addAssessment,
     attendanceData,
     logAttendance,
     loadStudentData,

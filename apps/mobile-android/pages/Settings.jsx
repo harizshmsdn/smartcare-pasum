@@ -12,6 +12,12 @@ export default function Settings() {
   // Load the saved preference on mount so the toggle reflects what's
   // actually stored — this is also what the backend checks before pushing
   // a notification to this user.
+  // SCHEMA MISMATCH — notifications_enabled does not exist on `profiles`.
+  // The only table with that column name in your schema is `settings`,
+  // and that's the lecturer's own preferences table (settings.lecturer_id
+  // NOT NULL UNIQUE) — a different table, different owner, not this
+  // student toggle. This read/write pair will fail until you add
+  // notifications_enabled to `profiles` (see suggested_migration.sql).
   useEffect(() => {
     async function loadPreference() {
       const { data: { session } } = await supabase.auth.getSession()
