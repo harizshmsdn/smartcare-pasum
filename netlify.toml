@@ -1,6 +1,6 @@
 [build]
   # We can run the turbo build command from the root
-  command = "npm run build --filter=web..."
+  command = "npm run build --filter=web"
   # Next.js build output directory for the web app
   publish = "apps/web/.next"
 
