@@ -1,7 +1,27 @@
-import { login, signup } from './actions'
-import Link from 'next/link'
+"use client";
+
+import { useState } from 'react';
+import { login, signup } from './actions';
+import Link from 'next/link';
+import Grainient from '../../components/Grainient';
 
 export default function LoginPage() {
+    const [activeTab, setActiveTab] = useState<'home' | 'about'>('home');
+    const [authError, setAuthError] = useState<{ error: string, code: string | number } | null>(null);
+    const [isPending, setIsPending] = useState(false);
+
+    const isWrongCredentials = authError?.error.toLowerCase().includes('credential') || authError?.error.toLowerCase().includes('invalid login');
+
+    const handleAction = async (action: (formData: FormData) => Promise<any>, formData: FormData) => {
+        setAuthError(null);
+        setIsPending(true);
+        const res = await action(formData);
+        if (res?.error) {
+            setAuthError(res);
+        }
+        setIsPending(false);
+    };
+
     return (
         <div className="min-h-screen flex w-full font-sans">
 
@@ -12,12 +32,26 @@ export default function LoginPage() {
                     {/* Header */}
                     <div className="space-y-2 text-center">
                         <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 tracking-tight">
-                            SmartCare @ PASUM
+                            tigha @ PASUM
                         </h1>
                         <p className="text-slate-500 text-sm">
                             Welcome back, please login to your account
                         </p>
                     </div>
+
+                    {authError && (
+                        <div className="p-3 text-sm text-red-600 bg-red-50/50 border border-red-200 rounded-lg flex items-start gap-2 animate-in fade-in zoom-in-95 duration-200">
+                            <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <div>
+                                <p className="font-semibold">
+                                    {isWrongCredentials ? 'Invalid Credentials' : `Error ${authError.code}`}
+                                </p>
+                                <p className="text-red-500/90">{authError.error}</p>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Form */}
                     <form className="space-y-5">
@@ -30,9 +64,12 @@ export default function LoginPage() {
                                 id="email"
                                 name="email"
                                 type="email"
-                                placeholder="matric@um.edu.my"
+                                placeholder="matric@siswa.um.edu.my"
                                 required
-                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all text-slate-800 placeholder-gray-400"
+                                disabled={isPending}
+                                className={`w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:border-transparent transition-all text-slate-800 placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed ${
+                                    authError ? 'border-red-300 focus:ring-red-500 bg-red-50/20' : 'border-gray-300 focus:ring-blue-600'
+                                }`}
                             />
                         </div>
 
@@ -47,7 +84,10 @@ export default function LoginPage() {
                                 type="password"
                                 placeholder="••••••••"
                                 required
-                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all text-slate-800 placeholder-gray-400"
+                                disabled={isPending}
+                                className={`w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:border-transparent transition-all text-slate-800 placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed ${
+                                    authError ? 'border-red-300 focus:ring-red-500 bg-red-50/20' : 'border-gray-300 focus:ring-blue-600'
+                                }`}
                             />
                         </div>
 
@@ -72,14 +112,20 @@ export default function LoginPage() {
                         {/* Action Buttons */}
                         <div className="flex gap-3 pt-2">
                             <button
-                                formAction={login}
-                                className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-sm active:scale-[0.98]"
+                                formAction={(formData) => handleAction(login, formData)}
+                                disabled={isPending}
+                                className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-sm active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center"
                             >
-                                Log In
+                                {isPending ? (
+                                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                ) : (
+                                    'Log In'
+                                )}
                             </button>
                             <button
-                                formAction={signup}
-                                className="flex-1 bg-transparent text-blue-600 py-3 px-4 rounded-lg border-2 border-blue-600 hover:bg-blue-50 transition-colors font-semibold active:scale-[0.98]"
+                                formAction={(formData) => handleAction(signup, formData)}
+                                disabled={isPending}
+                                className="flex-1 bg-transparent text-blue-600 py-3 px-4 rounded-lg border-2 border-blue-600 hover:bg-blue-50 transition-colors font-semibold active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center"
                             >
                                 Sign Up
                             </button>
@@ -125,31 +171,57 @@ export default function LoginPage() {
                 </div>
             </div>
 
-            {/* Right Side: Professional Blue Placeholder */}
-            <div className="hidden lg:flex w-1/2 bg-blue-900 relative flex-col justify-center p-12 overflow-hidden">
-
-                {/* Background decorative elements */}
-                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-800 rounded-full mix-blend-multiply filter blur-3xl opacity-50 translate-x-1/2 -translate-y-1/2"></div>
-                <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-950 rounded-full mix-blend-multiply filter blur-3xl opacity-50 -translate-x-1/2 translate-y-1/2"></div>
+            {/* Right Side: Dynamic Content with Grainy Gradient */}
+            <div
+                className="hidden lg:flex w-1/2 relative flex-col justify-center p-12 overflow-hidden bg-[#101a2c]"
+            >
+                <div className="absolute inset-0 z-0 pointer-events-none">
+                    <Grainient
+                        color1="#101a2c"
+                        color2="#223018"
+                        color3="#c8d4ff"
+                    />
+                </div>
 
                 {/* Top Right Navigation */}
                 <nav className="absolute top-8 right-12 flex gap-8 z-10">
-                    <Link href="/" className="text-white/80 hover:text-white font-medium transition-colors">
+                    <button
+                        onClick={() => setActiveTab('home')}
+                        className={`font-medium transition-all duration-300 ${activeTab === 'home' ? 'text-white' : 'text-white/50 hover:text-white/80'}`}
+                    >
                         Home
-                    </Link>
-                    <Link href="/about" className="text-white/80 hover:text-white font-medium transition-colors">
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('about')}
+                        className={`font-medium transition-all duration-300 ${activeTab === 'about' ? 'text-white' : 'text-white/50 hover:text-white/80'}`}
+                    >
                         About Us
-                    </Link>
+                    </button>
                 </nav>
 
-                {/* Placeholder Content */}
-                <div className="relative z-10 max-w-lg mx-auto text-white space-y-6">
-                    <h2 className="text-4xl font-bold leading-tight">
-                        Data-Driven Insights for Student Success.
-                    </h2>
-                    <p className="text-blue-200 text-lg leading-relaxed">
-                        System information, interactive features, and platform capabilities will be showcased here shortly. Stay tuned for updates on our digital monitoring and early-alert system.
-                    </p>
+                {/* Dynamic Content */}
+                <div className="relative z-10 max-w-lg mx-auto w-full text-white space-y-6">
+                    {activeTab === 'home' ? (
+                        <div className="space-y-4 transition-opacity duration-500 ease-in-out">
+                            <h2 className="text-6xl sm:text-7xl font-extrabold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white to-white/70">
+                                tigha.
+                            </h2>
+                            <p className="text-[#efe5d3]/90 text-xl font-medium leading-relaxed max-w-md">
+                                an EdTech platform to keep students locked in and ahead of the curve.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="space-y-8 transition-opacity duration-500 ease-in-out">
+                            <div className="space-y-1 border-l-4 border-[#c8d4ff]/40 pl-5">
+                                <h3 className="text-3xl font-bold text-white tracking-tight">Hariz</h3>
+                                <p className="text-[#ddcfe7]/80 text-lg font-medium">Ex-PASUM Student</p>
+                            </div>
+                            <div className="space-y-1 border-l-4 border-[#c8d4ff]/40 pl-5">
+                                <h3 className="text-3xl font-bold text-white tracking-tight">Garry</h3>
+                                <p className="text-[#ddcfe7]/80 text-lg font-medium">Ex-PASUM Student</p>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 

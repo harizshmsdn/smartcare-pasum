@@ -16,8 +16,7 @@ export async function login(formData: FormData) {
 
     if (error) {
         console.error("Supabase Auth error details:", error)
-        // You can handle this gracefully in your UI by reading the URL query parameter
-        redirect('/login?error=Could not authenticate user')
+        return { error: error.message, code: (error as any).code || error.status || 'AUTH_ERROR' }
     }
 
     // Clear the cache to ensure the layout recognizes the new session
@@ -36,7 +35,8 @@ export async function signup(formData: FormData) {
     })
 
     if (error) {
-        redirect('/login?error=Could not create user')
+        console.error("Supabase Signup error details:", error)
+        return { error: error.message, code: (error as any).code || error.status || 'SIGNUP_ERROR' }
     }
 
     revalidatePath('/', 'layout')
