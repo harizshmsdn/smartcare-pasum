@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { createClient } from "../../utils/supabase/client";
 import { api } from "../../lib/api";
+import { lecturerService } from "../../lib/services/lecturer";
 import BorderGlow from "../../components/BorderGlow";
 
 interface KanbanItem {
@@ -72,67 +73,30 @@ function InterventionsBoardContent() {
 
   const loadInterventions = async () => {
     setIsLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    // Fetch interventions
-    const { data } = await supabase
-      .from('interventions')
-      .select(`
-        id,
-        issue_description,
-        status,
-        priority,
-        created_at,
-        student:profiles!student_id (
-          institutional_id,
-          full_name
-        ),
-        classes (
-          id,
-          group_code,
-          subjects (
-            code,
-            name
-          )
-        )
-      `)
-      .eq('lecturer_id', user.id);
-
-    if (data) {
+    try {
+      const response = await lecturerService.getInterventions();
+      const data = response.interventions || [];
+      
       setInterventions(data);
       
-      // Extract unique class titles for filter dropdown
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const uniqueClasses = Array.from(new Set(data.map((item: any) => {
-        const classNode = item.classes;
-        return classNode ? `${classNode.subjects?.code} - ${classNode.subjects?.name} (${classNode.group_code})` : "";
+        const classNode = item.subject;
+        return classNode ? `${classNode.code}` : "";
       }).filter(Boolean))) as string[];
       
       setClassesList(["All Classes", ...uniqueClasses]);
+    } catch (err) {
+      console.error("Failed to fetch interventions", err);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   // Fetch all classes taught by this lecturer
   const fetchLecturerClasses = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data } = await supabase
-      .from('classes')
-      .select(`
-        id,
-        group_code,
-        subjects (
-          code,
-          name
-        )
-      `)
-      .eq('lecturer_id', user.id);
-
-    if (data) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    try {
+      const response = await lecturerService.getClasses();
+      const data = response.classes || [];
       const formatted: ClassOption[] = data.map((c: any) => ({
         id: c.id,
         code: c.subjects?.code || "GEN",
@@ -140,6 +104,8 @@ function InterventionsBoardContent() {
         group_code: c.group_code
       }));
       setLecturerClasses(formatted);
+    } catch (err) {
+      console.error("Failed to fetch classes", err);
     }
   };
 
@@ -174,19 +140,14 @@ function InterventionsBoardContent() {
   }, [paramStudentId, paramClassId]);
 
   const handleUpdateStatus = async (id: string, newStatus: string) => {
-    const { error } = await supabase
-      .from('interventions')
-      .update({ status: newStatus, updated_at: new Date().toISOString() })
-      .eq('id', id);
-
-    if (error) {
-      console.error("Failed to update status:", error);
-      return;
+    try {
+      await lecturerService.updateInterventionStatus(id, newStatus);
+      setInterventions(prev => 
+        prev.map(item => item.id === id ? { ...item, status: newStatus } : item)
+      );
+    } catch (err) {
+      console.error("Failed to update status:", err);
     }
-
-    setInterventions(prev => 
-      prev.map(item => item.id === id ? { ...item, status: newStatus } : item)
-    );
   };
 
   const handleCreateIntervention = async (e: React.FormEvent) => {
@@ -198,7 +159,6 @@ function InterventionsBoardContent() {
 
     setIsSaving(true);
     try {
-      // Prefer POST call to API client to execute backend email notifications
       await api.post("/api/interventions", {
         student_id: addModalStudentId,
         class_id: addModalClassId,
@@ -211,52 +171,11 @@ function InterventionsBoardContent() {
       await loadInterventions();
       closeModal();
     } catch (err) {
-      console.warn("FastAPI creation offline, falling back to direct Supabase insert:", err);
-      await runFallbackInsert();
+      console.error("Failed to create intervention:", err);
+      alert("Failed to create intervention via API.");
     } finally {
       setIsSaving(false);
     }
-  };
-
-  const runFallbackInsert = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { error } = await supabase
-      .from('interventions')
-      .insert({
-        student_id: addModalStudentId,
-        class_id: addModalClassId,
-        lecturer_id: user.id,
-        issue_description: issueDescription,
-        status: statusVal,
-        priority: priorityVal
-      });
-
-    if (error) {
-      alert(`Error creating intervention: ${error.message}`);
-      return;
-    }
-
-    if (scheduleAdvising) {
-      // Fetch class details for fallback alert label
-      const activeClass = lecturerClasses.find(c => c.id === addModalClassId);
-      const subjectLabel = activeClass ? `${activeClass.code} (${activeClass.group_code})` : "Class";
-
-      await supabase.from('alerts').insert({
-        lecturer_id: user.id,
-        student_id: addModalStudentId,
-        class_id: addModalClassId,
-        type: 'academic',
-        priority: priorityVal,
-        message: `Academic advising scheduled for your class: ${subjectLabel}. Please check in with your lecturer.`,
-        is_read: false
-      });
-    }
-
-    alert("Intervention created (local fallback mode - email not sent).");
-    await loadInterventions();
-    closeModal();
   };
 
   const closeModal = () => {
@@ -316,6 +235,31 @@ function InterventionsBoardContent() {
   const inProgressItems = filteredItems.filter(item => item.status === "in_progress");
   const referredItems = filteredItems.filter(item => item.status === "referred");
   const resolvedItems = filteredItems.filter(item => item.status === "resolved");
+
+  if (isLoading) {
+    return (
+      <main className="flex-1 p-8 h-screen flex flex-col bg-[#FAF9F6] overflow-hidden">
+        <div className="shrink-0 mb-8">
+          <div className="w-48 h-4 bg-slate-200 rounded animate-pulse mb-4"></div>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+            <div>
+              <div className="w-64 h-10 bg-slate-200 rounded-lg animate-pulse mb-2"></div>
+              <div className="w-48 h-5 bg-slate-200 rounded-lg animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 flex gap-6 overflow-x-auto pb-4 animate-pulse">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="flex-1 flex flex-col min-w-[280px] p-3 rounded-2xl border-2 border-transparent">
+              <div className="w-32 h-6 bg-slate-200 rounded mb-4"></div>
+              <div className="w-full h-32 bg-slate-200 rounded-xl mb-4"></div>
+              <div className="w-full h-32 bg-slate-200 rounded-xl mb-4"></div>
+            </div>
+          ))}
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="flex-1 p-8 h-screen flex flex-col bg-[#FAF9F6] overflow-hidden">

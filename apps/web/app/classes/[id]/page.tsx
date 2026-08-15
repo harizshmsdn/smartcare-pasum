@@ -121,7 +121,9 @@ export default function ProfilePage() {
     const fetchStudentData = async () => {
       setIsLoading(true);
       try {
+        const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token;
+        if (!token) throw new Error("No access token available");
 
         const res = await fetch(`http://localhost:8000/api/students/${studentId}/analytics${selectedClassId ? `?class_id=${selectedClassId}` : ''}`, {
           headers: {
@@ -143,167 +145,13 @@ export default function ProfilePage() {
             setSelectedClassId(data.enrollment.class_id);
           }
         } else {
-          await fetchFallbackStudentData();
+          console.error("FastAPI returned error:", await res.text());
         }
       } catch (err) {
-        console.warn("FastAPI offline, using Supabase direct student data:", err);
-        await fetchFallbackStudentData();
+        console.error("Failed to load student data:", err);
       } finally {
         setIsLoading(false);
       }
-    };
-
-    const fetchFallbackStudentData = async () => {
-      // 1. Fetch Student Profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', studentId)
-        .single();
-      setStudentProfile(profile);
-
-      // 2. Fetch all enrolled classes
-      const { data: enrollments } = await supabase
-        .from('enrollments')
-        .select(`
-          current_attendance_rate,
-          class_id,
-          classes (
-            id,
-            group_code,
-            subjects (
-              code,
-              name
-            )
-          )
-        `)
-        .eq('student_id', studentId);
-
-      const parsedClasses = (enrollments || []).map((e: any) => {
-        const classNode = e.classes as any;
-        return {
-          class_id: e.class_id,
-          class_name: classNode && classNode.subjects ? `${classNode.subjects.code} (${classNode.group_code})` : "General Class"
-        };
-      });
-      setEnrolledClasses(parsedClasses);
-
-      // Resolve which class_id we are filtering on
-      const activeClassId = selectedClassId || (parsedClasses[0]?.class_id || "");
-      if (activeClassId && !selectedClassId) {
-        setSelectedClassId(activeClassId);
-      }
-
-      // Fetch details for target active class
-      const targetEnrollment = (enrollments || []).find((e: any) => e.class_id === activeClassId) || enrollments?.[0];
-      const attRate = targetEnrollment ? Number(targetEnrollment.current_attendance_rate || 85) : 85;
-      setAttendanceRate(attRate);
-      
-      if (targetEnrollment) {
-        const classNode = targetEnrollment.classes as any;
-        if (classNode && classNode.subjects) {
-          setClassName(`${classNode.subjects.code} (${classNode.group_code})`);
-        }
-      }
-
-      // 3. Fetch count of pending merit claims
-      const { count } = await supabase
-        .from('merit_claims')
-        .select('*', { count: 'exact', head: true })
-        .eq('student_id', studentId)
-        .eq('status', 'pending');
-      setMeritCount(count || 0);
-
-      // 4. Fetch approved merits for History
-      const { data: merits } = await supabase
-        .from('merit_claims')
-        .select('*')
-        .eq('student_id', studentId)
-        .eq('status', 'approved');
-      setMeritHistory(merits || []);
-
-      // 5. Generate Fallback historical trajectory
-      const testHistory = [
-        { week: "Week 1", score: 85, attendance: 100 },
-        { week: "Week 2", score: 82, attendance: 100 },
-        { week: "Week 3", score: 78, attendance: Math.min(100, attRate + 15) },
-        { week: "Week 4", score: 65, attendance: Math.min(100, attRate + 8) },
-        { week: "Week 5", score: attRate < 80 ? 45 : 78, attendance: attRate },
-      ];
-      setChartData(testHistory);
-
-      // 6. Fetch activities fallback direct query
-      const { data: fallbackAtt } = await supabase
-        .from('attendance_records')
-        .select(`
-          timestamp,
-          status,
-          session_id,
-          attendance_sessions (
-            classes (
-              group_code,
-              subjects (
-                code
-              )
-            )
-          )
-        `)
-        .eq('student_id', studentId)
-        .order('timestamp', { ascending: false })
-        .limit(3);
-
-      const { data: fallbackMerits } = await supabase
-        .from('merit_claims')
-        .select('title, status, submitted_at, awarded_points')
-        .eq('student_id', studentId)
-        .order('submitted_at', { ascending: false })
-        .limit(3);
-
-      const { data: fallbackInt } = await supabase
-        .from('interventions')
-        .select('issue_description, status, created_at')
-        .eq('student_id', studentId)
-        .order('created_at', { ascending: false })
-        .limit(3);
-
-      const parsedActivities: ActivityItem[] = [];
-      
-      (fallbackAtt || []).forEach((r: any) => {
-        const session = r.attendance_sessions as any;
-        const cls = session?.classes as any;
-        const subj = cls?.subjects?.code ? `${cls.subjects.code} (${cls.group_code})` : "Class";
-        const isPresent = r.status === "present" || r.status === "late";
-        parsedActivities.push({
-          id: `att-${r.timestamp}`,
-          title: isPresent ? "Attendance Logged" : "Missed Class",
-          description: isPresent ? `Checked in for ${subj} session` : `Absent from ${subj} session`,
-          timestamp: r.timestamp,
-          icon: isPresent ? "check_circle" : "clock"
-        });
-      });
-
-      (fallbackMerits || []).forEach((m: any) => {
-        parsedActivities.push({
-          id: `merit-${m.submitted_at}`,
-          title: m.status === "approved" ? "Merit Approved" : m.status === "rejected" ? "Merit Claim Rejected" : "Merit Submitted",
-          description: m.status === "approved" ? `Awarded ${m.awarded_points} pts for: ${m.title}` : m.status === "rejected" ? `Rejected: ${m.title}` : `Pending verification: ${m.title}`,
-          timestamp: m.submitted_at,
-          icon: "award"
-        });
-      });
-
-      (fallbackInt || []).forEach((i: any) => {
-        parsedActivities.push({
-          id: `int-${i.created_at}`,
-          title: "Intervention Case",
-          description: `Status: ${String(i.status).replace("_", " ").toUpperCase()} - ${i.issue_description}`,
-          timestamp: i.created_at,
-          icon: "alert_triangle"
-        });
-      });
-
-      parsedActivities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-      setActivitiesList(parsedActivities.slice(0, 5));
     };
 
     fetchStudentData();

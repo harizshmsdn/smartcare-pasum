@@ -47,6 +47,7 @@ export default function StudentMeritRequestsPage() {
   const loadMeritRequests = async () => {
     setIsLoading(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -145,6 +146,7 @@ export default function StudentMeritRequestsPage() {
 
     setIsSubmitting(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
 
       let submittedSuccess = false;

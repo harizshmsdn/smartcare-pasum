@@ -64,6 +64,9 @@ export default function AdminSchedulesPage() {
     setIsLoading(true);
     try {
 
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No session");
+
       // 1. Fetch enrollments
       const enrollRes = await fetch("http://localhost:8000/api/admin/enrollments", {
         headers: { Authorization: `Bearer ${session.access_token}` }
@@ -111,6 +114,8 @@ export default function AdminSchedulesPage() {
     if (!targetStudentId || !targetClassId) return;
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No session");
 
       const res = await fetch("http://localhost:8000/api/admin/enrollments", {
         method: "POST",
@@ -141,6 +146,8 @@ export default function AdminSchedulesPage() {
     if (!confirm("Are you sure you want to remove this student from the class roster?")) return;
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No session");
 
       const res = await fetch(`http://localhost:8000/api/admin/enrollments/${enrollmentId}`, {
         method: "DELETE",

@@ -41,12 +41,8 @@ export default function AlertsPage() {
    * Fetches alert notifications for the logged in lecturer.
    */
   const fetchAlerts = async () => {
+    setIsLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.id) {
-        setLecturerId(session.user.id);
-      }
-
       const data = await alertService.getAlerts();
       if (data?.alerts) {
         setAlerts(data.alerts.map((a: any) => ({
@@ -61,80 +57,11 @@ export default function AlertsPage() {
           timestamp: a.timestamp || "Recently",
           isRead: !!a.is_read
         })));
-      } else {
-        await fetchFallbackAlerts();
       }
     } catch (err) {
-      console.warn("FastAPI offline, using Supabase direct alerts fetch:", err);
-      await fetchFallbackAlerts();
+      console.error("Failed to fetch alerts:", err);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const fetchFallbackAlerts = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    setLecturerId(user.id);
-
-    const { data } = await supabase
-      .from('alerts')
-      .select(`
-        id,
-        type,
-        priority,
-        message,
-        is_read,
-        created_at,
-        student:profiles!student_id (
-          id,
-          institutional_id,
-          full_name
-        ),
-        classes (
-          subjects (
-            name
-          )
-        )
-      `)
-      .eq('lecturer_id', user.id)
-      .order('created_at', { ascending: false });
-
-    if (data) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const formatted: AlertItem[] = data.map((item: any) => {
-        const studentNode = item.student;
-        const classNode = item.classes;
-        const subjectName = classNode?.subjects?.name || "General";
-
-        const diffMs = Date.now() - new Date(item.created_at).getTime();
-        const diffMin = Math.floor(diffMs / 60000);
-        const diffHr = Math.floor(diffMin / 60);
-        const diffDay = Math.floor(diffHr / 24);
-
-        let timestamp = "Just now";
-        if (diffDay > 0) {
-          timestamp = `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
-        } else if (diffHr > 0) {
-          timestamp = `${diffHr} hour${diffHr > 1 ? 's' : ''} ago`;
-        } else if (diffMin > 0) {
-          timestamp = `${diffMin} min${diffMin > 1 ? 's' : ''} ago`;
-        }
-
-        return {
-          id: item.id,
-          studentName: studentNode?.full_name || "Unknown Student",
-          matricId: studentNode?.institutional_id || "Unknown",
-          studentUuid: studentNode?.id || "",
-          course: subjectName,
-          type: item.type || "system",
-          priority: item.priority || "medium",
-          message: item.message || "",
-          timestamp,
-          isRead: !!item.is_read
-        };
-      });
-      setAlerts(formatted);
     }
   };
 
@@ -149,50 +76,24 @@ export default function AlertsPage() {
    * Marks individual alert as read.
    */
   const markAsRead = async (id: string) => {
-    let success = false;
     try {
       await alertService.markRead(id);
-      success = true;
+      setAlerts(prev => prev.map(a => a.id === id ? { ...a, isRead: true } : a));
     } catch (err) {
-      console.warn("FastAPI offline, falling back to direct Supabase update:", err);
+      console.error("Failed to mark alert as read:", err);
     }
-
-    if (!success) {
-      const { error } = await supabase
-        .from('alerts')
-        .update({ is_read: true })
-        .eq('id', id);
-      if (error) {
-        console.error("Supabase direct mark read error:", error);
-      }
-    }
-
-    setAlerts(prev => prev.map(a => a.id === id ? { ...a, isRead: true } : a));
   };
 
   /**
    * Marks all alerts as read.
    */
   const markAllAsRead = async () => {
-    let success = false;
     try {
       await alertService.markAllRead();
-      success = true;
+      setAlerts(prev => prev.map(a => ({ ...a, isRead: true })));
     } catch (err) {
-      console.warn("FastAPI offline, falling back to direct Supabase mark-all-read:", err);
+      console.error("Failed to mark all alerts as read:", err);
     }
-
-    if (!success && lecturerId) {
-      const { error } = await supabase
-        .from('alerts')
-        .update({ is_read: true })
-        .eq('lecturer_id', lecturerId);
-      if (error) {
-        console.error("Supabase direct mark all read error:", error);
-      }
-    }
-
-    setAlerts(prev => prev.map(a => ({ ...a, isRead: true })));
   };
 
   const filteredAlerts = alerts.filter(a => {
@@ -202,7 +103,35 @@ export default function AlertsPage() {
   });
 
   if (isLoading) {
-    return <div className="flex-1 flex items-center justify-center bg-slate-50 min-h-screen">Loading alerts...</div>;
+    return (
+      <main className="flex-1 p-8 h-screen flex flex-col bg-[#FAF9F6] overflow-hidden">
+        <header className="shrink-0 mb-8 flex justify-between items-end">
+          <div>
+            <div className="w-48 h-8 bg-slate-200 rounded animate-pulse mb-2"></div>
+            <div className="w-32 h-4 bg-slate-200 rounded animate-pulse"></div>
+          </div>
+        </header>
+        <div className="flex-1 min-h-0 bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
+          <div className="flex border-b border-slate-100 p-4 gap-2 shrink-0">
+            <div className="w-24 h-8 bg-slate-200 rounded-lg animate-pulse"></div>
+            <div className="w-24 h-8 bg-slate-200 rounded-lg animate-pulse"></div>
+            <div className="w-24 h-8 bg-slate-200 rounded-lg animate-pulse"></div>
+          </div>
+          <div className="flex-1 p-4 space-y-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="p-5 rounded-2xl border border-slate-200 bg-slate-50 shadow-sm animate-pulse flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-slate-200 shrink-0"></div>
+                <div className="flex-1">
+                  <div className="w-1/3 h-5 bg-slate-200 rounded mb-2"></div>
+                  <div className="w-3/4 h-4 bg-slate-200 rounded mb-3"></div>
+                  <div className="w-1/4 h-3 bg-slate-200 rounded"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </main>
+    );
   }
 
   return (

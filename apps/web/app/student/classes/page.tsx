@@ -17,6 +17,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import { createClient } from "../../../utils/supabase/client";
+import { studentService } from "../../../lib/services/student";
 
 interface ClassItem {
   id: string;
@@ -61,50 +62,35 @@ export default function StudentClassesPage() {
 
   useEffect(() => {
     const fetchClasses = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      try {
+        const dashboardData = await studentService.getDashboard();
+        const assigned = dashboardData.assigned_classes || [];
 
-      const { data: enrollmentsData } = await supabase
-        .from('enrollments')
-        .select(`
-          class_id,
-          current_attendance_rate,
-          classes (
-            id,
-            group_code,
-            subjects (
-              code,
-              name
-            )
-          )
-        `)
-        .eq('student_id', user.id);
-
-      if (enrollmentsData && enrollmentsData.length > 0) {
-        const formatted = enrollmentsData.map((e: any) => {
-          const c = e.classes;
-          return {
+        if (assigned.length > 0) {
+          const formatted = assigned.map((c: any) => ({
             id: c.id,
-            name: `${c.subjects?.code} - ${c.subjects?.name} (${c.group_code})`
-          };
-        });
-        setClassesList(formatted);
+            name: `${c.title} (${c.group})`
+          }));
+          setClassesList(formatted);
 
-        // Check query param classId
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlClassId = urlParams.get("classId");
-        const targetClass = formatted.find(c => c.id === urlClassId) || formatted[0];
+          const urlParams = new URLSearchParams(window.location.search);
+          const urlClassId = urlParams.get("classId");
+          const targetClass = formatted.find((c: any) => c.id === urlClassId) || formatted[0];
 
-        if (targetClass) {
-          setSelectedClassId(targetClass.id);
-          setSelectedClassName(targetClass.name);
+          if (targetClass) {
+            setSelectedClassId(targetClass.id);
+            setSelectedClassName(targetClass.name);
+          }
+        } else {
+          setIsLoading(false);
         }
-      } else {
+      } catch (err) {
+        console.error("Error loading student classes list:", err);
         setIsLoading(false);
       }
     };
     fetchClasses();
-  }, [supabase]);
+  }, []);
 
   // Load detailed information for selected class
   useEffect(() => {
@@ -113,156 +99,13 @@ export default function StudentClassesPage() {
     const fetchClassDetails = async () => {
       setIsLoading(true);
       try {
-        const token = session?.access_token;
-
-        if (token) {
-          try {
-            const res = await fetch(`http://localhost:8000/api/student/classes/${selectedClassId}/details`, {
-              headers: {
-                Authorization: `Bearer ${token}`
-              }
-            });
-            if (res.ok) {
-              const apiData = await res.json();
-              setLecturerInfo(apiData.lecturerInfo);
-              setClassScheduleText(apiData.classScheduleText);
-              setAttendanceRate(apiData.attendanceRate);
-              setPerformanceNumeric(apiData.performanceNumeric);
-              setAttendanceLog(apiData.attendanceLog || []);
-              setAssessments(apiData.assessments || []);
-              setIsLoading(false);
-              return;
-            }
-          } catch (apiErr) {
-            console.warn("FastAPI class details error, falling back to Supabase query:", apiErr);
-          }
-        }
-
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        // 1. Fetch Class and Lecturer details
-        const { data: classData } = await supabase
-          .from('classes')
-          .select(`
-            *,
-            lecturer:profiles!lecturer_id (*),
-            subjects (*)
-          `)
-          .eq('id', selectedClassId)
-          .single();
-
-        if (classData) {
-          setLecturerInfo(classData.lecturer);
-
-          const formatTimeStr = (timeStr: string | null) => {
-            if (!timeStr) return "";
-            const parts = timeStr.split(':');
-            const hr = parseInt(parts[0] || "0", 10);
-            const min = parts[1] || "00";
-            const ampm = hr >= 12 ? 'PM' : 'AM';
-            const displayHr = hr % 12 === 0 ? 12 : hr % 12;
-            return `${displayHr}:${min} ${ampm}`;
-          };
-
-          const timeRange = classData.start_time && classData.end_time
-            ? `${formatTimeStr(classData.start_time)} - ${formatTimeStr(classData.end_time)}`
-            : "10:00 AM - 12:00 PM";
-          setClassScheduleText(`${classData.day_of_week || 'Wednesday'} • ${timeRange}`);
-        }
-
-        // 2. Fetch Enrollment rate
-        const { data: enrollment } = await supabase
-          .from('enrollments')
-          .select('current_attendance_rate')
-          .eq('class_id', selectedClassId)
-          .eq('student_id', user.id)
-          .single();
-
-        const rate = enrollment ? Math.round(Number(enrollment.current_attendance_rate)) : 100;
-        setAttendanceRate(rate);
-
-        // 3. Fetch Continuous Assessments and student scores
-        const { data: assessmentsData } = await supabase
-          .from('assessments')
-          .select(`
-            id,
-            title,
-            type,
-            weightage,
-            total_marks,
-            student_scores (
-              score_achieved
-            )
-          `)
-          .eq('class_id', selectedClassId);
-
-        let caAvg = rate < 80 ? 65 : rate < 90 ? 82 : 91;
-        if (assessmentsData && assessmentsData.length > 0) {
-          let totalPct = 0;
-          let cnt = 0;
-          const list = assessmentsData.map((a: any) => {
-            const scoreVal = a.student_scores?.[0] ? Number(a.student_scores[0].score_achieved) : 0;
-            const total = Number(a.total_marks) || 100;
-            if (total > 0) {
-              totalPct += (scoreVal / total) * 100;
-              cnt += 1;
-            }
-            return {
-              id: a.id,
-              title: a.title,
-              type: a.type,
-              weightage: Number(a.weightage),
-              score: scoreVal,
-              totalMarks: total
-            };
-          });
-          setAssessments(list);
-          if (cnt > 0) caAvg = totalPct / cnt;
-        }
-
-        const score = Math.round((rate * 0.6) + (caAvg * 0.4));
-        setPerformanceNumeric(score);
-
-        // 4. Fetch Attendance Log
-        const { data: sessions } = await supabase
-          .from('attendance_sessions')
-          .select(`
-            id,
-            opened_at,
-            session_pin,
-            attendance_records (
-              status,
-              timestamp,
-              face_verified,
-              location_verified,
-              manual_override
-            )
-          `)
-          .eq('class_id', selectedClassId)
-          .order('opened_at', { ascending: false });
-
-        if (sessions) {
-          const logs = sessions.map((s: any) => {
-            const record = s.attendance_records?.[0];
-            const dateStr = new Date(s.opened_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-
-            const verifiedMethods = [];
-            if (record?.face_verified) verifiedMethods.push("Face ID");
-            if (record?.location_verified) verifiedMethods.push("GPS");
-            if (record?.manual_override) verifiedMethods.push("Manual Override");
-
-            return {
-              id: s.id,
-              date: dateStr,
-              pin: s.session_pin,
-              status: record?.status || "Absent",
-              verifiedMethods
-            };
-          });
-          setAttendanceLog(logs);
-        }
-
+        const apiData = await studentService.getClassDetails(selectedClassId);
+        setLecturerInfo(apiData.lecturerInfo);
+        setClassScheduleText(apiData.classScheduleText);
+        setAttendanceRate(apiData.attendanceRate);
+        setPerformanceNumeric(apiData.performanceNumeric);
+        setAttendanceLog(apiData.attendanceLog || []);
+        setAssessments(apiData.assessments || []);
       } catch (err) {
         console.error("Error fetching class details:", err);
       } finally {
@@ -271,10 +114,34 @@ export default function StudentClassesPage() {
     };
 
     fetchClassDetails();
-  }, [selectedClassId, supabase]);
+  }, [selectedClassId]);
 
   if (isLoading && classesList.length === 0) {
-    return <div className="flex-1 flex items-center justify-center bg-slate-50 min-h-screen">Loading enrolled classes...</div>;
+    return (
+      <main className="flex-1 p-8 overflow-y-auto bg-[#FAF9F6]">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+          <div>
+            <div className="w-64 h-10 bg-slate-200 rounded-lg animate-pulse mb-2"></div>
+            <div className="w-48 h-5 bg-slate-200 rounded-lg animate-pulse"></div>
+          </div>
+          <div className="w-48 h-10 bg-slate-200 rounded-xl animate-pulse"></div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="bg-slate-200 h-28 rounded-3xl animate-pulse border border-slate-200"></div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="space-y-6 lg:col-span-1">
+            <div className="bg-slate-200 h-64 rounded-2xl animate-pulse"></div>
+            <div className="bg-slate-200 h-64 rounded-3xl animate-pulse"></div>
+          </div>
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-slate-200 h-[500px] rounded-3xl animate-pulse flex flex-col h-full"></div>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   return (

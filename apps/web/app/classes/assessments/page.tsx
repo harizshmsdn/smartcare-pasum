@@ -102,10 +102,11 @@ export default function ClassAssessmentsPage() {
 
   // 2. Fetch class assessments and gradebook matrix
   const fetchClassAssessmentsData = async (classId: string) => {
-    if (!classId) return;
     setIsLoading(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
+      if (!token) throw new Error("No access token available");
 
       const res = await fetch(`http://localhost:8000/api/classes/${classId}/assessments`, {
         headers: {
@@ -118,42 +119,12 @@ export default function ClassAssessmentsPage() {
         setAssessments(data.assessments || []);
         setRosterScores(data.roster || []);
       } else {
-        await fetchFallbackClassAssessments(classId);
+        console.error("FastAPI returned error:", await res.text());
       }
     } catch (err) {
-      console.warn("FastAPI offline, using Supabase direct assessment fetch:", err);
-      await fetchFallbackClassAssessments(classId);
+      console.error("Failed to fetch class assessments:", err);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const fetchFallbackClassAssessments = async (classId: string) => {
-    const { data: assessmentsData } = await supabase
-      .from('assessments')
-      .select('*')
-      .eq('class_id', classId)
-      .order('created_at', { ascending: true });
-
-    setAssessments(assessmentsData || []);
-
-    const { data: enrollments } = await supabase
-      .from('enrollments')
-      .select(`
-        student_id,
-        profiles ( id, full_name, institutional_id )
-      `)
-      .eq('class_id', classId);
-
-    if (enrollments) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const roster: StudentRosterScore[] = enrollments.map((e: any) => ({
-        student_id: e.student_id,
-        student_name: e.profiles?.full_name || "Student",
-        matric_id: e.profiles?.institutional_id || "N/A",
-        scores: {}
-      }));
-      setRosterScores(roster);
     }
   };
 
@@ -409,6 +380,7 @@ export default function ClassAssessmentsPage() {
                                           setIsSavingScore(true);
                                           try {
                                             const scoreVal = parseFloat(String(currentScore));
+                                            const { data: { session } } = await supabase.auth.getSession();
                                             const token = session?.access_token;
 
                                             const res = await fetch(`http://localhost:8000/api/assessments/${a.id}/scores`, {
@@ -502,6 +474,7 @@ export default function ClassAssessmentsPage() {
                   onSubmit={async (e) => {
                     e.preventDefault();
                     try {
+                      const { data: { session } } = await supabase.auth.getSession();
                       const token = session?.access_token;
 
                       const res = await fetch(`http://localhost:8000/api/classes/${selectedClassId}/assessments`, {

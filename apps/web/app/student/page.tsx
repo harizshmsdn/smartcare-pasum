@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../utils/supabase/client";
+import { studentService } from "../../lib/services/student";
 import BorderGlow from "../../components/BorderGlow";
 import {
   TrendingDown,
@@ -72,121 +73,12 @@ export default function StudentHomePage() {
       setIsLoading(true);
 
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          router.push('/login');
-          return;
+        const data = await studentService.getDashboard();
+        if (data.profile?.full_name) {
+          setStudentName(data.profile.full_name);
         }
 
-        // Fetch Student Name
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .single();
-        if (profile?.full_name) {
-          setStudentName(profile.full_name);
-        }
-
-        // Fetch Student Scores across classes
-        const { data: scoresData } = await supabase
-          .from('student_scores')
-          .select(`
-            score_achieved,
-            assessments (
-              class_id,
-              total_marks
-            )
-          `)
-          .eq('student_id', user.id);
-
-        const classScoresMap: Record<string, number> = {};
-        if (scoresData) {
-          scoresData.forEach((s: any) => {
-            const cId = s.assessments?.class_id;
-            const total = s.assessments?.total_marks || 100;
-            if (cId && total > 0) {
-              const pct = Math.round((Number(s.score_achieved) / total) * 100);
-              classScoresMap[cId] = pct;
-            }
-          });
-        }
-
-        // Fetch Student Enrollments and Class details
-        const { data: enrollmentsData } = await supabase
-          .from('enrollments')
-          .select(`
-            current_attendance_rate,
-            classes (
-              id,
-              group_code,
-              type,
-              semester,
-              day_of_week,
-              start_time,
-              end_time,
-              location,
-              subjects (
-                code,
-                name
-              )
-            )
-          `)
-          .eq('student_id', user.id);
-
-        const processedClasses = (enrollmentsData || []).map((enroll: any) => {
-          const cls = enroll.classes;
-          const attendance = Math.round(Number(enroll.current_attendance_rate || 0));
-          const subjectNode = cls?.subjects;
-          const subjectName = subjectNode?.name || "Unknown Class";
-          const subjectCode = subjectNode?.code || "UNK101";
-
-          let riskStatus = "good";
-          if (attendance < 80) riskStatus = "critical";
-          else if (attendance < 90) riskStatus = "at-risk";
-
-          // Real latest score from database, fallback to attendance rate if score not recorded yet
-          const latestScore: number = (cls?.id && classScoresMap[cls.id] !== undefined)
-            ? Number(classScoresMap[cls.id])
-            : (attendance >= 90 ? 88 : attendance >= 80 ? 75 : 55);
-
-          const formatTimeStr = (timeStr: string | null) => {
-            if (!timeStr) return "";
-            const parts = timeStr.split(':');
-            const p0 = parts[0];
-            const p1 = parts[1];
-            if (!p0 || !p1) return timeStr;
-            const hr = parseInt(p0, 10);
-            const min = p1;
-            const ampm = hr >= 12 ? 'PM' : 'AM';
-            const displayHr = hr % 12 === 0 ? 12 : hr % 12;
-            return `${displayHr}:${min} ${ampm}`;
-          };
-
-          const formattedTimeRange = cls?.start_time && cls?.end_time
-            ? `${formatTimeStr(cls.start_time)} - ${formatTimeStr(cls.end_time)}`
-            : "10:00 AM - 12:00 PM";
-
-          const formattedDayTime = cls?.day_of_week
-            ? `${cls.day_of_week} • ${formattedTimeRange}`
-            : formattedTimeRange;
-
-          return {
-            id: cls?.id || '',
-            title: `${subjectCode} - ${subjectName}`,
-            group: cls?.group_code || 'Group A',
-            time: formattedDayTime,
-            location: cls?.location || 'Lecture Hall 1',
-            status: 'Enrolled',
-            attendance,
-            latestScore,
-            riskStatus,
-            type: cls?.type || 'Lecture',
-            dayOfWeek: cls?.day_of_week || 'Monday',
-            startTime: cls?.start_time || '10:00:00',
-            endTime: cls?.end_time || '12:00:00'
-          };
-        }).filter(item => item.id !== '');
+        const processedClasses: any[] = data.assigned_classes || [];
 
         const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
         const todayDayOfWeek = days[new Date().getDay()];
@@ -227,7 +119,27 @@ export default function StudentHomePage() {
   };
 
   if (isLoading) {
-    return <div className="flex-1 flex items-center justify-center bg-[#FAF9F6] min-h-screen">Loading student portal...</div>;
+    return (
+      <main className="flex-1 overflow-y-auto bg-transparent flex flex-col">
+        <div className="relative w-full h-[55vh] min-h-[450px] flex items-center justify-center overflow-hidden rounded-b-[3rem] mb-10 pt-4">
+          <div className="absolute top-8 left-10 z-40">
+            <div className="w-64 h-10 bg-slate-200 rounded-lg animate-pulse mb-2"></div>
+            <div className="w-48 h-5 bg-slate-200 rounded-lg animate-pulse"></div>
+          </div>
+          <div className="relative w-full max-w-4xl h-[350px] flex items-center justify-center">
+            <div className="w-full max-w-2xl h-full bg-slate-200 rounded-3xl animate-pulse"></div>
+          </div>
+        </div>
+        <div className="px-10 pb-10">
+          <div className="w-48 h-8 bg-slate-200 rounded-lg animate-pulse mb-6"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-slate-200 p-5 rounded-2xl animate-pulse h-48"></div>
+            ))}
+          </div>
+        </div>
+      </main>
+    );
   }
 
   return (

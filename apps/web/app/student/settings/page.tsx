@@ -11,6 +11,7 @@ import {
   ScanFace
 } from "lucide-react";
 import { createClient } from "../../../utils/supabase/client";
+import { studentService } from "../../../lib/services/student";
 
 export default function StudentSettingsPage() {
   const supabase = createClient();
@@ -29,31 +30,20 @@ export default function StudentSettingsPage() {
       setIsLoading(true);
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        setStudentId(user.id);
-
-        // Fetch settings row
-        const { data: settingsData } = await supabase
-          .from('settings')
-          .select('*')
-          .eq('lecturer_id', user.id) // DB has lecturer_id as user identifier in settings table
-          .maybeSingle();
-
-        if (settingsData) {
-          setLanguage(settingsData.language || "en");
-          setNotificationsEnabled(settingsData.notifications_enabled !== false);
+        if (user) {
+          setStudentId(user.id);
         }
 
-        // Fetch profile to verify Face ID and Device registration
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('face_hash, device_id')
-          .eq('id', user.id)
-          .single();
+        const data = await studentService.getSettings();
+        
+        if (data.settings) {
+          setLanguage(data.settings.language || "en");
+          setNotificationsEnabled(data.settings.notifications_enabled !== false);
+        }
 
-        if (profile) {
-          setFaceRegistered(!!profile.face_hash);
-          setDeviceRegistered(!!profile.device_id);
+        if (data.profile) {
+          setFaceRegistered(!!data.profile.face_hash);
+          setDeviceRegistered(!!data.profile.device_id);
         }
       } catch (err) {
         console.error("Error loading student settings:", err);
@@ -62,36 +52,37 @@ export default function StudentSettingsPage() {
       }
     };
     fetchSettingsAndProfile();
-  }, [supabase]);
+  }, []);
 
   const handleSave = async () => {
-    if (!studentId) return;
-
     try {
-      const { error } = await supabase
-        .from('settings')
-        .upsert({
-          lecturer_id: studentId,
-          language: language,
-          notifications_enabled: notificationsEnabled,
-          updated_at: new Date().toISOString()
-        });
-
-      if (error) {
-        console.error("Error saving settings:", error);
-        alert("Failed to save settings: " + error.message);
-        return;
-      }
+      await studentService.updateSettings({
+        language,
+        notifications_enabled: notificationsEnabled
+      });
 
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
-      console.error(err);
+      console.error("Error saving settings:", err);
+      alert("Failed to save settings");
     }
   };
 
   if (isLoading) {
-    return <div className="flex-1 flex items-center justify-center bg-slate-50 min-h-screen">Loading settings...</div>;
+    return (
+      <main className="flex-1 p-8 overflow-y-auto bg-[#FAF9F6]">
+        <header className="mb-8">
+          <div className="w-48 h-8 bg-slate-200 rounded animate-pulse mb-2"></div>
+          <div className="w-64 h-4 bg-slate-200 rounded animate-pulse"></div>
+        </header>
+        <div className="w-full space-y-6 max-w-4xl">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="bg-slate-200 h-32 rounded-2xl animate-pulse"></div>
+          ))}
+        </div>
+      </main>
+    );
   }
 
   return (

@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "../utils/supabase/client";
+import { lecturerService } from "../lib/services/lecturer";
 import BorderGlow from "../components/BorderGlow";
 import {
   QrCode,
@@ -122,69 +123,28 @@ export default function HomePage() {
           setLecturerName(profile.full_name);
         }
 
-        // Fetch Classes
-        const { data: classesData } = await supabase
-          .from('classes')
-          .select(`
-            id,
-            group_code,
-            type,
-            semester,
-            day_of_week,
-            start_time,
-            end_time,
-            location,
-            subjects (
-              code,
-              name
-            )
-          `)
-          .eq('lecturer_id', user.id);
+        // Fetch Classes via FastAPI
+        const response = await lecturerService.getClasses();
+        const classesData = response.classes || [];
 
-        const processedClasses = await Promise.all((classesData || []).map(async (cls) => {
-          const { data: enrollments } = await supabase
-            .from('enrollments')
-            .select('current_attendance_rate')
-            .eq('class_id', cls.id);
+        const processedClasses = classesData.map((cls: any) => {
+          const subjectName = cls.subjects?.name || "Unknown Class";
+          const subjectCode = cls.subjects?.code || "UNK101";
 
-          // Check for active session (closed_at is null)
-          const { data: activeSession } = await supabase
-            .from('attendance_sessions')
-            .select('id, session_pin, online_mode, face_id_required, location_required')
-            .eq('class_id', cls.id)
-            .is('closed_at', null)
-            .maybeSingle();
-
-          const totalEnrollments = enrollments?.length || 0;
-          const avgAttendance = totalEnrollments > 0
-            ? Math.round((enrollments || []).reduce((sum, e) => sum + Number(e.current_attendance_rate), 0) / totalEnrollments)
-            : 100;
-
-          const criticalCount = enrollments?.filter(e => Number(e.current_attendance_rate) < 80).length || 0;
-          const atRiskCount = enrollments?.filter(e => Number(e.current_attendance_rate) >= 80 && Number(e.current_attendance_rate) < 90).length || 0;
-
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const subjectNode = cls.subjects as any;
-          const subjectName = subjectNode?.name || "Unknown Class";
-          const subjectCode = subjectNode?.code || "UNK101";
-
-          // Format start_time and end_time (e.g. "10:00:00" -> "10:00 AM")
+          // Format start_time and end_time
           const formatTimeStr = (timeStr: string | null) => {
             if (!timeStr) return "";
             const parts = timeStr.split(':');
-            const p0 = parts[0];
-            const p1 = parts[1];
-            if (!p0 || !p1) return timeStr;
-            const hr = parseInt(p0, 10);
-            const min = p1;
+            if (!parts[0] || !parts[1]) return timeStr;
+            const hr = parseInt(parts[0], 10);
             const ampm = hr >= 12 ? 'PM' : 'AM';
             const displayHr = hr % 12 === 0 ? 12 : hr % 12;
-            return `${displayHr}:${min} ${ampm}`;
+            return `${displayHr}:${parts[1]} ${ampm}`;
           };
 
           const formattedTimeRange = cls.start_time && cls.end_time
             ? `${formatTimeStr(cls.start_time)} - ${formatTimeStr(cls.end_time)}`
-            : (cls.type === 'Lecture' ? '10:00 AM - 12:00 PM' : cls.type === 'Tutorial' ? '2:00 PM - 3:00 PM' : '4:00 PM - 6:00 PM');
+            : (cls.type === 'Lecture' ? '10:00 AM - 12:00 PM' : '2:00 PM - 3:00 PM');
 
           const formattedDayTime = cls.day_of_week
             ? `${cls.day_of_week} • ${formattedTimeRange}`
@@ -195,33 +155,33 @@ export default function HomePage() {
             title: `${subjectCode} - ${subjectName}`,
             group: cls.group_code,
             time: formattedDayTime,
-            location: cls.location || (cls.type === 'Lecture' ? 'Lecture Hall 3' : cls.type === 'Tutorial' ? 'Tutorial Room 1' : 'Computer Lab 2'),
-            status: activeSession ? 'Ongoing' : 'Scheduled',
-            critical: criticalCount,
-            atRisk: atRiskCount,
-            attendance: avgAttendance,
+            location: cls.location || (cls.type === 'Lecture' ? 'Lecture Hall 3' : 'Computer Lab 2'),
+            status: cls.active_session ? 'Ongoing' : 'Scheduled',
+            critical: cls.stats?.critical_count || 0,
+            atRisk: cls.stats?.at_risk_count || 0,
+            attendance: cls.stats?.average_attendance || 100,
             type: cls.type,
             dayOfWeek: cls.day_of_week,
             startTime: cls.start_time,
             endTime: cls.end_time,
-            activeSessionId: activeSession?.id || null,
-            activeSessionPin: activeSession?.session_pin || null,
-            activeOnlineMode: activeSession?.online_mode || false,
-            activeFaceIdRequired: activeSession?.face_id_required || false,
-            activeLocationRequired: activeSession?.location_required || false
+            activeSessionId: cls.active_session?.id || null,
+            activeSessionPin: cls.active_session?.session_pin || null,
+            activeOnlineMode: cls.active_session?.online_mode || false,
+            activeFaceIdRequired: cls.active_session?.face_id_required || false,
+            activeLocationRequired: cls.active_session?.location_required || false
           };
-        }));
+        });
 
         // Dynamic schedule filtering by current day
         const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
         const todayDayOfWeek = days[new Date().getDay()];
 
-        const todayClasses = processedClasses.filter(cls => cls.dayOfWeek === todayDayOfWeek);
-        todayClasses.sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
+        const todayClasses = processedClasses.filter((cls: any) => cls.dayOfWeek === todayDayOfWeek);
+        todayClasses.sort((a: any, b: any) => (a.startTime || "").localeCompare(b.startTime || ""));
 
         // Fallback: sort all classes by day-of-week index & starting time
         const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-        const fallbackClasses = [...processedClasses].sort((a, b) => {
+        const fallbackClasses = [...processedClasses].sort((a: any, b: any) => {
           const dayA = dayOrder.indexOf(a.dayOfWeek || "");
           const dayB = dayOrder.indexOf(b.dayOfWeek || "");
           if (dayA !== dayB) return dayA - dayB;
@@ -236,7 +196,7 @@ export default function HomePage() {
         let activeIdx = 0;
 
         if (todayClasses.length > 0) {
-          const firstUpcomingOrOngoing = todayClasses.findIndex(cls => {
+          const firstUpcomingOrOngoing = todayClasses.findIndex((cls: any) => {
             const start = cls.startTime || "00:00:00";
             let end = cls.endTime || "";
             if (!end) {
@@ -251,7 +211,7 @@ export default function HomePage() {
           if (firstUpcomingOrOngoing !== -1) {
             activeIdx = firstUpcomingOrOngoing;
           } else {
-            activeIdx = todayClasses.length - 1; // Default to last class of the day if all are past
+            activeIdx = todayClasses.length - 1; 
           }
         }
 
@@ -260,7 +220,7 @@ export default function HomePage() {
         setScheduleToday(slicedSchedule);
         setActiveIndex(finalActiveIdx);
         setAssignedClasses(processedClasses);
-        setHasAnyActiveSession(processedClasses.some((c) => !!c.activeSessionId));
+        setHasAnyActiveSession(processedClasses.some((c: any) => !!c.activeSessionId));
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
       } finally {
@@ -281,7 +241,24 @@ export default function HomePage() {
   };
 
   if (isLoading) {
-    return <div className="flex-1 flex items-center justify-center">Loading dashboard...</div>;
+    return (
+      <main className="flex-1 overflow-y-auto bg-[#FAF9F6] flex flex-col p-8">
+        <div className="w-64 h-10 bg-slate-200 rounded-lg animate-pulse mb-2"></div>
+        <div className="w-48 h-5 bg-slate-200 rounded-lg animate-pulse mb-8"></div>
+        
+        <div className="w-full h-[450px] bg-slate-200 rounded-3xl animate-pulse mb-10"></div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm animate-pulse h-48 flex flex-col justify-between">
+              <div className="w-12 h-12 bg-slate-200 rounded-xl"></div>
+              <div className="w-3/4 h-6 bg-slate-200 rounded-lg"></div>
+              <div className="w-full h-12 bg-slate-50 rounded-xl mt-4"></div>
+            </div>
+          ))}
+        </div>
+      </main>
+    );
   }
 
   return (

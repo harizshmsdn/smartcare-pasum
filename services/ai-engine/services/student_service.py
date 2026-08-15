@@ -24,11 +24,17 @@ def get_student_dashboard_analytics(user: dict = Depends(get_current_user), db =
                     e.class_id,
                     e.current_attendance_rate,
                     c.group_code,
+                    c.type,
+                    c.day_of_week,
+                    c.start_time,
+                    c.end_time,
                     s.code as subject_code,
-                    s.name as subject_name
+                    s.name as subject_name,
+                    p.full_name as lecturer_name
                 FROM public.enrollments e
                 JOIN public.classes c ON e.class_id = c.id
                 JOIN public.subjects s ON c.subject_id = s.id
+                LEFT JOIN public.profiles p ON c.lecturer_id = p.id
                 WHERE e.student_id = %s
                 ORDER BY s.code ASC;
                 """,
@@ -142,14 +148,42 @@ def get_student_dashboard_analytics(user: dict = Depends(get_current_user), db =
 
             ranked_subjects.sort(key=lambda x: x["score"], reverse=True)
 
+            assigned_classes = []
+            for r in enrollments:
+                att_rate = float(r["current_attendance_rate"]) if r["current_attendance_rate"] is not None else 85.0
+                risk_status = "Critical" if att_rate < 80 else ("Watch" if att_rate < 90 else "Good")
+                
+                # We reuse the ca_performance_data for the latest score
+                latest_score = 0
+                ca_list = ca_performance_data.get(r["subject_code"], [])
+                if ca_list:
+                    latest_score = ca_list[-1]["score"]
+                
+                assigned_classes.append({
+                    "id": r["class_id"],
+                    "name": r["subject_name"],
+                    "code": r["group_code"],
+                    "lecturer": r["lecturer_name"] or "Unknown",
+                    "status": "Enrolled",
+                    "attendance": att_rate,
+                    "latestScore": latest_score,
+                    "riskStatus": risk_status,
+                    "type": r["type"] or "Lecture",
+                    "dayOfWeek": r["day_of_week"] or "Monday",
+                    "startTime": str(r["start_time"]) if r["start_time"] else "10:00:00",
+                    "endTime": str(r["end_time"]) if r["end_time"] else "12:00:00"
+                })
+
             return {
+                "profile": {"full_name": profile["full_name"], "email": profile["email"], "institutional_id": profile["institutional_id"]},
                 "total_merits": total_merits,
                 "subjects_list": subjects_list,
                 "class_attendance": class_attendance,
                 "subject_timelines": subject_timelines,
                 "ca_performance_data": ca_performance_data,
                 "exam_performance": exam_performance,
-                "ranked_subjects": ranked_subjects
+                "ranked_subjects": ranked_subjects,
+                "assigned_classes": assigned_classes
             }
 
     except HTTPException:
@@ -447,6 +481,49 @@ def create_student_merit_claim(req: StudentMeritClaimRequest, user: dict = Depen
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Create Merit Claim Error: {str(e)}")
+
+
+def get_student_settings(user: dict, db):
+    try:
+        with db.cursor(cursor_factory=RealDictCursor) as cur:
+            student_id = user["id"]
+            
+            # Fetch profile for Face ID/Device
+            cur.execute("SELECT face_hash, device_id FROM public.profiles WHERE id = %s", (student_id,))
+            profile = cur.fetchone() or {}
+            
+            # Fetch settings
+            cur.execute("SELECT language, notifications_enabled FROM public.settings WHERE lecturer_id = %s", (student_id,))
+            settings = cur.fetchone() or {"language": "en", "notifications_enabled": True}
+            
+            return {
+                "profile": profile,
+                "settings": settings
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def update_student_settings(settings: dict, user: dict, db):
+    try:
+        with db.cursor() as cur:
+            student_id = user["id"]
+            language = settings.get("language", "en")
+            notifications_enabled = settings.get("notifications_enabled", True)
+            
+            cur.execute("""
+                INSERT INTO public.settings (lecturer_id, language, notifications_enabled, updated_at)
+                VALUES (%s, %s, %s, NOW())
+                ON CONFLICT (lecturer_id) DO UPDATE SET
+                    language = EXCLUDED.language,
+                    notifications_enabled = EXCLUDED.notifications_enabled,
+                    updated_at = NOW();
+            """, (student_id, language, notifications_enabled))
+            db.commit()
+            return {"status": "success"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 def send_intervention_email(student_email: str, student_name: str, subject_name: str, issue: str, db = Depends(get_db)):

@@ -10,12 +10,22 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from jose import jwt, JWTError
 
+from models.schemas import *
+from routers.core import router as core_router
+from routers.alerts import router as alerts_router
+from routers.analytics import router as analytics_router
+from routers.student import router as student_router
+from routers.admin import router as admin_router
+from routers.lecturer import router as lecturer_router
+
 app = FastAPI(title="SmartCare Attendance Engine", version="1.0.0")
+
 app.include_router(core_router)
 app.include_router(alerts_router)
 app.include_router(analytics_router)
 app.include_router(student_router)
 app.include_router(admin_router)
+app.include_router(lecturer_router)
 
 # Enable CORS for frontend clients
 app.add_middleware(
@@ -33,12 +43,6 @@ DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localho
 ENV = os.getenv("ENV", "development")
 IS_PRODUCTION = ENV.lower() == "production"
 
-from models.schemas import *
-from routers.core import router as core_router
-from routers.alerts import router as alerts_router
-from routers.analytics import router as analytics_router
-from routers.student import router as student_router
-from routers.admin import router as admin_router
 def get_db_connection():
     """Establishes connection to the Supabase local PostgreSQL database."""
     try:
@@ -85,25 +89,6 @@ def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
             print(f"Fallback unverified decode failed: {str(fallback_err)}")
         raise HTTPException(status_code=401, detail=f"Could not validate credentials: {str(e)}")
 
-
-
-
-
-
-
-
-
-
-# ==============================================================================
-# STUDENT SPECIFIC ENDPOINTS
-# ==============================================================================
-
-
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
-
-
-
-

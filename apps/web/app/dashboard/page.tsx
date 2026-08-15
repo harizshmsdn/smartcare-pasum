@@ -86,12 +86,14 @@ export default function DashboardPage() {
   const [examPerformanceData, setExamPerformanceData] = useState<ExamPerformanceItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 1. Initial Dashboard Load (FastAPI / Supabase Fallback)
+  // 1. Initial Dashboard Load (FastAPI)
   useEffect(() => {
     const fetchDashboardAnalytics = async () => {
       setIsLoading(true);
       try {
+        const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token;
+        if (!token) throw new Error("No access token available");
 
         // Call FastAPI Endpoint
         const res = await fetch("http://localhost:8000/api/analytics/dashboard", {
@@ -114,101 +116,14 @@ export default function DashboardPage() {
           if (data.merit_cgpa) setMeritCGPA(data.merit_cgpa);
           if (data.exam_performance) setExamPerformanceData(data.exam_performance);
         } else {
-          // Supabase direct fallback if FastAPI service is unreachable
-          await fetchFallbackAnalytics();
+          console.error("FastAPI returned error:", await res.text());
+          // Consider adding a toast or state to show the error
         }
       } catch (err) {
-        console.warn("FastAPI offline, using Supabase direct analytics:", err);
-        await fetchFallbackAnalytics();
+        console.error("Failed to load dashboard analytics:", err);
       } finally {
         setIsLoading(false);
       }
-    };
-
-    const fetchFallbackAnalytics = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Classes
-      const { data: classesData } = await supabase
-        .from('classes')
-        .select('id, group_code, subjects(code, name)')
-        .eq('lecturer_id', user.id);
-
-      if (classesData && classesData.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const formatted = classesData.map((c: any) => ({
-          id: c.id,
-          code: c.subjects?.code || "SUBJ",
-          name: c.subjects?.name || "Subject",
-          group_code: c.group_code || "Group A",
-          label: `${c.subjects?.code} - ${c.subjects?.name} (${c.group_code})`
-        }));
-        setAssignedClasses(formatted);
-        if (formatted[0]) {
-          setSelectedClassId(formatted[0].id);
-        }
-      }
-
-      // Risk clusters
-      const { data: enrollments } = await supabase.from('enrollments').select('current_attendance_rate');
-      if (enrollments) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const count = enrollments.filter((e: any) => Number(e.current_attendance_rate) < 80).length;
-        setAbsenteeismCount(count);
-      }
-
-      const { count: dropCount } = await supabase
-        .from('interventions')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'needs_review');
-      setAssessmentDropCount(dropCount || 0);
-
-      // Raw Merit Scores & CGPA
-      const { data: profiles } = await supabase.from('profiles').select('total_merit_score').eq('role', 'student');
-      if (profiles) {
-        const raw: [ChartItem, ChartItem, ChartItem, ChartItem, ChartItem] = [
-          { range: "0-100", students: 0 },
-          { range: "101-200", students: 0 },
-          { range: "201-300", students: 0 },
-          { range: "301-400", students: 0 },
-          { range: "401-500", students: 0 },
-        ];
-        const cgpa: [ChartItem, ChartItem, ChartItem, ChartItem, ChartItem] = [
-          { range: "< 2.0", students: 0 },
-          { range: "2.0-2.5", students: 0 },
-          { range: "2.5-3.0", students: 0 },
-          { range: "3.0-3.5", students: 0 },
-          { range: "3.5-4.0", students: 0 },
-        ];
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        profiles.forEach((p: any) => {
-          const score = Number(p.total_merit_score || 0);
-          if (score <= 100) raw[0].students++;
-          else if (score <= 200) raw[1].students++;
-          else if (score <= 300) raw[2].students++;
-          else if (score <= 400) raw[3].students++;
-          else raw[4].students++;
-
-          if (score <= 80) cgpa[0].students++;
-          else if (score <= 125) cgpa[1].students++;
-          else if (score <= 175) cgpa[2].students++;
-          else if (score <= 220) cgpa[3].students++;
-          else cgpa[4].students++;
-        });
-
-        setMeritRawScores(raw);
-        setMeritCGPA(cgpa);
-      }
-
-      // Exam Performance Fallback
-      setExamPerformanceData([
-        { subject: "PHY101", midterm: 79, finals: 85 },
-        { subject: "MTH201", midterm: 82, finals: 89 },
-        { subject: "CSE101", midterm: 75, finals: 82 },
-        { subject: "CHM101", midterm: 70, finals: 78 }
-      ]);
     };
 
     fetchDashboardAnalytics();
@@ -221,7 +136,9 @@ export default function DashboardPage() {
 
     const fetchClassTrajectory = async () => {
       try {
+        const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token;
+        if (!token) throw new Error("No access token available");
 
         const res = await fetch(`http://localhost:8000/api/analytics/trajectory?class_id=${selectedClassId}`, {
           headers: {
@@ -233,21 +150,10 @@ export default function DashboardPage() {
           const data = await res.json();
           setTrajectoryData(data);
         } else {
-          // Class-unique deterministic fallback pattern
-          const hash = sumCharCodes(selectedClassId);
-          setTrajectoryData([
-            { week: "W1", attendance: Math.min(100, 94 + (hash % 5)), assessment: Math.min(100, 80 + (hash % 7)) },
-            { week: "W2", attendance: Math.min(100, 92 + (hash % 6)), assessment: Math.min(100, 82 + (hash % 5)) },
-            { week: "W3", attendance: Math.min(100, 90 + (hash % 4)), assessment: Math.min(100, 78 + (hash % 8)) },
-            { week: "W4", attendance: Math.min(100, 88 + (hash % 7)), assessment: Math.min(100, 75 + (hash % 6)) },
-            { week: "W5", attendance: Math.min(100, 85 + (hash % 5)), assessment: Math.min(100, 78 + (hash % 9)) },
-            { week: "W6", attendance: Math.min(100, 82 + (hash % 8)), assessment: Math.min(100, 80 + (hash % 4)) },
-            { week: "W7", attendance: Math.min(100, 80 + (hash % 6)), assessment: Math.min(100, 82 + (hash % 7)) },
-            { week: "W8", attendance: Math.min(100, 84 + (hash % 5)), assessment: Math.min(100, 85 + (hash % 5)) },
-          ]);
+          console.error("FastAPI trajectory error:", await res.text());
         }
       } catch (err) {
-        console.warn("FastAPI trajectory error:", err);
+        console.error("Failed to load trajectory:", err);
       }
     };
 
@@ -398,15 +304,22 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex-1 min-h-0 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={meritRawScores} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                <XAxis dataKey="range" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-                <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                <Bar dataKey="students" name="Students" fill="#f59e0b" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {meritRawScores && meritRawScores.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={meritRawScores} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="range" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                  <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Bar dataKey="students" name="Students" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                <p className="text-sm font-medium">No Data Available</p>
+                <p className="text-[10px] mt-1">Waiting for initial scores to be recorded.</p>
+              </div>
+            )}
           </div>
         </BorderGlow>
 
@@ -427,20 +340,27 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex-1 min-h-0 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={meritCGPA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorCgpa" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="range" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                <Area type="monotone" dataKey="students" name="Students" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorCgpa)" />
-              </AreaChart>
-            </ResponsiveContainer>
+            {meritCGPA && meritCGPA.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={meritCGPA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorCgpa" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="range" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Area type="monotone" dataKey="students" name="Students" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorCgpa)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                <p className="text-sm font-medium">No Data Available</p>
+                <p className="text-[10px] mt-1">Waiting for initial CGPA calculations.</p>
+              </div>
+            )}
           </div>
         </BorderGlow>
 
@@ -461,16 +381,23 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex-1 min-h-0 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={examPerformanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                <XAxis dataKey="subject" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-                <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                <Bar dataKey="midterm" name="Mid-Term" fill="#94a3b8" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="finals" name="Finals" fill="#38bdf8" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {examPerformanceData && examPerformanceData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={examPerformanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="subject" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                  <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Bar dataKey="midterm" name="Mid-Term" fill="#94a3b8" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="finals" name="Finals" fill="#38bdf8" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                <p className="text-sm font-medium">No Exams Recorded</p>
+                <p className="text-[10px] mt-1">Matrix will populate after mid-terms.</p>
+              </div>
+            )}
           </div>
         </BorderGlow>
 

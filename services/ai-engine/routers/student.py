@@ -48,3 +48,10 @@ import json
 def get_student_interventions(user: dict = Depends(get_current_user), db = Depends(get_db)):
     return student_service.get_student_interventions(user=user, db=db)
 
+@router.get("/api/student/settings")
+def get_student_settings(user: dict = Depends(get_current_user), db = Depends(get_db)):
+    return student_service.get_student_settings(user=user, db=db)
+
+@router.patch("/api/student/settings")
+def update_student_settings(settings: dict, user: dict = Depends(get_current_user), db = Depends(get_db)):
+    return student_service.update_student_settings(settings=settings, user=user, db=db)

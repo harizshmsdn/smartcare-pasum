@@ -77,6 +77,8 @@ export default function AdminClassesPage() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No session");
 
       // 1. Fetch classes
       const classesRes = await fetch("http://localhost:8000/api/admin/classes", {
@@ -119,6 +121,8 @@ export default function AdminClassesPage() {
   const handleAddSubject = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No session");
 
       const res = await fetch("http://localhost:8000/api/admin/subjects", {
         method: "POST",
@@ -140,24 +144,20 @@ export default function AdminClassesPage() {
         setCreditHours(3);
         fetchData();
       } else {
-        alert("Failed to create subject.");
+        const data = await res.json();
+        alert(data.detail || "Failed to add subject");
       }
-    } catch (err) {
-      console.error("Create subject error:", err);
+    } catch (err: any) {
+      console.error("Add subject error:", err);
+      alert(err.message || "Failed to add subject");
     }
   };
 
   const handleAddClass = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedSubjectId || !selectedLecturerId) {
-      alert("Please select a subject and a lecturer.");
-      return;
-    }
     try {
-
-      // Format times to HH:MM:SS
-      const formattedStart = startTime.includes(":") && startTime.split(":").length === 2 ? `${startTime}:00` : startTime;
-      const formattedEnd = endTime.includes(":") && endTime.split(":").length === 2 ? `${endTime}:00` : endTime;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No session");
 
       const res = await fetch("http://localhost:8000/api/admin/classes", {
         method: "POST",
@@ -168,33 +168,34 @@ export default function AdminClassesPage() {
         body: JSON.stringify({
           subject_id: selectedSubjectId,
           lecturer_id: selectedLecturerId,
-          group_code: groupCode,
+          group_code: groupCode.toUpperCase(),
           type: classType,
           semester,
           day_of_week: dayOfWeek,
-          start_time: formattedStart,
-          end_time: formattedEnd,
+          start_time: startTime + ":00",
+          end_time: endTime + ":00",
           location
         })
       });
 
       if (res.ok) {
         setShowAddClass(false);
-        // Reset class form
-        setGroupCode("");
-        setLocation("");
         fetchData();
       } else {
-        alert("Failed to create class.");
+        const data = await res.json();
+        alert(data.detail || "Failed to add class");
       }
-    } catch (err) {
-      console.error("Create class error:", err);
+    } catch (err: any) {
+      console.error("Add class error:", err);
+      alert(err.message || "Failed to add class");
     }
   };
 
   const handleDeleteClass = async (classId: string) => {
     if (!confirm("Are you sure you want to delete this class? All attendance logs, student scores, and sessions will be deleted.")) return;
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No session");
 
       const res = await fetch(`http://localhost:8000/api/admin/classes/${classId}`, {
         method: "DELETE",
@@ -210,6 +211,28 @@ export default function AdminClassesPage() {
       }
     } catch (err) {
       console.error("Delete class error:", err);
+    }
+  };
+
+  const handleDeleteSubject = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this subject?")) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No session");
+
+      const res = await fetch(`http://localhost:8000/api/admin/subjects/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      });
+      if (res.ok) {
+        fetchData();
+      } else {
+        const data = await res.json();
+        alert(data.detail || "Failed to delete subject");
+      }
+    } catch (err: any) {
+      console.error("Delete subject error:", err);
+      alert("Failed to delete subject");
     }
   };
 

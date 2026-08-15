@@ -30,6 +30,7 @@ import {
   Award
 } from "lucide-react";
 import { createClient } from "../../utils/supabase/client";
+import { lecturerService } from "../../lib/services/lecturer";
 import { useEffect } from "react";
 
 interface StudentListItem {
@@ -59,6 +60,7 @@ export default function ClassesPage() {
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // States for the configuration modal
   const [showConfigModal, setShowConfigModal] = useState(false);
@@ -102,25 +104,10 @@ export default function ClassesPage() {
   useEffect(() => {
     const fetchClasses = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        const { data: classesData } = await supabase
-          .from('classes')
-          .select(`
-            id,
-            group_code,
-            day_of_week,
-            start_time,
-            subjects (
-              code,
-              name
-            )
-          `)
-          .eq('lecturer_id', user.id);
+        const response = await lecturerService.getClasses();
+        const classesData = response.classes || [];
 
         if (classesData && classesData.length > 0) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const formatted = classesData.map((c: any) => {
             let formattedTime = "";
             if (c.start_time) {
@@ -136,7 +123,8 @@ export default function ClassesPage() {
             return {
               id: c.id,
               name: `${c.subjects?.code} - ${c.subjects?.name} (${c.group_code})`,
-              schedule: scheduleStr
+              schedule: scheduleStr,
+              activeSessionId: c.active_session?.id || null
             };
           });
           setClassesList(formatted);
@@ -151,6 +139,8 @@ export default function ClassesPage() {
         }
       } catch (err) {
         console.error("Error loading lecturer classes:", err);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchClasses();
@@ -160,7 +150,9 @@ export default function ClassesPage() {
   // Fetch class assessments and gradebook scores from FastAPI
   const fetchClassAssessments = async (classId: string) => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
+      if (!token) throw new Error("No access token available");
 
       const res = await fetch(`http://localhost:8000/api/classes/${classId}/assessments`, {
         headers: {
@@ -173,44 +165,10 @@ export default function ClassesPage() {
         setClassAssessments(data.assessments || []);
         setClassRosterScores(data.roster || []);
       } else {
-        await fetchFallbackClassAssessments(classId);
+        console.error("FastAPI returned error:", await res.text());
       }
     } catch (err) {
-      console.warn("FastAPI offline, using Supabase direct assessment fetch:", err);
-      await fetchFallbackClassAssessments(classId);
-    }
-  };
-
-  const fetchFallbackClassAssessments = async (classId: string) => {
-    const { data: assessments } = await supabase
-      .from('assessments')
-      .select('*')
-      .eq('class_id', classId)
-      .order('created_at', { ascending: true });
-
-    setClassAssessments(assessments || []);
-
-    const { data: enrollments } = await supabase
-      .from('enrollments')
-      .select(`
-        student_id,
-        profiles (
-          id,
-          full_name,
-          institutional_id
-        )
-      `)
-      .eq('class_id', classId);
-
-    if (enrollments) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const roster = enrollments.map((e: any) => ({
-        student_id: e.student_id,
-        student_name: e.profiles?.full_name || "Student",
-        matric_id: e.profiles?.institutional_id || "N/A",
-        scores: {}
-      }));
-      setClassRosterScores(roster);
+      console.error("Failed to fetch class assessments:", err);
     }
   };
 
@@ -219,66 +177,45 @@ export default function ClassesPage() {
     if (!selectedClassId) return;
 
     const fetchRoster = async () => {
-      // Check for active session (closed_at is null)
-      const { data: activeSession } = await supabase
-        .from('attendance_sessions')
-        .select('id')
-        .eq('class_id', selectedClassId)
-        .is('closed_at', null)
-        .maybeSingle();
-
-      const { data: anyActive } = await supabase
-        .from('attendance_sessions')
-        .select('id')
-        .is('closed_at', null)
-        .limit(1);
-
-      if (activeSession) {
-        setActiveSessionId(activeSession.id);
-      } else {
-        setActiveSessionId(null);
-      }
-      setHasAnyActiveSession(!!(anyActive && anyActive.length > 0));
-
-      const { data: enrollments } = await supabase
-        .from('enrollments')
-        .select(`
-          current_attendance_rate,
-          profiles (
-            id,
-            full_name,
-            institutional_id,
-            email
-          )
-        `)
-        .eq('class_id', selectedClassId);
-
-      if (enrollments) {
+      try {
+        // Sync active session ID from classesList
+        const currentClass = classesList.find((c: any) => c.id === selectedClassId);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const formattedStudents = enrollments.map((e: any) => {
-          const profile = e.profiles;
-          const attendance = Number(e.current_attendance_rate);
-          let status = 'good';
-          if (attendance < 80) status = 'critical';
-          else if (attendance < 90) status = 'at-risk';
+        setActiveSessionId((currentClass as any)?.activeSessionId || null);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setHasAnyActiveSession(classesList.some((c: any) => !!c.activeSessionId));
 
-          return {
-            id: profile?.id || '',
-            matricId: profile?.institutional_id || '',
-            name: profile?.full_name || 'Unknown Student',
-            email: profile?.email || '',
-            status,
-            attendance,
-            latestScore: attendance < 80 ? 45 : attendance < 90 ? 63 : 88,
-            lastSeen: attendance < 80 ? '3 days ago' : 'Today'
-          };
-        });
-        setStudents(formattedStudents);
+        const response = await lecturerService.getClassRoster(selectedClassId);
+        const enrollments = response.enrollments || [];
+
+        if (enrollments) {
+          const formattedStudents = enrollments.map((e: any) => {
+            const profile = e.profiles;
+            const attendance = Number(e.current_attendance_rate);
+            let status = 'good';
+            if (attendance < 80) status = 'critical';
+            else if (attendance < 90) status = 'at-risk';
+
+            return {
+              id: profile?.id || '',
+              matricId: profile?.institutional_id || '',
+              name: profile?.full_name || 'Unknown Student',
+              email: profile?.email || '',
+              status,
+              attendance,
+              latestScore: attendance < 80 ? 45 : attendance < 90 ? 63 : 88,
+              lastSeen: attendance < 80 ? '3 days ago' : 'Today'
+            };
+          });
+          setStudents(formattedStudents);
+        }
+      } catch (err) {
+        console.error("Failed to fetch class roster:", err);
       }
     };
     fetchRoster();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedClassId]);
+  }, [selectedClassId, classesList]);
 
   //Filter Logic: Applies Tab selection AND Search Query
   const filteredStudents = students.filter((student) => {
@@ -297,6 +234,34 @@ export default function ClassesPage() {
   const classAvg = students.length > 0
     ? Math.round(students.reduce((sum, s) => sum + s.attendance, 0) / students.length)
     : 100;
+
+  if (isLoading) {
+    return (
+      <main className="flex-1 p-8 overflow-y-auto bg-[#FAF9F6]">
+        <div className="w-64 h-10 bg-slate-200 rounded-lg animate-pulse mb-2"></div>
+        <div className="w-48 h-5 bg-slate-200 rounded-lg animate-pulse mb-8"></div>
+        
+        <div className="grid grid-cols-5 gap-5 mb-8">
+          {[1, 2, 3, 4, 5].map(i => (
+            <div key={i} className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm animate-pulse h-28 flex items-center gap-4">
+              <div className="w-14 h-14 bg-slate-200 rounded-2xl shrink-0"></div>
+              <div className="flex-1">
+                <div className="w-24 h-4 bg-slate-200 rounded mb-2"></div>
+                <div className="w-16 h-8 bg-slate-200 rounded"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden h-[400px] p-5 animate-pulse">
+          <div className="w-full h-12 bg-slate-100 rounded-lg mb-6"></div>
+          <div className="w-full h-10 bg-slate-50 rounded-lg mb-4"></div>
+          <div className="w-full h-10 bg-slate-50 rounded-lg mb-4"></div>
+          <div className="w-full h-10 bg-slate-50 rounded-lg mb-4"></div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="flex-1 p-8 overflow-y-auto bg-[#FAF9F6]">

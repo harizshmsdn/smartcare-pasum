@@ -12,6 +12,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import { createClient } from "../../../utils/supabase/client";
+import { studentService } from "../../../lib/services/student";
 
 interface AlertItem {
   id: string;
@@ -31,93 +32,14 @@ export default function StudentAlertsPage() {
   const [studentId, setStudentId] = useState("");
 
   const fetchAlerts = async () => {
+    setIsLoading(true);
     try {
-      const token = session?.access_token;
-      if (session?.user?.id) {
-        setStudentId(session.user.id);
-      }
-
-      if (token) {
-        try {
-          const res = await fetch("http://localhost:8000/api/student/alerts", {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          });
-          if (res.ok) {
-            const apiData = await res.json();
-            setAlerts(apiData.alerts || []);
-            setIsLoading(false);
-            return;
-          }
-        } catch (apiErr) {
-          console.warn("FastAPI alerts error, falling back to Supabase query:", apiErr);
-        }
-      }
-
-      await fetchFallbackAlerts();
+      const data = await studentService.getAlerts();
+      setAlerts(data.alerts || []);
     } catch (err) {
       console.error("Error loading student alerts:", err);
-      await fetchFallbackAlerts();
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const fetchFallbackAlerts = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    setStudentId(user.id);
-
-    const { data } = await supabase
-      .from('alerts')
-      .select(`
-        id,
-        type,
-        priority,
-        message,
-        is_read,
-        created_at,
-        classes (
-          subjects (
-            name
-          )
-        )
-      `)
-      .eq('student_id', user.id)
-      .order('created_at', { ascending: false });
-
-    if (data) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const formatted: AlertItem[] = data.map((item: any) => {
-        const classNode = item.classes;
-        const subjectName = classNode?.subjects?.name || "General";
-
-        const diffMs = Date.now() - new Date(item.created_at).getTime();
-        const diffMin = Math.floor(diffMs / 60000);
-        const diffHr = Math.floor(diffMin / 60);
-        const diffDay = Math.floor(diffHr / 24);
-
-        let timestamp = "Just now";
-        if (diffDay > 0) {
-          timestamp = `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
-        } else if (diffHr > 0) {
-          timestamp = `${diffHr} hour${diffHr > 1 ? 's' : ''} ago`;
-        } else if (diffMin > 0) {
-          timestamp = `${diffMin} min${diffMin > 1 ? 's' : ''} ago`;
-        }
-
-        return {
-          id: item.id,
-          course: subjectName,
-          type: item.type || "system",
-          priority: item.priority || "medium",
-          message: item.message || "",
-          timestamp,
-          isRead: !!item.is_read
-        };
-      });
-      setAlerts(formatted);
     }
   };
 
@@ -141,65 +63,21 @@ export default function StudentAlertsPage() {
   const unreadCount = alerts.filter(a => !a.isRead).length;
 
   const markAsRead = async (id: string) => {
-    let success = false;
     try {
-      const token = session?.access_token;
-
-      if (token) {
-        const res = await fetch(`http://localhost:8000/api/student/alerts/${id}/read`, {
-          method: 'PATCH',
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          success = true;
-        }
-      }
+      await studentService.markAlertRead(id);
+      setAlerts(prev => prev.map(a => a.id === id ? { ...a, isRead: true } : a));
     } catch (err) {
-      console.warn("FastAPI offline or unreachable, falling back to direct Supabase update:", err);
+      console.error("Failed to mark alert as read:", err);
     }
-
-    if (!success) {
-      const { error } = await supabase
-        .from('alerts')
-        .update({ is_read: true })
-        .eq('id', id);
-      if (error) {
-        console.error("Supabase direct mark read error:", error);
-      }
-    }
-
-    setAlerts(prev => prev.map(a => a.id === id ? { ...a, isRead: true } : a));
   };
 
   const markAllAsRead = async () => {
-    let success = false;
     try {
-      const token = session?.access_token;
-
-      if (token) {
-        const res = await fetch("http://localhost:8000/api/student/alerts/mark-all-read", {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          success = true;
-        }
-      }
+      await studentService.markAllAlertsRead();
+      setAlerts(prev => prev.map(a => ({ ...a, isRead: true })));
     } catch (err) {
-      console.warn("FastAPI offline or unreachable, falling back to direct Supabase mark-all-read:", err);
+      console.error("Failed to mark all alerts as read:", err);
     }
-
-    if (!success && studentId) {
-      const { error } = await supabase
-        .from('alerts')
-        .update({ is_read: true })
-        .eq('student_id', studentId);
-      if (error) {
-        console.error("Supabase direct mark all read error:", error);
-      }
-    }
-
-    setAlerts(prev => prev.map(a => ({ ...a, isRead: true })));
   };
 
   const filteredAlerts = alerts.filter(a => {
@@ -209,7 +87,35 @@ export default function StudentAlertsPage() {
   });
 
   if (isLoading) {
-    return <div className="flex-1 flex items-center justify-center bg-slate-50 min-h-screen">Loading alerts...</div>;
+    return (
+      <main className="flex-1 p-8 h-screen flex flex-col bg-[#FAF9F6] overflow-hidden">
+        <header className="shrink-0 mb-8 flex justify-between items-end">
+          <div>
+            <div className="w-48 h-8 bg-slate-200 rounded animate-pulse mb-2"></div>
+            <div className="w-32 h-4 bg-slate-200 rounded animate-pulse"></div>
+          </div>
+        </header>
+        <div className="flex-1 min-h-0 bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
+          <div className="flex border-b border-slate-100 p-4 gap-2 shrink-0">
+            <div className="w-24 h-8 bg-slate-200 rounded-lg animate-pulse"></div>
+            <div className="w-24 h-8 bg-slate-200 rounded-lg animate-pulse"></div>
+            <div className="w-24 h-8 bg-slate-200 rounded-lg animate-pulse"></div>
+          </div>
+          <div className="flex-1 p-4 space-y-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="p-5 rounded-2xl border border-slate-200 bg-slate-50 shadow-sm animate-pulse flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-slate-200 shrink-0"></div>
+                <div className="flex-1">
+                  <div className="w-1/3 h-5 bg-slate-200 rounded mb-2"></div>
+                  <div className="w-3/4 h-4 bg-slate-200 rounded mb-3"></div>
+                  <div className="w-1/4 h-3 bg-slate-200 rounded"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </main>
+    );
   }
 
   return (

@@ -11,6 +11,7 @@ import {
   ArrowLeft
 } from "lucide-react";
 import { createClient } from "../../../utils/supabase/client";
+import { studentService } from "../../../lib/services/student";
 
 export default function StudentInterventionsPage() {
   const supabase = createClient();
@@ -20,72 +21,26 @@ export default function StudentInterventionsPage() {
   const fetchInterventions = async () => {
     setIsLoading(true);
     try {
-      const token = session?.access_token;
-
-      if (token) {
-        try {
-          const res = await fetch("http://localhost:8000/api/student/interventions", {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (res.ok) {
-            const apiData = await res.json();
-            const formatted = (apiData.interventions || []).map((i: any) => ({
-              id: i.id,
-              issue_description: i.issue_description,
-              status: i.status,
-              priority: i.priority,
-              created_at: i.created_at,
-              lecturer: {
-                full_name: i.lecturer_name,
-                email: i.lecturer_email
-              },
-              classes: {
-                group_code: i.group_code,
-                subjects: {
-                  code: i.subject_code,
-                  name: i.subject_name
-                }
-              }
-            }));
-            setInterventions(formatted);
-            setIsLoading(false);
-            return;
+      const data = await studentService.getInterventions();
+      const formatted = (data.interventions || []).map((i: any) => ({
+        id: i.id,
+        issue_description: i.issue_description,
+        status: i.status,
+        priority: i.priority,
+        created_at: i.created_at,
+        lecturer: {
+          full_name: i.lecturer_name,
+          email: i.lecturer_email
+        },
+        classes: {
+          group_code: i.group_code,
+          subjects: {
+            code: i.subject_code,
+            name: i.subject_name
           }
-        } catch (apiErr) {
-          console.warn("FastAPI interventions error, falling back to Supabase query:", apiErr);
         }
-      }
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data } = await supabase
-        .from('interventions')
-        .select(`
-          id,
-          issue_description,
-          status,
-          priority,
-          created_at,
-          lecturer:profiles!lecturer_id (
-            full_name,
-            email
-          ),
-          classes (
-            group_code,
-            subjects (
-              code,
-              name
-            )
-          )
-        `)
-        .eq('student_id', user.id)
-        .neq('status', 'resolved')
-        .order('created_at', { ascending: false });
-
-      if (data) {
-        setInterventions(data);
-      }
+      }));
+      setInterventions(formatted);
     } catch (err) {
       console.error("Error fetching interventions for student:", err);
     } finally {
@@ -110,7 +65,29 @@ export default function StudentInterventionsPage() {
   }, [supabase]);
 
   if (isLoading) {
-    return <div className="flex-1 flex items-center justify-center bg-[#FAF9F6] min-h-screen">Loading case files...</div>;
+    return (
+      <main className="flex-1 p-8 overflow-y-auto bg-[#FAF9F6]">
+        <div className="mb-6 flex justify-between items-center">
+          <div className="w-48 h-5 bg-slate-200 rounded animate-pulse"></div>
+          <div className="w-32 h-4 bg-slate-200 rounded animate-pulse"></div>
+        </div>
+        <header className="mb-8">
+          <div className="w-64 h-8 bg-slate-200 rounded animate-pulse mb-2"></div>
+          <div className="w-96 h-4 bg-slate-200 rounded animate-pulse"></div>
+        </header>
+        <div className="w-full max-w-4xl space-y-6">
+          {[1, 2].map((i) => (
+            <div key={i} className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden animate-pulse">
+              <div className="h-14 bg-slate-200"></div>
+              <div className="p-8 space-y-6">
+                <div className="h-20 bg-slate-100 rounded-xl"></div>
+                <div className="h-32 bg-slate-100 rounded-xl"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </main>
+    );
   }
 
   const activeCount = interventions.length;

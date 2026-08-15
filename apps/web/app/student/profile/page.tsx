@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "../../../utils/supabase/client";
+import { studentService } from "../../../lib/services/student";
 
 export default function StudentProfilePage() {
   const supabase = createClient();
@@ -21,40 +22,18 @@ export default function StudentProfilePage() {
   const fetchProfile = async () => {
     setIsLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Fetch Student Profile
-      const { data: prof } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-      setProfile(prof);
-
-      // Fetch Enrolled Courses
-      const { data: enrollmentsData } = await supabase
-        .from('enrollments')
-        .select(`
-          classes (
-            group_code,
-            subjects (
-              code,
-              name
-            )
-          )
-        `)
-        .eq('student_id', user.id);
-
-      if (enrollmentsData) {
-        const formatted = enrollmentsData.map((e: any) => {
-          const c = e.classes;
-          return {
-            code: c?.subjects?.code || "PHY101",
-            name: c?.subjects?.name || "Unknown Class",
-            group: c?.group_code || "Group A"
-          };
-        });
+      const data = await studentService.getDashboard();
+      if (data.profile) {
+        setProfile(data.profile);
+      }
+      
+      const assigned = data.assigned_classes || [];
+      if (assigned.length > 0) {
+        const formatted = assigned.map((c: any) => ({
+          code: c.subject || "PHY101",
+          name: c.title || "Unknown Class",
+          group: c.group || "Group A"
+        }));
         setEnrolledCourses(formatted);
       }
     } catch (err) {
@@ -66,22 +45,26 @@ export default function StudentProfilePage() {
 
   useEffect(() => {
     fetchProfile();
-
-    // Realtime channel listener for profile updates
-    const channel = supabase
-      .channel('student_profile_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-        fetchProfile();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [supabase]);
+  }, []);
 
   if (isLoading || !profile) {
-    return <div className="flex-1 flex items-center justify-center bg-slate-50 min-h-screen">Loading profile...</div>;
+    return (
+      <main className="flex-1 p-8 overflow-y-auto bg-[#FAF9F6]">
+        <header className="mb-8">
+          <div className="w-48 h-8 bg-slate-200 rounded animate-pulse mb-2"></div>
+          <div className="w-64 h-4 bg-slate-200 rounded animate-pulse"></div>
+        </header>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="space-y-6">
+            <div className="bg-slate-200 h-96 rounded-2xl animate-pulse"></div>
+          </div>
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-slate-200 h-32 rounded-2xl animate-pulse"></div>
+            <div className="bg-slate-200 h-64 rounded-2xl animate-pulse"></div>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   const initials = profile.full_name
