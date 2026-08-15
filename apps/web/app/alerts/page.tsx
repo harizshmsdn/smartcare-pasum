@@ -42,6 +42,7 @@ export default function AlertsPage() {
    */
   const fetchAlerts = async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       if (session?.user?.id) {
         setLecturerId(session.user.id);
       }

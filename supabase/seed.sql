@@ -1,4 +1,4 @@
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA extensions;
 -- 1. Insert the user into the Supabase Auth system
 -- We use the pgcrypto extension's crypt() function to hash the password 'password123'
 INSERT INTO auth.users (
@@ -27,7 +27,7 @@ INSERT INTO auth.users (
   'authenticated',
   'authenticated',
   'lecturer@pasum.edu.my',
-  crypt('password123', gen_salt('bf')),
+  extensions.crypt('password123', extensions.gen_salt('bf')),
   current_timestamp,
   '{"provider":"email","providers":["email"],"role":"lecturer"}',
   '{}',
@@ -89,49 +89,49 @@ INSERT INTO public.profiles (
 
 -- Student 1: Ahmad Hakimi
 INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, recovery_token, email_change_token_new, email_change, phone_change, phone_change_token, email_change_token_current, reauthentication_token)
-VALUES ('22222222-2222-2222-2222-222222222221', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'student1@pasum.edu.my', crypt('password123', gen_salt('bf')), current_timestamp, '{"provider":"email","providers":["email"],"role":"student"}', '{}', current_timestamp, current_timestamp, '', '', '', '', '', '', '', '');
+VALUES ('22222222-2222-2222-2222-222222222221', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'student1@pasum.edu.my', extensions.crypt('password123', extensions.gen_salt('bf')), current_timestamp, '{"provider":"email","providers":["email"],"role":"student"}', '{}', current_timestamp, current_timestamp, '', '', '', '', '', '', '', '');
 
 INSERT INTO public.profiles (id, role, full_name, institutional_id, email, total_merit_score)
 VALUES ('22222222-2222-2222-2222-222222222221', 'student', 'Ahmad Hakimi bin Faisal', '1720441', 'student1@pasum.edu.my', 145);
 
 -- Student 2: Nurul Izzah
 INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, recovery_token, email_change_token_new, email_change, phone_change, phone_change_token, email_change_token_current, reauthentication_token)
-VALUES ('22222222-2222-2222-2222-222222222222', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'student2@pasum.edu.my', crypt('password123', gen_salt('bf')), current_timestamp, '{"provider":"email","providers":["email"],"role":"student"}', '{}', current_timestamp, current_timestamp, '', '', '', '', '', '', '', '');
+VALUES ('22222222-2222-2222-2222-222222222222', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'student2@pasum.edu.my', extensions.crypt('password123', extensions.gen_salt('bf')), current_timestamp, '{"provider":"email","providers":["email"],"role":"student"}', '{}', current_timestamp, current_timestamp, '', '', '', '', '', '', '', '');
 
 INSERT INTO public.profiles (id, role, full_name, institutional_id, email, total_merit_score)
 VALUES ('22222222-2222-2222-2222-222222222222', 'student', 'Nurul Izzah binti Osman', '1720442', 'student2@pasum.edu.my', 180);
 
 -- Student 3: Jason Lee
 INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, recovery_token, email_change_token_new, email_change, phone_change, phone_change_token, email_change_token_current, reauthentication_token)
-VALUES ('22222222-2222-2222-2222-222222222223', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'student3@pasum.edu.my', crypt('password123', gen_salt('bf')), current_timestamp, '{"provider":"email","providers":["email"],"role":"student"}', '{}', current_timestamp, current_timestamp, '', '', '', '', '', '', '', '');
+VALUES ('22222222-2222-2222-2222-222222222223', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'student3@pasum.edu.my', extensions.crypt('password123', extensions.gen_salt('bf')), current_timestamp, '{"provider":"email","providers":["email"],"role":"student"}', '{}', current_timestamp, current_timestamp, '', '', '', '', '', '', '', '');
 
 INSERT INTO public.profiles (id, role, full_name, institutional_id, email, total_merit_score)
 VALUES ('22222222-2222-2222-2222-222222222223', 'student', 'Jason Lee Wei Min', '1720445', 'student3@pasum.edu.my', 95);
 
 -- Student 4: Siti Aisyah
 INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, recovery_token, email_change_token_new, email_change, phone_change, phone_change_token, email_change_token_current, reauthentication_token)
-VALUES ('22222222-2222-2222-2222-222222222224', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'student4@pasum.edu.my', crypt('password123', gen_salt('bf')), current_timestamp, '{"provider":"email","providers":["email"],"role":"student"}', '{}', current_timestamp, current_timestamp, '', '', '', '', '', '', '', '');
+VALUES ('22222222-2222-2222-2222-222222222224', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'student4@pasum.edu.my', extensions.crypt('password123', extensions.gen_salt('bf')), current_timestamp, '{"provider":"email","providers":["email"],"role":"student"}', '{}', current_timestamp, current_timestamp, '', '', '', '', '', '', '', '');
 
 INSERT INTO public.profiles (id, role, full_name, institutional_id, email, total_merit_score)
 VALUES ('22222222-2222-2222-2222-222222222224', 'student', 'Siti Aisyah binti Rahman', '1720450', 'student4@pasum.edu.my', 210);
 
 -- Student 5: Muhammad Danial
 INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, recovery_token, email_change_token_new, email_change, phone_change, phone_change_token, email_change_token_current, reauthentication_token)
-VALUES ('22222222-2222-2222-2222-222222222225', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'student5@pasum.edu.my', crypt('password123', gen_salt('bf')), current_timestamp, '{"provider":"email","providers":["email"],"role":"student"}', '{}', current_timestamp, current_timestamp, '', '', '', '', '', '', '', '');
+VALUES ('22222222-2222-2222-2222-222222222225', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'student5@pasum.edu.my', extensions.crypt('password123', extensions.gen_salt('bf')), current_timestamp, '{"provider":"email","providers":["email"],"role":"student"}', '{}', current_timestamp, current_timestamp, '', '', '', '', '', '', '', '');
 
 INSERT INTO public.profiles (id, role, full_name, institutional_id, email, total_merit_score)
 VALUES ('22222222-2222-2222-2222-222222222225', 'student', 'Muhammad Danial bin Zulkifli', '1720451', 'student5@pasum.edu.my', 60);
 
 -- Student 6: Priya
 INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, recovery_token, email_change_token_new, email_change, phone_change, phone_change_token, email_change_token_current, reauthentication_token)
-VALUES ('22222222-2222-2222-2222-222222222226', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'student6@pasum.edu.my', crypt('password123', gen_salt('bf')), current_timestamp, '{"provider":"email","providers":["email"],"role":"student"}', '{}', current_timestamp, current_timestamp, '', '', '', '', '', '', '', '');
+VALUES ('22222222-2222-2222-2222-222222222226', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'student6@pasum.edu.my', extensions.crypt('password123', extensions.gen_salt('bf')), current_timestamp, '{"provider":"email","providers":["email"],"role":"student"}', '{}', current_timestamp, current_timestamp, '', '', '', '', '', '', '', '');
 
 INSERT INTO public.profiles (id, role, full_name, institutional_id, email, total_merit_score)
 VALUES ('22222222-2222-2222-2222-222222222226', 'student', 'Priya a/p Subramaniam', '1720455', 'student6@pasum.edu.my', 130);
 
 -- Student 7: Chong Wei Jie
 INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, recovery_token, email_change_token_new, email_change, phone_change, phone_change_token, email_change_token_current, reauthentication_token)
-VALUES ('22222222-2222-2222-2222-222222222227', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'student7@pasum.edu.my', crypt('password123', gen_salt('bf')), current_timestamp, '{"provider":"email","providers":["email"],"role":"student"}', '{}', current_timestamp, current_timestamp, '', '', '', '', '', '', '', '');
+VALUES ('22222222-2222-2222-2222-222222222227', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'student7@pasum.edu.my', extensions.crypt('password123', extensions.gen_salt('bf')), current_timestamp, '{"provider":"email","providers":["email"],"role":"student"}', '{}', current_timestamp, current_timestamp, '', '', '', '', '', '', '', '');
 
 INSERT INTO public.profiles (id, role, full_name, institutional_id, email, total_merit_score)
 VALUES ('22222222-2222-2222-2222-222222222227', 'student', 'Chong Wei Jie', '1720462', 'student7@pasum.edu.my', 105);
