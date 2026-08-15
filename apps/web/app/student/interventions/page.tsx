@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { createClient } from "../../../utils/supabase/client";
 import { studentService } from "../../../lib/services/student";
+import EmptyState from "../../../components/EmptyState";
 
 export default function StudentInterventionsPage() {
   const supabase = createClient();
@@ -187,14 +188,12 @@ export default function StudentInterventionsPage() {
           </div>
         ) : (
           /* Success Empty State */
-          <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center shadow-sm flex flex-col items-center justify-center py-20 max-w-2xl mx-auto">
-            <div className="bg-emerald-50 p-5 rounded-full text-emerald-600 mb-6">
-              <ShieldCheck size={48} strokeWidth={2.5} />
-            </div>
-            <h3 className="text-2xl font-bold text-slate-900">You have no cases</h3>
-            <p className="text-slate-500 mt-2 max-w-sm text-sm">
-              Keep up the performance! You are fully on track with all attendance thresholds and assessment compliance guidelines.
-            </p>
+          <div className="py-20 max-w-2xl mx-auto">
+            <EmptyState 
+              icon={ShieldCheck}
+              title="You have no cases"
+              description="Keep up the performance! You are fully on track with all attendance thresholds and assessment compliance guidelines."
+            />
           </div>
         )}
       </div>

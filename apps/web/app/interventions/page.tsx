@@ -19,6 +19,7 @@ import { createClient } from "../../utils/supabase/client";
 import { api } from "../../lib/api";
 import { lecturerService } from "../../lib/services/lecturer";
 import BorderGlow from "../../components/BorderGlow";
+import EmptyState from "../../components/EmptyState";
 
 interface KanbanItem {
   id: string; // Institutional ID (Matric)
@@ -317,9 +318,18 @@ function InterventionsBoardContent() {
       </div>
 
       {/* Kanban Grid Container */}
-      <div className="flex-1 min-h-0 flex gap-6 overflow-x-auto pb-4">
-        
-        {/* Column 1: Needs Review */}
+      {filteredItems.length === 0 ? (
+        <div className="flex-1 min-h-0 flex items-center justify-center pb-4">
+          <EmptyState 
+            icon={CheckCircle2}
+            title="No Interventions Found"
+            description="There are no intervention cases matching your current filter. Great job!"
+          />
+        </div>
+      ) : (
+        <div className="flex-1 min-h-0 flex gap-6 overflow-x-auto pb-4">
+          
+          {/* Column 1: Needs Review */}
         <div 
           onDragOver={(e) => handleDragOver(e, "needs_review")}
           onDragLeave={() => setActiveDragColumn(null)}
@@ -463,7 +473,8 @@ function InterventionsBoardContent() {
           </div>
         </div>
 
-      </div>
+        </div>
+      )}
 
       {/* Add Intervention Modal Overlay */}
       {isAddModalOpen && (

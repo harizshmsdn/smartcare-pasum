@@ -24,6 +24,8 @@ import {
   Users,
   Check
 } from "lucide-react";
+import EmptyState from "../components/EmptyState";
+import useSWR from "swr";
 
 //TypeScript interfaces to match Supabase schema
 interface ScheduleItem {
@@ -101,31 +103,40 @@ export default function HomePage() {
     year: 'numeric'
   }).format(new Date());
 
-  //useEffect block ready for Supabase data fetching
+  const fetchDashboardData = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      router.push('/login');
+      throw new Error("Not authenticated");
+    }
+
+    // Fetch Lecturer Name
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single();
+
+    // Fetch Classes via FastAPI
+    const response = await lecturerService.getClasses();
+    return {
+      profile,
+      classes: response.classes || []
+    };
+  };
+
+  const { data: dashboardData, isLoading: isSwrLoading, mutate } = useSWR('lecturerDashboard', fetchDashboardData, {
+    revalidateOnFocus: true,
+  });
+
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      setIsLoading(true);
+    if (!dashboardData) return;
 
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          router.push('/login');
-          return;
-        }
+    if (dashboardData.profile?.full_name) {
+      setLecturerName(dashboardData.profile.full_name);
+    }
 
-        // Fetch Lecturer Name
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .single();
-        if (profile?.full_name) {
-          setLecturerName(profile.full_name);
-        }
-
-        // Fetch Classes via FastAPI
-        const response = await lecturerService.getClasses();
-        const classesData = response.classes || [];
+    const classesData = dashboardData.classes;
 
         const processedClasses = classesData.map((cls: any) => {
           const subjectName = cls.subjects?.name || "Unknown Class";
@@ -221,16 +232,24 @@ export default function HomePage() {
         setActiveIndex(finalActiveIdx);
         setAssignedClasses(processedClasses);
         setHasAnyActiveSession(processedClasses.some((c: any) => !!c.activeSessionId));
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error);
-      } finally {
         setIsLoading(false);
-      }
-    };
+  }, [dashboardData]);
 
-    fetchDashboardData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Realtime subscription to invalidate SWR cache instantly on DB changes
+  useEffect(() => {
+    const channel = supabase.channel('lecturer_dashboard_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance_records' }, () => {
+        mutate();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, () => {
+        mutate();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, mutate]);
 
   const nextSlide = () => {
     setActiveIndex((prev) => (prev === scheduleToday.length - 1 ? 0 : prev + 1));
@@ -273,24 +292,36 @@ export default function HomePage() {
           <p className="text-slate-500 mt-1">{currentDateFormatted}</p>
         </div>
 
-        {/* Carousel Navigation Arrows */}
-        <button
-          onClick={prevSlide}
-          className="absolute left-10 z-40 bg-white/80 backdrop-blur border border-slate-200 p-3 rounded-full shadow-lg text-slate-700 hover:bg-white hover:scale-110 transition-all"
-        >
-          <ChevronLeft size={24} />
-        </button>
+        {scheduleToday.length > 1 && (
+          <>
+            <button
+              onClick={prevSlide}
+              className="absolute left-10 z-40 bg-white/80 backdrop-blur border border-slate-200 p-3 rounded-full shadow-lg text-slate-700 hover:bg-white hover:scale-110 transition-all"
+            >
+              <ChevronLeft size={24} />
+            </button>
 
-        <button
-          onClick={nextSlide}
-          className="absolute right-10 z-40 bg-white/80 backdrop-blur border border-slate-200 p-3 rounded-full shadow-lg text-slate-700 hover:bg-white hover:scale-110 transition-all"
-        >
-          <ChevronRight size={24} />
-        </button>
+            <button
+              onClick={nextSlide}
+              className="absolute right-10 z-40 bg-white/80 backdrop-blur border border-slate-200 p-3 rounded-full shadow-lg text-slate-700 hover:bg-white hover:scale-110 transition-all"
+            >
+              <ChevronRight size={24} />
+            </button>
+          </>
+        )}
 
         {/* 3D Track */}
         <div className="relative w-full max-w-4xl h-[350px] flex items-center justify-center perspective-[1200px]">
-          {scheduleToday.map((cls, index) => {
+          {scheduleToday.length === 0 ? (
+            <div className="relative z-30">
+              <EmptyState 
+                icon={BookOpen}
+                title="No Classes Today"
+                description="You don't have any classes scheduled. Enjoy your day off!"
+              />
+            </div>
+          ) : (
+            scheduleToday.map((cls, index) => {
             const offset = index - activeIndex;
             const isCenter = offset === 0;
             const isRight = offset > 0 || (activeIndex === scheduleToday.length - 1 && index === 0);
@@ -380,7 +411,8 @@ export default function HomePage() {
                 </div>
               </BorderGlow>
             );
-          })}
+          })
+          )}
         </div>
       </div>
 
@@ -393,55 +425,63 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {assignedClasses.map((item) => {
-            const Icon = getClassIcon(item.type);
-            return (
-              <Link
-                href={`/classes?classId=${item.id}`}
-                key={item.id}
-                className="block group rounded-2xl"
-              >
-                <BorderGlow
-                  backgroundColor="#ffffff"
-                  borderRadius={16}
-                  glowColor="220 90 60"
-                  colors={['#3b82f6', '#8b5cf6', '#6366f1']}
-                  className="p-5 shadow-sm transition-all duration-300"
+        {assignedClasses.length === 0 ? (
+          <EmptyState 
+            icon={BookOpen}
+            title="No Assigned Classes"
+            description="You have no classes assigned for this semester. Please contact administration."
+          />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {assignedClasses.map((item) => {
+              const Icon = getClassIcon(item.type);
+              return (
+                <Link
+                  href={`/classes?classId=${item.id}`}
+                  key={item.id}
+                  className="block group rounded-2xl"
                 >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className={`p-2.5 rounded-xl ${item.type === 'Lecture' ? 'bg-indigo-100 text-indigo-600' :
-                      item.type === 'Tutorial' ? 'bg-emerald-100 text-emerald-600' :
-                        'bg-amber-100 text-amber-600'
-                      }`}>
-                      <Icon size={20} />
-                    </div>
-                    <span className="bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md">
-                      {item.type}
-                    </span>
-                  </div>
-
-                  <h4 className="font-bold text-slate-900 text-lg leading-tight mb-2 group-hover:text-blue-600 transition-colors">
-                    {item.title}
-                  </h4>
-
-                  <div className="space-y-2 mt-4 pt-4 border-t border-slate-100">
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <Clock size={16} className="text-slate-400" />
-                      <span className="font-medium">{item.time}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-slate-500">Overall Attendance</span>
-                      <span className={`font-bold ${item.attendance < 90 ? 'text-orange-600' : 'text-emerald-600'}`}>
-                        {item.attendance}%
+                  <BorderGlow
+                    backgroundColor="#ffffff"
+                    borderRadius={16}
+                    glowColor="220 90 60"
+                    colors={['#3b82f6', '#8b5cf6', '#6366f1']}
+                    className="p-5 shadow-sm transition-all duration-300"
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <div className={`p-2.5 rounded-xl ${item.type === 'Lecture' ? 'bg-indigo-100 text-indigo-600' :
+                        item.type === 'Tutorial' ? 'bg-emerald-100 text-emerald-600' :
+                          'bg-amber-100 text-amber-600'
+                        }`}>
+                        <Icon size={20} />
+                      </div>
+                      <span className="bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md">
+                        {item.type}
                       </span>
                     </div>
-                  </div>
-                </BorderGlow>
-              </Link>
-            );
-          })}
-        </div>
+
+                    <h4 className="font-bold text-slate-900 text-lg leading-tight mb-2 group-hover:text-blue-600 transition-colors">
+                      {item.title}
+                    </h4>
+
+                    <div className="space-y-2 mt-4 pt-4 border-t border-slate-100">
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <Clock size={16} className="text-slate-400" />
+                        <span className="font-medium">{item.time}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-slate-500">Overall Attendance</span>
+                        <span className={`font-bold ${item.attendance < 90 ? 'text-orange-600' : 'text-emerald-600'}`}>
+                          {item.attendance}%
+                        </span>
+                      </div>
+                    </div>
+                  </BorderGlow>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Session Configuration Modal */}

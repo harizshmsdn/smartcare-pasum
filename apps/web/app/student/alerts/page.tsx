@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { createClient } from "../../../utils/supabase/client";
 import { studentService } from "../../../lib/services/student";
+import EmptyState from "../../../components/EmptyState";
 
 interface AlertItem {
   id: string;
@@ -174,10 +175,12 @@ export default function StudentAlertsPage() {
         {/* Feed List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {filteredAlerts.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-slate-400">
-              <CheckCircle2 size={48} className="mb-4 text-emerald-400 opacity-50" />
-              <p className="text-lg font-medium">You&apos;re all caught up!</p>
-              <p className="text-sm">No new alerts matching this filter.</p>
+            <div className="h-full flex items-center justify-center py-20">
+              <EmptyState 
+                icon={CheckCircle2}
+                title="You're all caught up!"
+                description="No pending alerts matching your current filter. You are all good to go!"
+              />
             </div>
           ) : (
             filteredAlerts.map((alert) => (

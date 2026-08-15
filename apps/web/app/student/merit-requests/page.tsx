@@ -14,6 +14,7 @@ import {
   PlusCircle
 } from "lucide-react";
 import { createClient } from "../../../utils/supabase/client";
+import EmptyState from "../../../components/EmptyState";
 
 interface MeritRequest {
   id: string;
@@ -349,8 +350,12 @@ export default function StudentMeritRequestsPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="p-10 text-center text-slate-400 italic text-sm">
-                    No merit claims submitted yet. Click "Submit Merit Claim" to start.
+                  <td colSpan={5} className="py-12">
+                    <EmptyState 
+                      icon={Award}
+                      title="No Merit Claims"
+                      description='No merit claims submitted yet. Click "Submit Merit Claim" to start.'
+                    />
                   </td>
                 </tr>
               )}

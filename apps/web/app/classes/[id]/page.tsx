@@ -26,6 +26,7 @@ import {
 } from "recharts";
 import Link from "next/link";
 import { createClient } from "../../../utils/supabase/client";
+import EmptyState from "../../../components/EmptyState";
 
 interface ActivityItem {
   id: string;
@@ -392,8 +393,12 @@ export default function ProfilePage() {
                 ))}
               </div>
             ) : (
-              <div className="py-8 text-center text-slate-400 text-sm">
-                No recent activity logged for this student.
+              <div className="py-12">
+                <EmptyState 
+                  icon={History}
+                  title="No Recent Activity"
+                  description="No recent activity logged for this student."
+                />
               </div>
             )}
           </div>
@@ -431,7 +436,13 @@ export default function ProfilePage() {
                   ))}
                 </ul>
               ) : (
-                <p className="text-slate-500 text-center py-4">No verified merits in history.</p>
+                <div className="py-12">
+                  <EmptyState 
+                    icon={Award}
+                    title="No Merit History"
+                    description="No verified merits in history."
+                  />
+                </div>
               )}
             </div>
           </div>

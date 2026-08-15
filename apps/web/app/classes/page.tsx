@@ -32,6 +32,8 @@ import {
 import { createClient } from "../../utils/supabase/client";
 import { lecturerService } from "../../lib/services/lecturer";
 import { useEffect } from "react";
+import EmptyState from "../../components/EmptyState";
+import useSWR from "swr";
 
 interface StudentListItem {
   id: string;
@@ -60,7 +62,11 @@ export default function ClassesPage() {
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingClasses, setIsLoadingClasses] = useState(true);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // States for the configuration modal
   const [showConfigModal, setShowConfigModal] = useState(false);
@@ -100,52 +106,48 @@ export default function ClassesPage() {
   };
 
 
-  // Fetch classes taught by this lecturer
+  // Fetch classes taught by this lecturer using SWR
+  const { data: classesDataRaw, isLoading: isSwrLoadingClasses } = useSWR('lecturerClassesList', async () => {
+    const response = await lecturerService.getClasses();
+    return response.classes || [];
+  });
+
   useEffect(() => {
-    const fetchClasses = async () => {
-      try {
-        const response = await lecturerService.getClasses();
-        const classesData = response.classes || [];
+    if (!classesDataRaw) return;
 
-        if (classesData && classesData.length > 0) {
-          const formatted = classesData.map((c: any) => {
-            let formattedTime = "";
-            if (c.start_time) {
-              const [hrs, mins] = c.start_time.split(":");
-              const h = parseInt(hrs, 10);
-              const ampm = h >= 12 ? "PM" : "AM";
-              const h12 = h % 12 || 12;
-              formattedTime = `${h12}:${mins} ${ampm}`;
-            }
-            const dayShort = c.day_of_week ? c.day_of_week.slice(0, 3) : "";
-            const scheduleStr = dayShort && formattedTime ? `${dayShort}, ${formattedTime}` : "Schedule TBD";
-
-            return {
-              id: c.id,
-              name: `${c.subjects?.code} - ${c.subjects?.name} (${c.group_code})`,
-              schedule: scheduleStr,
-              activeSessionId: c.active_session?.id || null
-            };
-          });
-          setClassesList(formatted);
-          const urlParams = new URLSearchParams(window.location.search);
-          const urlClassId = urlParams.get("classId");
-          const targetClass = formatted.find((c: any) => c.id === urlClassId) || formatted[0];
-          if (targetClass) {
-            setSelectedClassId(targetClass.id);
-            setSelectedClassName(targetClass.name);
-            setNextSessionTime(targetClass.schedule);
-          }
-        }
-      } catch (err) {
-        console.error("Error loading lecturer classes:", err);
-      } finally {
-        setIsLoading(false);
+    const formatted = classesDataRaw.map((c: any) => {
+      let formattedTime = "";
+      if (c.start_time) {
+        const [hrs, mins] = c.start_time.split(":");
+        const h = parseInt(hrs, 10);
+        const ampm = h >= 12 ? "PM" : "AM";
+        const h12 = h % 12 || 12;
+        formattedTime = `${h12}:${mins} ${ampm}`;
       }
-    };
-    fetchClasses();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+      const dayShort = c.day_of_week ? c.day_of_week.slice(0, 3) : "";
+      const scheduleStr = dayShort && formattedTime ? `${dayShort}, ${formattedTime}` : "Schedule TBD";
+
+      return {
+        id: c.id,
+        name: `${c.subjects?.code} - ${c.subjects?.name} (${c.group_code})`,
+        schedule: scheduleStr,
+        activeSessionId: c.active_session?.id || null
+      };
+    });
+    setClassesList(formatted);
+    
+    // Select class from URL or first class
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlClassId = urlParams.get("classId");
+    const targetClass = formatted.find((c: any) => c.id === urlClassId) || formatted[0];
+    
+    if (targetClass) {
+      setSelectedClassId(targetClass.id);
+      setSelectedClassName(targetClass.name);
+      setNextSessionTime(targetClass.schedule);
+    }
+    setIsLoadingClasses(false);
+  }, [classesDataRaw]);
 
   // Fetch class assessments and gradebook scores from FastAPI
   const fetchClassAssessments = async (classId: string) => {
@@ -172,50 +174,60 @@ export default function ClassesPage() {
     }
   };
 
-  // Fetch student roster for selected class
+  // Fetch student roster for selected class using SWR
+  const { data: rosterEnrollments, isLoading: isLoadingRoster, mutate: mutateRoster } = useSWR(
+    selectedClassId ? `roster_${selectedClassId}` : null,
+    async () => {
+      const response = await lecturerService.getClassRoster(selectedClassId);
+      return response.enrollments || [];
+    }
+  );
+
   useEffect(() => {
     if (!selectedClassId) return;
 
-    const fetchRoster = async () => {
-      try {
-        // Sync active session ID from classesList
-        const currentClass = classesList.find((c: any) => c.id === selectedClassId);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setActiveSessionId((currentClass as any)?.activeSessionId || null);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setHasAnyActiveSession(classesList.some((c: any) => !!c.activeSessionId));
+    // Sync active session ID from classesList
+    const currentClass = classesList.find((c: any) => c.id === selectedClassId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setActiveSessionId((currentClass as any)?.activeSessionId || null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setHasAnyActiveSession(classesList.some((c: any) => !!c.activeSessionId));
 
-        const response = await lecturerService.getClassRoster(selectedClassId);
-        const enrollments = response.enrollments || [];
+    if (rosterEnrollments) {
+      const formattedStudents = rosterEnrollments.map((e: any) => {
+        const profile = e.profiles;
+        const attendance = Number(e.current_attendance_rate);
+        let status = 'good';
+        if (attendance < 80) status = 'critical';
+        else if (attendance < 90) status = 'at-risk';
 
-        if (enrollments) {
-          const formattedStudents = enrollments.map((e: any) => {
-            const profile = e.profiles;
-            const attendance = Number(e.current_attendance_rate);
-            let status = 'good';
-            if (attendance < 80) status = 'critical';
-            else if (attendance < 90) status = 'at-risk';
+        return {
+          id: profile?.id || '',
+          matricId: profile?.institutional_id || '',
+          name: profile?.full_name || 'Unknown Student',
+          email: profile?.email || '',
+          status,
+          attendance,
+          latestScore: attendance < 80 ? 45 : attendance < 90 ? 63 : 88,
+          lastSeen: attendance < 80 ? '3 days ago' : 'Today'
+        };
+      });
+      setStudents(formattedStudents);
+    }
+  }, [selectedClassId, classesList, rosterEnrollments]);
 
-            return {
-              id: profile?.id || '',
-              matricId: profile?.institutional_id || '',
-              name: profile?.full_name || 'Unknown Student',
-              email: profile?.email || '',
-              status,
-              attendance,
-              latestScore: attendance < 80 ? 45 : attendance < 90 ? 63 : 88,
-              lastSeen: attendance < 80 ? '3 days ago' : 'Today'
-            };
-          });
-          setStudents(formattedStudents);
-        }
-      } catch (err) {
-        console.error("Failed to fetch class roster:", err);
-      }
+  // Realtime mutator for roster
+  useEffect(() => {
+    if (!selectedClassId) return;
+    const channel = supabase.channel(`roster_realtime_${selectedClassId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance_records' }, () => {
+        mutateRoster();
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
     };
-    fetchRoster();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedClassId, classesList]);
+  }, [selectedClassId, mutateRoster, supabase]);
 
   //Filter Logic: Applies Tab selection AND Search Query
   const filteredStudents = students.filter((student) => {
@@ -229,13 +241,22 @@ export default function ClassesPage() {
     return matchesTab && matchesSearch;
   });
 
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, activeTab]);
+
   //Calculate dynamic alerts count
   const alertsCount = students.filter(s => s.status !== "good").length;
   const classAvg = students.length > 0
     ? Math.round(students.reduce((sum, s) => sum + s.attendance, 0) / students.length)
     : 100;
 
-  if (isLoading) {
+  // Pagination logic
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage));
+  const paginatedStudents = filteredStudents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  if (isLoadingClasses || isSwrLoadingClasses) {
     return (
       <main className="flex-1 p-8 overflow-y-auto bg-[#FAF9F6]">
         <div className="w-64 h-10 bg-slate-200 rounded-lg animate-pulse mb-2"></div>
@@ -460,9 +481,9 @@ export default function ClassesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {/* NOW RENDERING filteredStudents instead of mockStudents */}
-              {filteredStudents.length > 0 ? (
-                filteredStudents.map((student) => (
+              {/* NOW RENDERING paginatedStudents instead of filteredStudents */}
+              {paginatedStudents.length > 0 ? (
+                paginatedStudents.map((student) => (
                   <tr key={student.id} onClick={() => router.push(`/classes/${student.id}?classId=${selectedClassId}`)} className="hover:bg-slate-50 transition-colors group cursor-pointer">
                     <td className="p-4">
                       <div className="flex items-center gap-3">
@@ -539,14 +560,43 @@ export default function ClassesPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-slate-500">
-                    No students found matching your criteria.
+                  <td colSpan={5} className="p-0">
+                    <EmptyState 
+                      icon={Users}
+                      title={students.length === 0 ? "No Students Enrolled" : "No Matches Found"}
+                      description={students.length === 0 ? "There are no students currently enrolled in this class." : "No students found matching your filters."}
+                    />
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        {filteredStudents.length > 0 && (
+          <div className="p-5 border-t border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <span className="text-sm text-slate-500 font-medium">
+              Showing <span className="font-bold text-slate-900">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-bold text-slate-900">{Math.min(currentPage * itemsPerPage, filteredStudents.length)}</span> of <span className="font-bold text-slate-900">{filteredStudents.length}</span> students
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-white"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-white"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Session Configuration Modal */}

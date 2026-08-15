@@ -15,6 +15,8 @@ import {
   GraduationCap
 } from "lucide-react";
 import { adminService, UserProfile } from "../../../lib/services/admin";
+import EmptyState from "../../../components/EmptyState";
+import useSWR from "swr";
 
 /**
  * Admin User Management Page.
@@ -41,24 +43,24 @@ export default function AdminUsersPage() {
   const [officeLocation, setOfficeLocation] = useState("");
   const [affiliation, setAffiliation] = useState("");
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
+
   /**
-   * Fetches user accounts from the directory service.
+   * Fetches user accounts using SWR.
    */
-  const fetchUsers = async () => {
-    setIsLoading(true);
-    try {
-      const data = await adminService.getUsers();
-      setUsers(data.users || []);
-    } catch (err: any) {
-      console.error("Error fetching users:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { data: usersData, isLoading: isSwrLoading, mutate } = useSWR('adminUsersList', async () => {
+    const data = await adminService.getUsers();
+    return data.users || [];
+  });
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    if (usersData) {
+      setUsers(usersData);
+      setIsLoading(false);
+    }
+  }, [usersData]);
 
   useEffect(() => {
     const query = searchQuery.toLowerCase();
@@ -72,6 +74,15 @@ export default function AdminUsersPage() {
     });
     setFilteredUsers(result);
   }, [users, activeTab, searchQuery]);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, activeTab]);
+
+  // Pagination logic
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / itemsPerPage));
+  const paginatedUsers = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   /**
    * Handles user creation form submission.
@@ -98,7 +109,7 @@ export default function AdminUsersPage() {
       });
       setShowAddModal(false);
       resetForm();
-      fetchUsers();
+      mutate();
     } catch (err: any) {
       console.error("Add user error:", err);
       alert(err.message || "Failed to create user.");
@@ -135,7 +146,7 @@ export default function AdminUsersPage() {
       });
       setShowEditModal(false);
       resetForm();
-      fetchUsers();
+      mutate();
     } catch (err: any) {
       console.error("Update user error:", err);
       alert(err.message || "Failed to update user.");
@@ -149,7 +160,7 @@ export default function AdminUsersPage() {
     if (!confirm("Are you sure you want to delete this user? All associated data will be deleted.")) return;
     try {
       await adminService.deleteUser(userId);
-      fetchUsers();
+      mutate();
     } catch (err: any) {
       console.error("Delete user error:", err);
       alert(err.message || "Failed to delete user.");
@@ -232,11 +243,12 @@ export default function AdminUsersPage() {
       </div>
 
       {/* User Directory List */}
-      {isLoading ? (
+      {isLoading || isSwrLoading ? (
         <div className="text-center py-20 text-slate-500 font-medium">Fetching directory...</div>
       ) : filteredUsers.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredUsers.map((u) => (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {paginatedUsers.map((u) => (
             <div key={u.id} className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
               
               {/* Card top details */}
@@ -303,10 +315,38 @@ export default function AdminUsersPage() {
 
             </div>
           ))}
+          </div>
+
+          {/* Pagination Controls */}
+          <div className="p-5 border-t border-slate-200 flex justify-between items-center bg-white rounded-3xl shadow-sm">
+            <span className="text-sm text-slate-500 font-medium">
+              Showing <span className="font-bold text-slate-900">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-bold text-slate-900">{Math.min(currentPage * itemsPerPage, filteredUsers.length)}</span> of <span className="font-bold text-slate-900">{filteredUsers.length}</span> users
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-white"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-white"
+              >
+                Next
+              </button>
+            </div>
+          </div>
         </div>
       ) : (
-        <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center shadow-sm">
-          <p className="text-slate-500 font-medium">No users found matching your filters.</p>
+        <div className="py-12 bg-white border border-slate-200 rounded-3xl shadow-sm">
+          <EmptyState 
+            icon={Search}
+            title="No Users Found"
+            description="No users found matching your filters. Try adjusting your search query or role tab."
+          />
         </div>
       )}
 

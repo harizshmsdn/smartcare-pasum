@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { createClient } from "../../../utils/supabase/client";
 import { studentService } from "../../../lib/services/student";
+import EmptyState from "../../../components/EmptyState";
+import useSWR from "swr";
 
 interface ClassItem {
   id: string;
@@ -59,64 +61,73 @@ export default function StudentClassesPage() {
   // Detailed lists
   const [attendanceLog, setAttendanceLog] = useState<AttendanceLogItem[]>([]);
   const [assessments, setAssessments] = useState<AssessmentItem[]>([]);
+  // Pagination for attendance log
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Fetch classes list (reuses dashboard data cache)
+  const { data: dashboardData, isLoading: isLoadingClasses } = useSWR('studentDashboard', async () => {
+    return await studentService.getDashboard();
+  });
+  useEffect(() => {
+    if (!dashboardData) return;
+    const assigned = dashboardData.assigned_classes || [];
+
+    if (assigned.length > 0) {
+      const formatted = assigned.map((c: any) => ({
+        id: c.id,
+        name: `${c.title} (${c.group})`
+      }));
+      setClassesList(formatted);
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlClassId = urlParams.get("classId");
+      const targetClass = formatted.find((c: any) => c.id === urlClassId) || formatted[0];
+
+      if (targetClass) {
+        setSelectedClassId(targetClass.id);
+        setSelectedClassName(targetClass.name);
+      }
+    }
+  }, [dashboardData]);
+
+  // Load detailed information for selected class using SWR
+  const { data: classDetails, isLoading: isLoadingDetails, mutate: mutateDetails } = useSWR(
+    selectedClassId ? `studentClassDetails_${selectedClassId}` : null,
+    async () => {
+      return await studentService.getClassDetails(selectedClassId);
+    }
+  );
 
   useEffect(() => {
-    const fetchClasses = async () => {
-      try {
-        const dashboardData = await studentService.getDashboard();
-        const assigned = dashboardData.assigned_classes || [];
+    if (!classDetails) return;
+    setLecturerInfo(classDetails.lecturerInfo);
+    setClassScheduleText(classDetails.classScheduleText);
+    setAttendanceRate(classDetails.attendanceRate);
+    setPerformanceNumeric(classDetails.performanceNumeric);
+    setAttendanceLog(classDetails.attendanceLog || []);
+    setAssessments(classDetails.assessments || []);
+    setCurrentPage(1); // Reset pagination on class change
+  }, [classDetails]);
 
-        if (assigned.length > 0) {
-          const formatted = assigned.map((c: any) => ({
-            id: c.id,
-            name: `${c.title} (${c.group})`
-          }));
-          setClassesList(formatted);
-
-          const urlParams = new URLSearchParams(window.location.search);
-          const urlClassId = urlParams.get("classId");
-          const targetClass = formatted.find((c: any) => c.id === urlClassId) || formatted[0];
-
-          if (targetClass) {
-            setSelectedClassId(targetClass.id);
-            setSelectedClassName(targetClass.name);
-          }
-        } else {
-          setIsLoading(false);
-        }
-      } catch (err) {
-        console.error("Error loading student classes list:", err);
-        setIsLoading(false);
-      }
-    };
-    fetchClasses();
-  }, []);
-
-  // Load detailed information for selected class
+  // Realtime subscription for live updates to attendance log
   useEffect(() => {
     if (!selectedClassId) return;
-
-    const fetchClassDetails = async () => {
-      setIsLoading(true);
-      try {
-        const apiData = await studentService.getClassDetails(selectedClassId);
-        setLecturerInfo(apiData.lecturerInfo);
-        setClassScheduleText(apiData.classScheduleText);
-        setAttendanceRate(apiData.attendanceRate);
-        setPerformanceNumeric(apiData.performanceNumeric);
-        setAttendanceLog(apiData.attendanceLog || []);
-        setAssessments(apiData.assessments || []);
-      } catch (err) {
-        console.error("Error fetching class details:", err);
-      } finally {
-        setIsLoading(false);
-      }
+    const channel = supabase.channel(`student_class_details_${selectedClassId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance_records' }, () => {
+        mutateDetails();
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
     };
+  }, [selectedClassId, supabase, mutateDetails]);
 
-    fetchClassDetails();
-  }, [selectedClassId]);
+  // Pagination logic
+  const totalPages = Math.max(1, Math.ceil(attendanceLog.length / itemsPerPage));
+  const paginatedLogs = attendanceLog.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  if (isLoading && classesList.length === 0) {
+  if ((isLoadingClasses || isLoadingDetails) && classesList.length === 0) {
     return (
       <main className="flex-1 p-8 overflow-y-auto bg-[#FAF9F6]">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -318,21 +329,33 @@ export default function StudentClassesPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-150">
-                  {assessments.map((a) => (
-                    <tr key={a.id} className="text-sm text-slate-700 hover:bg-slate-50/50 transition-colors">
-                      <td className="py-4 px-4 font-semibold text-slate-900">{a.title}</td>
-                      <td className="py-4 px-4">
-                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider border ${a.type === 'Final' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-slate-100 text-slate-650 border-slate-200'
-                          }`}>
-                          {a.type}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 text-center font-semibold text-slate-600">{a.weightage}%</td>
-                      <td className="py-4 px-4 text-right font-mono font-bold text-slate-900">
-                        <span className="text-blue-600">{a.score}</span> <span className="text-slate-400">/</span> {a.totalMarks}
+                  {assessments.length > 0 ? (
+                    assessments.map((a) => (
+                      <tr key={a.id} className="text-sm text-slate-700 hover:bg-slate-50/50 transition-colors">
+                        <td className="py-4 px-4 font-semibold text-slate-900">{a.title}</td>
+                        <td className="py-4 px-4">
+                          <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider border ${a.type === 'Final' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-slate-100 text-slate-650 border-slate-200'
+                            }`}>
+                            {a.type}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4 text-center font-semibold text-slate-600">{a.weightage}%</td>
+                        <td className="py-4 px-4 text-right font-mono font-bold text-slate-900">
+                          <span className="text-blue-600">{a.score}</span> <span className="text-slate-400">/</span> {a.totalMarks}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={4} className="py-12">
+                        <EmptyState 
+                          icon={Award}
+                          title="No Assessments Yet"
+                          description="There are no continuous assessments or exam marks recorded for this class yet."
+                        />
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
@@ -347,9 +370,9 @@ export default function StudentClassesPage() {
               Attendance log
             </h3>
 
-            {attendanceLog.length > 0 ? (
-              <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
-                {attendanceLog.map((log) => (
+            {paginatedLogs.length > 0 ? (
+              <div className="space-y-4 pr-1">
+                {paginatedLogs.map((log) => (
                   <div key={log.id} className="flex justify-between items-center p-4 rounded-xl border border-slate-100 bg-slate-50/30 hover:border-slate-200 transition-colors">
                     <div>
                       <p className="font-semibold text-slate-800">{log.date}</p>
@@ -376,7 +399,38 @@ export default function StudentClassesPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-slate-500 text-sm text-center py-6">No attendance sessions registered for this class.</p>
+              <div className="py-12">
+                <EmptyState 
+                  icon={Calendar}
+                  title="No Attendance Logs"
+                  description="No attendance sessions have been registered for this class yet."
+                />
+              </div>
+            )}
+
+            {/* Pagination Controls for Attendance Log */}
+            {attendanceLog.length > 0 && (
+              <div className="mt-6 pt-4 border-t border-slate-100 flex justify-between items-center">
+                <span className="text-sm text-slate-500 font-medium">
+                  Showing <span className="font-bold text-slate-900">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-bold text-slate-900">{Math.min(currentPage * itemsPerPage, attendanceLog.length)}</span> of <span className="font-bold text-slate-900">{attendanceLog.length}</span>
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-white"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-white"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>

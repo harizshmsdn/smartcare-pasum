@@ -18,6 +18,8 @@ import {
   AlertTriangle,
   GraduationCap
 } from "lucide-react";
+import EmptyState from "../../components/EmptyState";
+import useSWR from "swr";
 
 interface ScheduleItem {
   id: string;
@@ -68,47 +70,56 @@ export default function StudentHomePage() {
     year: 'numeric'
   }).format(new Date());
 
+  const fetchDashboardData = async () => {
+    const data = await studentService.getDashboard();
+    return data;
+  };
+
+  const { data: dashboardData, isLoading: isSwrLoading, mutate } = useSWR('studentDashboard', fetchDashboardData);
+
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      setIsLoading(true);
+    if (!dashboardData) return;
 
-      try {
-        const data = await studentService.getDashboard();
-        if (data.profile?.full_name) {
-          setStudentName(data.profile.full_name);
-        }
+    if (dashboardData.profile?.full_name) {
+      setStudentName(dashboardData.profile.full_name);
+    }
 
-        const processedClasses: any[] = data.assigned_classes || [];
+    const processedClasses: any[] = dashboardData.assigned_classes || [];
 
-        const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-        const todayDayOfWeek = days[new Date().getDay()];
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const todayDayOfWeek = days[new Date().getDay()];
 
-        const todayClasses = processedClasses.filter(cls => cls.dayOfWeek === todayDayOfWeek);
-        todayClasses.sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
+    const todayClasses = processedClasses.filter(cls => cls.dayOfWeek === todayDayOfWeek);
+    todayClasses.sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
 
-        const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-        const fallbackClasses = [...processedClasses].sort((a, b) => {
-          const dayA = dayOrder.indexOf(a.dayOfWeek || "");
-          const dayB = dayOrder.indexOf(b.dayOfWeek || "");
-          if (dayA !== dayB) return dayA - dayB;
-          return (a.startTime || "").localeCompare(b.startTime || "");
-        });
+    const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    const fallbackClasses = [...processedClasses].sort((a, b) => {
+      const dayA = dayOrder.indexOf(a.dayOfWeek || "");
+      const dayB = dayOrder.indexOf(b.dayOfWeek || "");
+      if (dayA !== dayB) return dayA - dayB;
+      return (a.startTime || "").localeCompare(b.startTime || "");
+    });
 
-        const displaySchedule = todayClasses.length > 0 ? todayClasses : fallbackClasses;
-        const slicedSchedule = displaySchedule.slice(0, 3);
+    const displaySchedule = todayClasses.length > 0 ? todayClasses : fallbackClasses;
+    const slicedSchedule = displaySchedule.slice(0, 3);
 
-        setScheduleToday(slicedSchedule);
-        setAssignedClasses(processedClasses);
-        setActiveIndex(0);
-      } catch (error) {
-        console.error("Error fetching student dashboard data:", error);
-      } finally {
-        setIsLoading(false);
-      }
+    setScheduleToday(slicedSchedule);
+    setAssignedClasses(processedClasses);
+    setActiveIndex(0);
+    setIsLoading(false);
+  }, [dashboardData]);
+
+  // Realtime subscription for live updates
+  useEffect(() => {
+    const channel = supabase.channel('student_dashboard_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance_records' }, () => {
+        mutate();
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
     };
-
-    fetchDashboardData();
-  }, [router, supabase]);
+  }, [supabase, mutate]);
 
   const nextSlide = () => {
     setActiveIndex((prev) => (prev === scheduleToday.length - 1 ? 0 : prev + 1));
@@ -118,7 +129,7 @@ export default function StudentHomePage() {
     setActiveIndex((prev) => (prev === 0 ? scheduleToday.length - 1 : prev - 1));
   };
 
-  if (isLoading) {
+  if (isLoading || isSwrLoading) {
     return (
       <main className="flex-1 overflow-y-auto bg-transparent flex flex-col">
         <div className="relative w-full h-[55vh] min-h-[450px] flex items-center justify-center overflow-hidden rounded-b-[3rem] mb-10 pt-4">
@@ -248,7 +259,13 @@ export default function StudentHomePage() {
               );
             })
           ) : (
-            <div className="text-center text-slate-500 text-lg">No classes assigned for this semester.</div>
+            <div className="relative z-30">
+              <EmptyState 
+                icon={BookOpen}
+                title="No Classes Today"
+                description="You don't have any classes scheduled. Enjoy your day off!"
+              />
+            </div>
           )}
         </div>
       </div>
@@ -262,55 +279,63 @@ export default function StudentHomePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {assignedClasses.map((item) => {
-            const Icon = getClassIcon(item.type);
-            return (
-              <Link
-                href={`/student/classes?classId=${item.id}`}
-                key={item.id}
-                className="block group rounded-2xl"
-              >
-                <BorderGlow
-                  backgroundColor="#ffffff"
-                  borderRadius={16}
-                  glowColor="220 90 60"
-                  colors={['#3b82f6', '#8b5cf6', '#6366f1']}
-                  className="p-5 shadow-sm transition-all duration-300"
+        {assignedClasses.length === 0 ? (
+          <EmptyState 
+            icon={GraduationCap}
+            title="No Enrolled Classes"
+            description="You are not enrolled in any classes for this semester. Please contact administration."
+          />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {assignedClasses.map((item) => {
+              const Icon = getClassIcon(item.type);
+              return (
+                <Link
+                  href={`/student/classes?classId=${item.id}`}
+                  key={item.id}
+                  className="block group rounded-2xl"
                 >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className={`p-2.5 rounded-xl ${item.type === 'Lecture' ? 'bg-indigo-100 text-indigo-600' :
-                      item.type === 'Tutorial' ? 'bg-emerald-100 text-emerald-600' :
-                        'bg-amber-100 text-amber-600'
-                      }`}>
-                      <Icon size={20} />
-                    </div>
-                    <span className="bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md">
-                      {item.type}
-                    </span>
-                  </div>
-
-                  <h4 className="font-bold text-slate-900 text-lg leading-tight mb-2 group-hover:text-blue-600 transition-colors">
-                    {item.title}
-                  </h4>
-
-                  <div className="space-y-2 mt-4 pt-4 border-t border-slate-100">
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <Clock size={16} className="text-slate-400" />
-                      <span className="font-medium">{item.time}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-slate-500">My Attendance</span>
-                      <span className={`font-bold ${item.attendance < 80 ? 'text-red-600' : item.attendance < 90 ? 'text-orange-600' : 'text-emerald-600'}`}>
-                        {item.attendance}%
+                  <BorderGlow
+                    backgroundColor="#ffffff"
+                    borderRadius={16}
+                    glowColor="220 90 60"
+                    colors={['#3b82f6', '#8b5cf6', '#6366f1']}
+                    className="p-5 shadow-sm transition-all duration-300"
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <div className={`p-2.5 rounded-xl ${item.type === 'Lecture' ? 'bg-indigo-100 text-indigo-600' :
+                        item.type === 'Tutorial' ? 'bg-emerald-100 text-emerald-600' :
+                          'bg-amber-100 text-amber-600'
+                        }`}>
+                        <Icon size={20} />
+                      </div>
+                      <span className="bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md">
+                        {item.type}
                       </span>
                     </div>
-                  </div>
-                </BorderGlow>
-              </Link>
-            );
-          })}
-        </div>
+
+                    <h4 className="font-bold text-slate-900 text-lg leading-tight mb-2 group-hover:text-blue-600 transition-colors">
+                      {item.title}
+                    </h4>
+
+                    <div className="space-y-2 mt-4 pt-4 border-t border-slate-100">
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <Clock size={16} className="text-slate-400" />
+                        <span className="font-medium">{item.time}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-slate-500">My Attendance</span>
+                        <span className={`font-bold ${item.attendance < 80 ? 'text-red-600' : item.attendance < 90 ? 'text-orange-600' : 'text-emerald-600'}`}>
+                          {item.attendance}%
+                        </span>
+                      </div>
+                    </div>
+                  </BorderGlow>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
     </main>
   );
