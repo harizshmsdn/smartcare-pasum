@@ -7,7 +7,11 @@ import {
   Phone,
   BookOpen,
   Award,
-  GraduationCap
+  GraduationCap,
+  Edit2,
+  Save,
+  X,
+  ShieldAlert
 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "../../../utils/supabase/client";
@@ -19,12 +23,20 @@ export default function StudentProfilePage() {
   const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Edit states
+  const [isEditing, setIsEditing] = useState(false);
+  const [editPhone, setEditPhone] = useState("");
+  const [editEmergency, setEditEmergency] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
   const fetchProfile = async () => {
     setIsLoading(true);
     try {
       const data = await studentService.getDashboard();
       if (data.profile) {
         setProfile(data.profile);
+        setEditPhone(data.profile.phone_number || "");
+        setEditEmergency(data.profile.emergency_contact || "");
       }
       
       const assigned = data.assigned_classes || [];
@@ -46,6 +58,33 @@ export default function StudentProfilePage() {
   useEffect(() => {
     fetchProfile();
   }, []);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          phone_number: editPhone || null,
+          emergency_contact: editEmergency || null
+        })
+        .eq('id', profile.id);
+      
+      if (error) throw error;
+      
+      setProfile({
+        ...profile,
+        phone_number: editPhone || null,
+        emergency_contact: editEmergency || null
+      });
+      setIsEditing(false);
+    } catch (err) {
+      console.error("Error updating profile:", err);
+      alert("Failed to update profile.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   if (isLoading || !profile) {
     return (
@@ -95,16 +134,83 @@ export default function StudentProfilePage() {
             <p className="text-sm font-semibold text-blue-600 mt-0.5">Undergraduate Student</p>
             <p className="text-xs text-slate-400 mt-1">Matric ID: {profile.institutional_id}</p>
 
-            <div className="border-t border-slate-100 mt-6 pt-6 w-full space-y-3 text-left text-sm text-slate-650">
+            <div className="border-t border-slate-100 mt-6 pt-6 w-full space-y-3 text-left text-sm text-slate-650 relative">
+              <div className="absolute -top-3 right-0 bg-white">
+                {!isEditing ? (
+                  <button 
+                    onClick={() => setIsEditing(true)}
+                    className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+                    title="Edit Contact Info"
+                  >
+                    <Edit2 size={16} />
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <button 
+                      onClick={() => setIsEditing(false)}
+                      className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                    >
+                      <X size={16} />
+                    </button>
+                    <button 
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      className="p-1.5 text-slate-400 hover:text-emerald-600 rounded-lg hover:bg-emerald-50 transition-colors disabled:opacity-50"
+                    >
+                      <Save size={16} />
+                    </button>
+                  </div>
+                )}
+              </div>
               <div className="flex items-center gap-3">
                 <Mail size={16} className="text-slate-400 shrink-0" />
                 <span className="truncate">{profile.email}</span>
               </div>
-              {profile.phone_number && (
-                <div className="flex items-center gap-3">
-                  <Phone size={16} className="text-slate-400 shrink-0" />
-                  <span>{profile.phone_number}</span>
+              
+              {isEditing ? (
+                <div className="space-y-3 pt-2">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500">Phone Number</label>
+                    <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                      <Phone size={14} className="text-slate-400 shrink-0" />
+                      <input 
+                        type="text"
+                        value={editPhone}
+                        onChange={(e) => setEditPhone(e.target.value)}
+                        className="bg-transparent border-none text-sm w-full focus:outline-none text-slate-700"
+                        placeholder="+60 12-345 6789"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500">Emergency Contact</label>
+                    <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                      <ShieldAlert size={14} className="text-slate-400 shrink-0" />
+                      <input 
+                        type="text"
+                        value={editEmergency}
+                        onChange={(e) => setEditEmergency(e.target.value)}
+                        className="bg-transparent border-none text-sm w-full focus:outline-none text-slate-700"
+                        placeholder="e.g. +60 19-876 5432 (Mother)"
+                      />
+                    </div>
+                  </div>
                 </div>
+              ) : (
+                <>
+                  {profile.phone_number && (
+                    <div className="flex items-center gap-3">
+                      <Phone size={16} className="text-slate-400 shrink-0" />
+                      <span>{profile.phone_number}</span>
+                    </div>
+                  )}
+                  {profile.emergency_contact && (
+                    <div className="flex items-center gap-3">
+                      <ShieldAlert size={16} className="text-red-400 shrink-0" />
+                      <span className="text-slate-700">{profile.emergency_contact}</span>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 

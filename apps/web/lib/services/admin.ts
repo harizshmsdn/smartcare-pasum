@@ -7,6 +7,7 @@ export interface UserProfile {
   institutional_id: string;
   email: string;
   phone_number?: string;
+  emergency_contact?: string | null;
   office_location?: string;
   affiliation?: string;
 }
@@ -17,6 +18,7 @@ export interface CreateUserData {
   role: 'student' | 'lecturer' | 'admin';
   institutional_id: string;
   phone_number?: string | null;
+  emergency_contact?: string | null;
   office_location?: string | null;
   affiliation: string;
 }
@@ -27,6 +29,7 @@ export interface UpdateUserData {
   role?: 'student' | 'lecturer' | 'admin';
   institutional_id?: string | null;
   phone_number?: string | null;
+  emergency_contact?: string | null;
   office_location?: string | null;
   affiliation?: string | null;
 }

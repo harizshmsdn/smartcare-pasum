@@ -1,0 +1,18 @@
+[build]
+  # We can run the turbo build command from the root
+  command = "npm run build --filter=web..."
+  # Next.js build output directory for the web app
+  publish = "apps/web/.next"
+
+[build.environment]
+  # This tells Netlify it is a monorepo
+  NETLIFY_USE_YARN = "false"
+  NPM_FLAGS = "--legacy-peer-deps"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[dev]
+  command = "npm run dev --filter=web"
+  targetPort = 3000
+  port = 8888

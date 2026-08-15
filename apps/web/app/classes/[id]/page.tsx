@@ -13,7 +13,9 @@ import {
   ArrowLeft,
   Award,
   History,
-  X
+  X,
+  ShieldAlert,
+  Phone
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -208,6 +210,24 @@ export default function ProfilePage() {
             {/* Dynamic Class Switcher */}
             <div className="flex flex-wrap items-center mt-1 text-slate-500 font-medium text-sm" style={{ gap: '1px 10px' }}>
               <span>Matric: {studentProfile.institutional_id}</span>
+              {studentProfile.phone_number && (
+                <>
+                  <span>•</span>
+                  <span className="flex items-center gap-1">
+                    <Phone size={14} className="text-slate-400" />
+                    {studentProfile.phone_number}
+                  </span>
+                </>
+              )}
+              {studentProfile.emergency_contact && (
+                <>
+                  <span>•</span>
+                  <span className="flex items-center gap-1 text-red-600 font-semibold" title="Emergency Contact">
+                    <ShieldAlert size={14} />
+                    {studentProfile.emergency_contact}
+                  </span>
+                </>
+              )}
               <span>•</span>
               <span className="text-slate-400">Class Focus:</span>
               {enrolledClasses.length > 0 ? (

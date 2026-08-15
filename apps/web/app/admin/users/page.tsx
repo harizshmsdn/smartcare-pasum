@@ -12,7 +12,8 @@ import {
   MapPin, 
   Briefcase, 
   ChevronRight,
-  GraduationCap
+  GraduationCap,
+  ShieldAlert
 } from "lucide-react";
 import { adminService, UserProfile } from "../../../lib/services/admin";
 import EmptyState from "../../../components/EmptyState";
@@ -40,6 +41,7 @@ export default function AdminUsersPage() {
   const [role, setRole] = useState<"student" | "lecturer" | "admin">("student");
   const [institutionalId, setInstitutionalId] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [emergencyContact, setEmergencyContact] = useState("");
   const [officeLocation, setOfficeLocation] = useState("");
   const [affiliation, setAffiliation] = useState("");
 
@@ -104,6 +106,7 @@ export default function AdminUsersPage() {
         role,
         institutional_id: institutionalId.trim(),
         phone_number: phoneNumber.trim() || null,
+        emergency_contact: emergencyContact.trim() || null,
         office_location: officeLocation.trim() || null,
         affiliation: affiliation.trim()
       });
@@ -123,6 +126,7 @@ export default function AdminUsersPage() {
     setRole(u.role);
     setInstitutionalId(u.institutional_id || "");
     setPhoneNumber(u.phone_number || "");
+    setEmergencyContact(u.emergency_contact || "");
     setOfficeLocation(u.office_location || "");
     setAffiliation(u.affiliation || "");
     setShowEditModal(true);
@@ -141,6 +145,7 @@ export default function AdminUsersPage() {
         role,
         institutional_id: institutionalId || null,
         phone_number: phoneNumber || null,
+        emergency_contact: emergencyContact || null,
         office_location: officeLocation || null,
         affiliation: affiliation || null
       });
@@ -174,6 +179,7 @@ export default function AdminUsersPage() {
     setRole(activeTab);
     setInstitutionalId("");
     setPhoneNumber("");
+    setEmergencyContact("");
     setOfficeLocation("");
     setAffiliation("");
   };
@@ -277,6 +283,12 @@ export default function AdminUsersPage() {
                     <div className="flex items-center gap-2">
                       <Phone size={14} className="text-slate-400 shrink-0" />
                       <span>{u.phone_number}</span>
+                    </div>
+                  )}
+                  {u.emergency_contact && (
+                    <div className="flex items-center gap-2">
+                      <ShieldAlert size={14} className="text-red-400 shrink-0" />
+                      <span>{u.emergency_contact}</span>
                     </div>
                   )}
                   {u.role === 'lecturer' && u.office_location && (
@@ -412,15 +424,27 @@ export default function AdminUsersPage() {
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">Phone Number <span className="text-slate-400 font-normal">(Optional)</span></label>
-                <input
-                  type="text"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-slate-800"
-                  placeholder="+60 12-345 6789"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700">Phone Number <span className="text-slate-400 font-normal">(Optional)</span></label>
+                  <input
+                    type="text"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-slate-800"
+                    placeholder="+60 12-345 6789"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700">Emergency Contact <span className="text-slate-400 font-normal">(Optional)</span></label>
+                  <input
+                    type="text"
+                    value={emergencyContact}
+                    onChange={(e) => setEmergencyContact(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-slate-800"
+                    placeholder="+60 19-876 5432"
+                  />
+                </div>
               </div>
 
               {role === 'lecturer' && (
@@ -526,14 +550,25 @@ export default function AdminUsersPage() {
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">Phone Number</label>
-                <input
-                  type="text"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-slate-800"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700">Phone Number</label>
+                  <input
+                    type="text"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-slate-800"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700">Emergency Contact</label>
+                  <input
+                    type="text"
+                    value={emergencyContact}
+                    onChange={(e) => setEmergencyContact(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-slate-800"
+                  />
+                </div>
               </div>
 
               {role === 'lecturer' && (
