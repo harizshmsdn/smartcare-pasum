@@ -27,6 +27,11 @@ app.include_router(student_router)
 app.include_router(admin_router)
 app.include_router(lecturer_router)
 
+@app.get("/")
+def health_check():
+    """Health check endpoint for Render deployment verification."""
+    return {"status": "healthy", "service": "tigha AI Engine"}
+
 # Enable CORS for frontend clients
 app.add_middleware(
     CORSMiddleware,

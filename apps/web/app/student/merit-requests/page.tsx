@@ -14,6 +14,7 @@ import {
   PlusCircle
 } from "lucide-react";
 import { createClient } from "../../../utils/supabase/client";
+import { api } from "../../../lib/api";
 import EmptyState from "../../../components/EmptyState";
 
 interface MeritRequest {
@@ -65,31 +66,24 @@ export default function StudentMeritRequestsPage() {
         setStudentName(profile.full_name);
       }
 
-      if (token) {
-        try {
-          const res = await fetch("http://localhost:8000/api/student/merit-claims", {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (res.ok) {
-            const apiData = await res.json();
-            const formatted = (apiData.claims || []).map((c: any) => ({
-              id: c.id,
-              date: new Date(c.submitted_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
-              time: new Date(c.submitted_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-              title: c.title,
-              category: c.category || 'General',
-              points: Number(c.awarded_points || 10),
-              description: c.description || '',
-              proofUrl: c.proof_file_url || '',
-              status: c.status
-            }));
-            setRequests(formatted);
-            setIsLoading(false);
-            return;
-          }
-        } catch (apiErr) {
-          console.warn("FastAPI merit claims error, falling back to Supabase query:", apiErr);
-        }
+      try {
+        const apiData = await api.get("/api/student/merit-claims");
+        const formatted = (apiData.claims || []).map((c: any) => ({
+          id: c.id,
+          date: new Date(c.submitted_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+          time: new Date(c.submitted_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          title: c.title,
+          category: c.category || 'General',
+          points: Number(c.awarded_points || 10),
+          description: c.description || '',
+          proofUrl: c.proof_file_url || '',
+          status: c.status
+        }));
+        setRequests(formatted);
+        setIsLoading(false);
+        return;
+      } catch (apiErr) {
+        console.warn("FastAPI merit claims error, falling back to Supabase query:", apiErr);
       }
 
       // Fetch Merit Claims via Supabase
@@ -152,29 +146,17 @@ export default function StudentMeritRequestsPage() {
 
       let submittedSuccess = false;
 
-      if (token) {
-        try {
-          const res = await fetch("http://localhost:8000/api/student/merit-claims", {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              title: newTitle,
-              category: newCategory,
-              awarded_points: newPoints,
-              description: newDescription,
-              proof_file_url: newProofUrl
-            })
-          });
-
-          if (res.ok) {
-            submittedSuccess = true;
-          }
-        } catch (apiErr) {
-          console.warn("FastAPI create merit claim error, falling back to Supabase:", apiErr);
-        }
+      try {
+        await api.post("/api/student/merit-claims", {
+          title: newTitle,
+          category: newCategory,
+          awarded_points: newPoints,
+          description: newDescription,
+          proof_file_url: newProofUrl
+        });
+        submittedSuccess = true;
+      } catch (apiErr) {
+        console.warn("FastAPI create merit claim error, falling back to Supabase:", apiErr);
       }
 
       if (!submittedSuccess) {

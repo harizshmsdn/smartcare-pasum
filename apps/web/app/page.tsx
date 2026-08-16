@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "../utils/supabase/client";
 import { lecturerService } from "../lib/services/lecturer";
+import { api } from "../lib/api";
 import BorderGlow from "../components/BorderGlow";
 import {
   QrCode,
@@ -640,34 +641,16 @@ export default function HomePage() {
               <button
                 onClick={async () => {
                   try {
-                    const { data: { session: authSession } } = await supabase.auth.getSession();
-                    const token = authSession?.access_token;
-
-                    const res = await fetch("http://localhost:8000/api/sessions/start", {
-                      method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${token}`
-                      },
-                      body: JSON.stringify({
-                        class_id: configuringClass.id,
-                        opened_at: new Date().toISOString(),
-                        online_mode: onlineMode,
-                        face_id_required: faceIdRequired,
-                        location_required: !onlineMode && locationRequired,
-                        geo_lat: 3.115,
-                        geo_lng: 101.655,
-                        geo_radius_meters: 50
-                      })
+                    const data = await api.post("/api/sessions/start", {
+                      class_id: configuringClass.id,
+                      opened_at: new Date().toISOString(),
+                      online_mode: onlineMode,
+                      face_id_required: faceIdRequired,
+                      location_required: !onlineMode && locationRequired,
+                      geo_lat: 3.115,
+                      geo_lng: 101.655,
+                      geo_radius_meters: 50
                     });
-
-                    if (!res.ok) {
-                      const errData = await res.json();
-                      alert("Error starting session: " + (errData.detail || "Unknown error"));
-                      return;
-                    }
-
-                    const data = await res.json();
 
                     if (data.status === "active_exists") {
                       router.push(`/attendance/active?sessionId=${data.session.id}&classId=${configuringClass.id}`);
@@ -691,9 +674,9 @@ export default function HomePage() {
                     // Redirect to Active Attendance page with config query params
                     router.push(`/attendance/active?sessionId=${newSession.id}&classId=${configuringClass.id}&onlineMode=${newSession.online_mode}&faceIdRequired=${newSession.face_id_required}&locationRequired=${newSession.location_required}`);
                     setShowConfigModal(false);
-                  } catch (err) {
+                  } catch (err: any) {
                     console.error("FastAPI error starting session:", err);
-                    alert("Error calling FastAPI server. Make sure it is running on port 8000.");
+                    alert("Error calling server: " + (err.detail || err.message || "Unknown error"));
                   }
                 }}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl shadow-md shadow-blue-200 hover:shadow-lg hover:shadow-blue-300 transition-all cursor-pointer border-none font-sans"

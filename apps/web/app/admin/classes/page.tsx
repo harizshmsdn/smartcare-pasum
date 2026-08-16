@@ -13,6 +13,7 @@ import {
   BookMarked
 } from "lucide-react";
 import { createClient } from "../../../utils/supabase/client";
+import { api } from "../../../lib/api";
 
 interface Subject {
   id: string;
@@ -81,31 +82,28 @@ export default function AdminClassesPage() {
       if (!session) throw new Error("No session");
 
       // 1. Fetch classes
-      const classesRes = await fetch("http://localhost:8000/api/admin/classes", {
-        headers: { Authorization: `Bearer ${session.access_token}` }
-      });
-      if (classesRes.ok) {
-        const d = await classesRes.json();
+      try {
+        const d = await api.get("/api/admin/classes");
         setClasses(d.classes);
+      } catch (e) {
+        console.error(e);
       }
 
       // 2. Fetch subjects
-      const subjectsRes = await fetch("http://localhost:8000/api/admin/subjects", {
-        headers: { Authorization: `Bearer ${session.access_token}` }
-      });
-      if (subjectsRes.ok) {
-        const d = await subjectsRes.json();
+      try {
+        const d = await api.get("/api/admin/subjects");
         setSubjects(d.subjects);
+      } catch (e) {
+        console.error(e);
       }
 
       // 3. Fetch lecturers (via admin users list endpoint)
-      const usersRes = await fetch("http://localhost:8000/api/admin/users", {
-        headers: { Authorization: `Bearer ${session.access_token}` }
-      });
-      if (usersRes.ok) {
-        const d = await usersRes.json();
+      try {
+        const d = await api.get("/api/admin/users");
         const lects = d.users.filter((u: any) => u.role === "lecturer" || u.role === "admin");
         setLecturers(lects);
+      } catch (e) {
+        console.error(e);
       }
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -121,32 +119,17 @@ export default function AdminClassesPage() {
   const handleAddSubject = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("No session");
-
-      const res = await fetch("http://localhost:8000/api/admin/subjects", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
-          code: subjectCode.toUpperCase(),
-          name: subjectName,
-          credit_hours: Number(creditHours)
-        })
+      await api.post("/api/admin/subjects", {
+        code: subjectCode.toUpperCase(),
+        name: subjectName,
+        credit_hours: Number(creditHours)
       });
 
-      if (res.ok) {
-        setShowAddSubject(false);
-        setSubjectCode("");
-        setSubjectName("");
-        setCreditHours(3);
-        fetchData();
-      } else {
-        const data = await res.json();
-        alert(data.detail || "Failed to add subject");
-      }
+      setShowAddSubject(false);
+      setSubjectCode("");
+      setSubjectName("");
+      setCreditHours(3);
+      fetchData();
     } catch (err: any) {
       console.error("Add subject error:", err);
       alert(err.message || "Failed to add subject");
@@ -156,35 +139,20 @@ export default function AdminClassesPage() {
   const handleAddClass = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("No session");
-
-      const res = await fetch("http://localhost:8000/api/admin/classes", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
-          subject_id: selectedSubjectId,
-          lecturer_id: selectedLecturerId,
-          group_code: groupCode.toUpperCase(),
-          type: classType,
-          semester,
-          day_of_week: dayOfWeek,
-          start_time: startTime + ":00",
-          end_time: endTime + ":00",
-          location
-        })
+      await api.post("/api/admin/classes", {
+        subject_id: selectedSubjectId,
+        lecturer_id: selectedLecturerId,
+        group_code: groupCode.toUpperCase(),
+        type: classType,
+        semester,
+        day_of_week: dayOfWeek,
+        start_time: startTime + ":00",
+        end_time: endTime + ":00",
+        location
       });
 
-      if (res.ok) {
-        setShowAddClass(false);
-        fetchData();
-      } else {
-        const data = await res.json();
-        alert(data.detail || "Failed to add class");
-      }
+      setShowAddClass(false);
+      fetchData();
     } catch (err: any) {
       console.error("Add class error:", err);
       alert(err.message || "Failed to add class");
@@ -194,21 +162,8 @@ export default function AdminClassesPage() {
   const handleDeleteClass = async (classId: string) => {
     if (!confirm("Are you sure you want to delete this class? All attendance logs, student scores, and sessions will be deleted.")) return;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("No session");
-
-      const res = await fetch(`http://localhost:8000/api/admin/classes/${classId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
-        }
-      });
-
-      if (res.ok) {
-        fetchData();
-      } else {
-        alert("Failed to delete class.");
-      }
+      await api.delete(`/api/admin/classes/${classId}`);
+      fetchData();
     } catch (err) {
       console.error("Delete class error:", err);
     }
@@ -217,19 +172,8 @@ export default function AdminClassesPage() {
   const handleDeleteSubject = async (id: string) => {
     if (!confirm("Are you sure you want to delete this subject?")) return;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("No session");
-
-      const res = await fetch(`http://localhost:8000/api/admin/subjects/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${session.access_token}` }
-      });
-      if (res.ok) {
-        fetchData();
-      } else {
-        const data = await res.json();
-        alert(data.detail || "Failed to delete subject");
-      }
+      await api.delete(`/api/admin/subjects/${id}`);
+      fetchData();
     } catch (err: any) {
       console.error("Delete subject error:", err);
       alert("Failed to delete subject");

@@ -28,6 +28,7 @@ import {
 } from "recharts";
 import Link from "next/link";
 import { createClient } from "../../../utils/supabase/client";
+import { api } from "../../../lib/api";
 import EmptyState from "../../../components/EmptyState";
 
 interface ActivityItem {
@@ -124,31 +125,18 @@ export default function ProfilePage() {
     const fetchStudentData = async () => {
       setIsLoading(true);
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const token = session?.access_token;
-        if (!token) throw new Error("No access token available");
-
-        const res = await fetch(`http://localhost:8000/api/students/${studentId}/analytics${selectedClassId ? `?class_id=${selectedClassId}` : ''}`, {
-          headers: {
-            "Authorization": `Bearer ${token}`
-          }
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          setStudentProfile(data.profile);
-          setAttendanceRate(data.enrollment?.attendance_rate || 85);
-          setClassName(data.enrollment?.class_name || "PASUM Class");
-          setMeritCount(data.merit_summary?.pending_count || 0);
-          setMeritHistory(data.merit_summary?.approved_history || []);
-          setEnrolledClasses(data.enrolled_classes || []);
-          setChartData(data.student_history || []);
-          setActivitiesList(data.activities || []);
-          if (data.enrollment?.class_id && !selectedClassId) {
-            setSelectedClassId(data.enrollment.class_id);
-          }
-        } else {
-          console.error("FastAPI returned error:", await res.text());
+        const data = await api.get(`/api/students/${studentId}/analytics${selectedClassId ? `?class_id=${selectedClassId}` : ''}`);
+        
+        setStudentProfile(data.profile);
+        setAttendanceRate(data.enrollment?.attendance_rate || 85);
+        setClassName(data.enrollment?.class_name || "PASUM Class");
+        setMeritCount(data.merit_summary?.pending_count || 0);
+        setMeritHistory(data.merit_summary?.approved_history || []);
+        setEnrolledClasses(data.enrolled_classes || []);
+        setChartData(data.student_history || []);
+        setActivitiesList(data.activities || []);
+        if (data.enrollment?.class_id && !selectedClassId) {
+          setSelectedClassId(data.enrollment.class_id);
         }
       } catch (err) {
         console.error("Failed to load student data:", err);

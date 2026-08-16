@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import BorderGlow from "../../components/BorderGlow";
+import { api } from "../../lib/api";
 import {
   TrendingUp,
   Award,
@@ -95,15 +96,9 @@ export default function DashboardPage() {
         const token = session?.access_token;
         if (!token) throw new Error("No access token available");
 
-        // Call FastAPI Endpoint
-        const res = await fetch("http://localhost:8000/api/analytics/dashboard", {
-          headers: {
-            "Authorization": `Bearer ${token}`
-          }
-        });
-
-        if (res.ok) {
-          const data = await res.json();
+        // Call FastAPI Endpoint via api client
+        try {
+          const data = await api.get("/api/analytics/dashboard");
           setAssignedClasses(data.assigned_classes || []);
           if (data.assigned_classes && data.assigned_classes.length > 0) {
             setSelectedClassId(data.assigned_classes[0].id);
@@ -115,8 +110,8 @@ export default function DashboardPage() {
           if (data.merit_raw_scores) setMeritRawScores(data.merit_raw_scores);
           if (data.merit_cgpa) setMeritCGPA(data.merit_cgpa);
           if (data.exam_performance) setExamPerformanceData(data.exam_performance);
-        } else {
-          console.error("FastAPI returned error:", await res.text());
+        } catch (err: any) {
+          console.error("FastAPI returned error:", err);
           // Consider adding a toast or state to show the error
         }
       } catch (err) {
@@ -140,17 +135,11 @@ export default function DashboardPage() {
         const token = session?.access_token;
         if (!token) throw new Error("No access token available");
 
-        const res = await fetch(`http://localhost:8000/api/analytics/trajectory?class_id=${selectedClassId}`, {
-          headers: {
-            "Authorization": `Bearer ${token}`
-          }
-        });
-
-        if (res.ok) {
-          const data = await res.json();
+        try {
+          const data = await api.get(`/api/analytics/trajectory?class_id=${selectedClassId}`);
           setTrajectoryData(data);
-        } else {
-          console.error("FastAPI trajectory error:", await res.text());
+        } catch (err: any) {
+          console.error("FastAPI trajectory error:", err);
         }
       } catch (err) {
         console.error("Failed to load trajectory:", err);

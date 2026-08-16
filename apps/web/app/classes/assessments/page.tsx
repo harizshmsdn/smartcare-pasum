@@ -18,6 +18,7 @@ import {
   Sparkles
 } from "lucide-react";
 import { createClient } from "../../../utils/supabase/client";
+import { api } from "../../../lib/api";
 
 interface ClassOption {
   id: string;
@@ -104,24 +105,10 @@ export default function ClassAssessmentsPage() {
   const fetchClassAssessmentsData = async (classId: string) => {
     setIsLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      if (!token) throw new Error("No access token available");
-
-      const res = await fetch(`http://localhost:8000/api/classes/${classId}/assessments`, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setAssessments(data.assessments || []);
-        setRosterScores(data.roster || []);
-      } else {
-        console.error("FastAPI returned error:", await res.text());
-      }
-    } catch (err) {
+      const data = await api.get(`/api/classes/${classId}/assessments`);
+      setAssessments(data.assessments || []);
+      setRosterScores(data.roster || []);
+    } catch (err: any) {
       console.error("Failed to fetch class assessments:", err);
     } finally {
       setIsLoading(false);
@@ -380,22 +367,12 @@ export default function ClassAssessmentsPage() {
                                           setIsSavingScore(true);
                                           try {
                                             const scoreVal = parseFloat(String(currentScore));
-                                            const { data: { session } } = await supabase.auth.getSession();
-                                            const token = session?.access_token;
-
-                                            const res = await fetch(`http://localhost:8000/api/assessments/${a.id}/scores`, {
-                                              method: "POST",
-                                              headers: {
-                                                "Content-Type": "application/json",
-                                                "Authorization": `Bearer ${token}`
-                                              },
-                                              body: JSON.stringify({
+                                            try {
+                                              await api.post(`/api/assessments/${a.id}/scores`, {
                                                 student_id: student.student_id,
                                                 score_achieved: scoreVal
-                                              })
-                                            });
+                                              });
 
-                                            if (res.ok) {
                                               setRosterScores(prev => prev.map(s => {
                                                 if (s.student_id === student.student_id) {
                                                   return {
@@ -405,9 +382,8 @@ export default function ClassAssessmentsPage() {
                                                 }
                                                 return s;
                                               }));
-                                            } else {
-                                              const errData = await res.json();
-                                              alert("Error saving score: " + (errData.detail || "Failed"));
+                                            } catch (err: any) {
+                                              alert("Error saving score: " + (err.detail || err.message || "Failed"));
                                             }
                                           } catch (err) {
                                             console.error("Score save error:", err);
@@ -474,33 +450,18 @@ export default function ClassAssessmentsPage() {
                   onSubmit={async (e) => {
                     e.preventDefault();
                     try {
-                      const { data: { session } } = await supabase.auth.getSession();
-                      const token = session?.access_token;
-
-                      const res = await fetch(`http://localhost:8000/api/classes/${selectedClassId}/assessments`, {
-                        method: "POST",
-                        headers: {
-                          "Content-Type": "application/json",
-                          "Authorization": `Bearer ${token}`
-                        },
-                        body: JSON.stringify({
-                          title: newTitle,
-                          type: newType,
-                          weightage: parseFloat(newWeightage),
-                          total_marks: parseInt(newTotalMarks, 10)
-                        })
+                      await api.post(`/api/classes/${selectedClassId}/assessments`, {
+                        title: newTitle,
+                        type: newType,
+                        weightage: parseFloat(newWeightage),
+                        total_marks: parseInt(newTotalMarks, 10)
                       });
 
-                      if (res.ok) {
-                        setNewTitle("");
-                        setActiveTab("matrix");
-                        if (selectedClassId) fetchClassAssessmentsData(selectedClassId);
-                      } else {
-                        const err = await res.json();
-                        alert("Failed to create assessment: " + (err.detail || "Error"));
-                      }
-                    } catch (err) {
-                      console.error("Create assessment error:", err);
+                      setNewTitle("");
+                      setActiveTab("matrix");
+                      if (selectedClassId) fetchClassAssessmentsData(selectedClassId);
+                    } catch (err: any) {
+                      alert("Failed to create assessment: " + (err.detail || err.message || "Error"));
                     }
                   }}
                   className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm max-w-lg mx-auto space-y-6"

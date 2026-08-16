@@ -25,6 +25,7 @@ import {
   Legend
 } from "recharts";
 import { createClient } from "../../../utils/supabase/client";
+import { api } from "../../../lib/api";
 
 interface AttendanceItem {
   subject: string;
@@ -66,32 +67,23 @@ export default function StudentDashboardPage() {
         const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token;
 
-        if (token) {
-          try {
-            const res = await fetch("http://localhost:8000/api/student/dashboard", {
-              headers: {
-                Authorization: `Bearer ${token}`
-              }
-            });
-            if (res.ok) {
-              const apiData = await res.json();
-              setTotalMerits(apiData.total_merits || 0);
-              setSubjectsList(apiData.subjects_list || []);
-              if (apiData.subjects_list && apiData.subjects_list.length > 0) {
-                setActiveSubject(apiData.subjects_list[0]);
-                setCaActiveSubject(apiData.subjects_list[0]);
-              }
-              setClassAttendance(apiData.class_attendance || []);
-              setSubjectTimelines(apiData.subject_timelines || {});
-              setCaPerformanceData(apiData.ca_performance_data || {});
-              setExamPerformance(apiData.exam_performance || []);
-              setRankedSubjects(apiData.ranked_subjects || []);
-              setIsLoading(false);
-              return;
-            }
-          } catch (apiErr) {
-            console.warn("FastAPI endpoint error, falling back to direct Supabase query:", apiErr);
+        try {
+          const apiData = await api.get("/api/student/dashboard");
+          setTotalMerits(apiData.total_merits || 0);
+          setSubjectsList(apiData.subjects_list || []);
+          if (apiData.subjects_list && apiData.subjects_list.length > 0) {
+            setActiveSubject(apiData.subjects_list[0]);
+            setCaActiveSubject(apiData.subjects_list[0]);
           }
+          setClassAttendance(apiData.class_attendance || []);
+          setSubjectTimelines(apiData.subject_timelines || {});
+          setCaPerformanceData(apiData.ca_performance_data || {});
+          setExamPerformance(apiData.exam_performance || []);
+          setRankedSubjects(apiData.ranked_subjects || []);
+          setIsLoading(false);
+          return;
+        } catch (apiErr) {
+          console.warn("FastAPI endpoint error, falling back to direct Supabase query:", apiErr);
         }
 
         // Direct Supabase query fallback

@@ -13,6 +13,7 @@ import {
   BookOpen
 } from "lucide-react";
 import { createClient } from "../../../utils/supabase/client";
+import { api } from "../../../lib/api";
 
 interface Enrollment {
   enrollment_id: string;
@@ -63,39 +64,32 @@ export default function AdminSchedulesPage() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("No session");
-
       // 1. Fetch enrollments
-      const enrollRes = await fetch("http://localhost:8000/api/admin/enrollments", {
-        headers: { Authorization: `Bearer ${session.access_token}` }
-      });
-      if (enrollRes.ok) {
-        const d = await enrollRes.json();
+      try {
+        const d = await api.get("/api/admin/enrollments");
         setEnrollments(d.enrollments);
+      } catch (e) {
+        console.error(e);
       }
 
       // 2. Fetch classes
-      const classesRes = await fetch("http://localhost:8000/api/admin/classes", {
-        headers: { Authorization: `Bearer ${session.access_token}` }
-      });
-      if (classesRes.ok) {
-        const d = await classesRes.json();
+      try {
+        const d = await api.get("/api/admin/classes");
         setClasses(d.classes);
         if (d.classes.length > 0 && !selectedClassId) {
           setSelectedClassId(d.classes[0].id);
         }
+      } catch (e) {
+        console.error(e);
       }
 
       // 3. Fetch students
-      const usersRes = await fetch("http://localhost:8000/api/admin/users", {
-        headers: { Authorization: `Bearer ${session.access_token}` }
-      });
-      if (usersRes.ok) {
-        const d = await usersRes.json();
+      try {
+        const d = await api.get("/api/admin/users");
         const studs = d.users.filter((u: any) => u.role === "student");
         setStudents(studs);
+      } catch (e) {
+        console.error(e);
       }
 
     } catch (err) {
@@ -114,30 +108,16 @@ export default function AdminSchedulesPage() {
     if (!targetStudentId || !targetClassId) return;
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("No session");
-
-      const res = await fetch("http://localhost:8000/api/admin/enrollments", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
-          student_id: targetStudentId,
-          class_id: targetClassId
-        })
+      await api.post("/api/admin/enrollments", {
+        student_id: targetStudentId,
+        class_id: targetClassId
       });
-
-      if (res.ok) {
-        setShowEnrollModal(false);
-        setTargetStudentId("");
-        fetchData();
-      } else {
-        const errData = await res.json();
-        alert(errData.detail || "Failed to enroll student.");
-      }
-    } catch (err) {
+      
+      setShowEnrollModal(false);
+      setTargetStudentId("");
+      fetchData();
+    } catch (err: any) {
+      alert(err.detail || err.message || "Failed to enroll student.");
       console.error("Enroll student error:", err);
     }
   };
@@ -146,23 +126,11 @@ export default function AdminSchedulesPage() {
     if (!confirm("Are you sure you want to remove this student from the class roster?")) return;
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("No session");
-
-      const res = await fetch(`http://localhost:8000/api/admin/enrollments/${enrollmentId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
-        }
-      });
-
-      if (res.ok) {
-        fetchData();
-      } else {
-        alert("Failed to unenroll student.");
-      }
-    } catch (err) {
+      await api.delete(`/api/admin/enrollments/${enrollmentId}`);
+      fetchData();
+    } catch (err: any) {
       console.error("Unenroll error:", err);
+      alert("Failed to unenroll student.");
     }
   };
 
