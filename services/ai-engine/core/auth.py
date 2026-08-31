@@ -5,7 +5,7 @@ from jose import jwt
 
 JWT_SECRET = os.getenv("JWT_SECRET", "super-secret-jwt-key-with-at-least-32-characters-long")
 JWT_ALGORITHM = "HS256"
-ENV = os.getenv("ENV", "development")
+ENV = os.getenv("ENV", "production")
 IS_PRODUCTION = ENV.lower() == "production"
 
 def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
@@ -31,6 +31,7 @@ def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
             raise HTTPException(status_code=401, detail="Invalid token payload: missing sub")
         return {"id": user_id, "role": role}
     except Exception as e:
+        print(f"Auth failed: {str(e)}") # Added for debugging Render 401s
         if IS_PRODUCTION:
             raise HTTPException(status_code=401, detail=f"Could not validate credentials: {str(e)}")
             
@@ -47,7 +48,7 @@ def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
         raise HTTPException(status_code=401, detail=f"Could not validate credentials: {str(e)}")
 
 
-def check_user_auth(cur, user_id: str, required_role: str = None) -> dict:
+def check_user_auth(cur, user_id: str, required_role: Optional[str] = None) -> dict:
     """Verifies that the user exists, returns their profile, and optionally validates their role."""
     cur.execute(
         """
