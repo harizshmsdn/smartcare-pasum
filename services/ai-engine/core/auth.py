@@ -1,4 +1,7 @@
 import os
+import json
+import urllib.request
+import logging
 from typing import Optional
 from fastapi import HTTPException, Header
 from jose import jwt
@@ -7,6 +10,15 @@ JWT_SECRET = os.getenv("JWT_SECRET", "super-secret-jwt-key-with-at-least-32-char
 JWT_ALGORITHM = "HS256"
 ENV = os.getenv("ENV", "production")
 IS_PRODUCTION = ENV.lower() == "production"
+
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://fqiwqsawxsuqheuhegtv.supabase.co")
+JWKS_URL = f"{SUPABASE_URL}/auth/v1/.well-known/jwks.json"
+JWKS = None
+try:
+    with urllib.request.urlopen(JWKS_URL) as response:
+        JWKS = json.loads(response.read())
+except Exception as e:
+    logging.warning(f"Failed to load JWKS from {JWKS_URL}: {e}")
 
 def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
     """Decodes JWT and authenticates user role/ID securely."""
@@ -24,7 +36,8 @@ def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
         alg = header.get("alg", JWT_ALGORITHM)
         
         # 2. Decode and verify Supabase JWT
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[alg], options={"verify_aud": False})
+        key = JWKS if JWKS and alg != "HS256" else JWT_SECRET
+        payload = jwt.decode(token, key, algorithms=[alg], options={"verify_aud": False})
         user_id = payload.get("sub")
         role = payload.get("role", "authenticated")
         if not user_id:
