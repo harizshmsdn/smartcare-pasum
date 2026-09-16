@@ -40,8 +40,8 @@ interface AssignedClassOption {
 
 interface TrajectoryPoint {
   week: string;
-  attendance: number;
-  assessment: number;
+  attendance?: number | null;
+  assessment?: number | null;
 }
 
 interface ChartItem {
@@ -221,17 +221,25 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex-1 min-h-0 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trajectoryData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                <XAxis dataKey="week" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} />
-                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
-                <Line type="monotone" dataKey="attendance" name="Avg Attendance %" stroke="#1e3a8a" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                <Line type="monotone" dataKey="assessment" name="Avg Assessment %" stroke="#ef4444" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-              </LineChart>
-            </ResponsiveContainer>
+            {trajectoryData && trajectoryData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={trajectoryData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="week" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} />
+                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
+                  <Line connectNulls type="monotone" dataKey="attendance" name="Avg Attendance %" stroke="#1e3a8a" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                  <Line connectNulls type="monotone" dataKey="assessment" name="Avg Assessment %" stroke="#ef4444" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                <TrendingUp size={36} className="text-slate-300 mb-2" />
+                <p className="text-sm font-medium text-slate-600">No Trajectory Data Available</p>
+                <p className="text-xs text-slate-400 mt-0.5">Trends will populate once attendance sessions and assessments are recorded.</p>
+              </div>
+            )}
           </div>
         </BorderGlow>
 
@@ -383,8 +391,9 @@ export default function DashboardPage() {
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-slate-400">
-                <p className="text-sm font-medium">No Exams Recorded</p>
-                <p className="text-[10px] mt-1">Matrix will populate after mid-terms.</p>
+                <BookOpen size={36} className="text-slate-300 mb-2" />
+                <p className="text-sm font-medium text-slate-600">No Exams Recorded</p>
+                <p className="text-xs text-slate-400 mt-0.5">Matrix will populate after mid-term or final exams are recorded.</p>
               </div>
             )}
           </div>

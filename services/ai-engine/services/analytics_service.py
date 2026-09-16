@@ -169,26 +169,22 @@ def get_dashboard_analytics(user: dict = Depends(get_current_user), db = Depends
                 {"range": k, "students": v} for k, v in cgpa_buckets.items()
             ]
 
-            # 5. Major Exams Matrix (Mid-Term vs. Finals performance by subject)
+            # Compute actual exam performance averages per subject
             cur.execute(
                 """
                 SELECT 
                     s.code as subject,
-                    ROUND(COALESCE(
-                        AVG(CASE WHEN a.type = 'Midterm' THEN (ss.score_achieved / NULLIF(a.total_marks, 0)) * 100 END),
-                        AVG(CASE WHEN a.type = 'Continuous' THEN (ss.score_achieved / NULLIF(a.total_marks, 0)) * 100 END),
-                        72
-                    )) as midterm,
-                    ROUND(COALESCE(
-                        AVG(CASE WHEN a.type = 'Final' THEN (ss.score_achieved / NULLIF(a.total_marks, 0)) * 100 END),
-                        78
-                    )) as finals
+                    ROUND(AVG(CASE WHEN a.type = 'Midterm' THEN (ss.score_achieved / NULLIF(a.total_marks, 0)) * 100 END)) as midterm,
+                    ROUND(AVG(CASE WHEN a.type = 'Final' THEN (ss.score_achieved / NULLIF(a.total_marks, 0)) * 100 END)) as finals
                 FROM public.classes c
                 JOIN public.subjects s ON c.subject_id = s.id
-                LEFT JOIN public.assessments a ON a.class_id = c.id
-                LEFT JOIN public.student_scores ss ON ss.assessment_id = a.id
-                WHERE c.lecturer_id = %s OR %s = 'admin'
+                JOIN public.assessments a ON a.class_id = c.id
+                JOIN public.student_scores ss ON ss.assessment_id = a.id
+                WHERE (c.lecturer_id = %s OR %s = 'admin')
                 GROUP BY s.id, s.code
+                HAVING 
+                    AVG(CASE WHEN a.type = 'Midterm' THEN (ss.score_achieved / NULLIF(a.total_marks, 0)) * 100 END) IS NOT NULL
+                    OR AVG(CASE WHEN a.type = 'Final' THEN (ss.score_achieved / NULLIF(a.total_marks, 0)) * 100 END) IS NOT NULL
                 ORDER BY s.code;
                 """,
                 (user_id, actual_role)
@@ -197,8 +193,8 @@ def get_dashboard_analytics(user: dict = Depends(get_current_user), db = Depends
             exam_performance = [
                 {
                     "subject": r["subject"],
-                    "midterm": int(r["midterm"]),
-                    "finals": int(r["finals"])
+                    "midterm": int(r["midterm"]) if r["midterm"] is not None else 0,
+                    "finals": int(r["finals"]) if r["finals"] is not None else 0
                 }
                 for r in exam_rows
             ]
@@ -237,20 +233,33 @@ def get_class_trajectory(class_id: str, user: dict = Depends(get_current_user), 
             if cur.fetchone() is None:
                 raise HTTPException(status_code=404, detail="Class not found or access denied")
 
-            # Fetch class average attendance rate from enrollments
-            cur.execute("SELECT AVG(current_attendance_rate) as avg_attendance FROM public.enrollments WHERE class_id = %s;", (class_id,))
-            att_row = cur.fetchone()
-            base_att = float(att_row["avg_attendance"]) if att_row and att_row["avg_attendance"] is not None else 85.0
-
-            # Fetch assessment scores for this class grouped by created_at / title
+            # Fetch actual attendance sessions and rates
             cur.execute(
                 """
                 SELECT 
+                    s.id,
+                    s.opened_at,
+                    ROUND((COUNT(CASE WHEN r.status = 'present' THEN 1 END)::numeric / NULLIF(COUNT(r.id), 0)) * 100) as att_rate
+                FROM public.attendance_sessions s
+                JOIN public.attendance_records r ON r.session_id = s.id
+                WHERE s.class_id = %s
+                GROUP BY s.id, s.opened_at
+                ORDER BY s.opened_at ASC;
+                """,
+                (class_id,)
+            )
+            session_rows = cur.fetchall() or []
+
+            # Fetch actual assessment average scores
+            cur.execute(
+                """
+                SELECT 
+                    a.id,
                     a.title,
                     a.created_at,
-                    ROUND(COALESCE(AVG((ss.score_achieved / NULLIF(a.total_marks, 0)) * 100), 75)) as avg_score
+                    ROUND(AVG((ss.score_achieved / NULLIF(a.total_marks, 0)) * 100)) as avg_score
                 FROM public.assessments a
-                LEFT JOIN public.student_scores ss ON ss.assessment_id = a.id
+                JOIN public.student_scores ss ON ss.assessment_id = a.id
                 WHERE a.class_id = %s
                 GROUP BY a.id, a.title, a.created_at
                 ORDER BY a.created_at ASC;
@@ -259,40 +268,23 @@ def get_class_trajectory(class_id: str, user: dict = Depends(get_current_user), 
             )
             assessment_rows = cur.fetchall() or []
 
-            # Derive unique deterministic seed from class_id string so each class has a distinct curve
-            class_hash = sum(ord(char) for char in str(class_id))
+            # Return empty list if no real session or assessment data exists
+            if not session_rows and not assessment_rows:
+                return []
 
-            # Construct 8-week trajectory (W1..W8) combining actual assessment averages & attendance curves
+            # Align timeline points from actual sessions and assessments
+            total_points = max(len(session_rows), len(assessment_rows))
             trajectory_data = []
-            weeks = ["W1", "W2", "W3", "W4", "W5", "W6", "W7", "W8"]
 
-            for idx, week_label in enumerate(weeks):
-                # Unique class-specific attendance pattern
-                att_variance = [
-                    ((class_hash * 3 + idx * 7) % 9) - 4,
-                    ((class_hash * 2 + idx * 5) % 8) - 3,
-                    ((class_hash + idx * 3) % 7) - 3,
-                    -((class_hash * 4 + idx * 2) % 6),
-                    -((class_hash * 5 + idx * 4) % 8) - 2,
-                    -((class_hash * 2 + idx * 6) % 10) - 3,
-                    -((class_hash * 3 + idx * 8) % 12) - 4,
-                    ((class_hash * 4 + idx * 3) % 6) - 1,
-                ][idx]
-
-                week_attendance = max(55, min(100, round(base_att + att_variance)))
-
-                # Assessment score calculation
-                if idx < len(assessment_rows) and assessment_rows[idx]["avg_score"] is not None:
-                    week_assessment = int(assessment_rows[idx]["avg_score"])
-                else:
-                    # Class-unique assessment trajectory
-                    assess_variance = ((class_hash * 7 + idx * 11) % 15) - 7
-                    week_assessment = max(50, min(100, round(week_attendance * 0.82 + assess_variance)))
+            for idx in range(total_points):
+                week_label = f"W{idx + 1}"
+                att_val = int(session_rows[idx]["att_rate"]) if idx < len(session_rows) and session_rows[idx]["att_rate"] is not None else None
+                assess_val = int(assessment_rows[idx]["avg_score"]) if idx < len(assessment_rows) and assessment_rows[idx]["avg_score"] is not None else None
 
                 trajectory_data.append({
                     "week": week_label,
-                    "attendance": week_attendance,
-                    "assessment": week_assessment
+                    "attendance": att_val,
+                    "assessment": assess_val
                 })
 
             return trajectory_data
