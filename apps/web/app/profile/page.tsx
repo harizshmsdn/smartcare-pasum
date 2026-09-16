@@ -7,9 +7,11 @@ import {
   Phone,
   MapPin,
   BookOpen,
-  Building
+  Building,
+  KeyRound
 } from "lucide-react";
 import { createClient } from "../../utils/supabase/client";
+import { ChangePasswordModal } from "../../components/ChangePasswordModal";
 
 export default function LecturerProfilePage() {
   const supabase = createClient();
@@ -18,6 +20,7 @@ export default function LecturerProfilePage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [classesTaught, setClassesTaught] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -48,12 +51,12 @@ export default function LecturerProfilePage() {
 
         if (classesData) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const formatted = classesData.map((c: any) => ({
-            code: c.subjects?.code || "PHY101",
-            name: c.subjects?.name || "Unknown Class",
-            group: c.group_code || "Group A"
+          const mapped = classesData.map((c: any) => ({
+            code: c.subjects?.code || "PASUM",
+            title: c.subjects?.name || "Subject",
+            group: c.group_code
           }));
-          setClassesTaught(formatted);
+          setClassesTaught(mapped);
         }
       } catch (err) {
         console.error("Error fetching lecturer profile:", err);
@@ -105,11 +108,25 @@ export default function LecturerProfilePage() {
                 <span>{profile.phone_number || "+60 3-7967 4321"}</span>
               </div>
               <div className="flex items-center gap-3 text-slate-600">
+                <Building size={16} className="text-slate-400 shrink-0" />
+                <span className="text-xs truncate">{profile.affiliation || "Center for Foundation Studies in Science (PASUM)"}</span>
+              </div>
+              <div className="flex items-center gap-3 text-slate-600">
                 <MapPin size={16} className="text-slate-400 shrink-0" />
                 <span className="text-xs">{profile.office_location || "PASUM Main Building"}</span>
               </div>
             </div>
           </div>
+
+          {/* Change password button */}
+          <button
+            type="button"
+            onClick={() => setIsPasswordModalOpen(true)}
+            className="w-full flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 font-semibold py-3 px-4 rounded-2xl border border-slate-200 shadow-sm transition-all hover:border-slate-300 active:scale-[0.99]"
+          >
+            <KeyRound size={18} className="text-blue-600" />
+            <span>Change Password</span>
+          </button>
         </div>
 
         {/* Right Column: Academic Details & Assignments (Takes 2 Columns) */}
@@ -153,6 +170,11 @@ export default function LecturerProfilePage() {
           </div>
         </div>
       </div>
+
+      <ChangePasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+      />
     </main>
   );
 }

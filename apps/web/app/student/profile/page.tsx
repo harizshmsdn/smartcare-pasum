@@ -11,17 +11,21 @@ import {
   Edit2,
   Save,
   X,
-  ShieldAlert
+  ShieldAlert,
+  Building,
+  KeyRound
 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "../../../utils/supabase/client";
 import { studentService } from "../../../lib/services/student";
+import { ChangePasswordModal } from "../../../components/ChangePasswordModal";
 
 export default function StudentProfilePage() {
   const supabase = createClient();
   const [profile, setProfile] = useState<any>(null);
   const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   // Edit states
   const [isEditing, setIsEditing] = useState(false);
@@ -225,6 +229,10 @@ export default function StudentProfilePage() {
                       <span>{profile.phone_number}</span>
                     </div>
                   )}
+                  <div className="flex items-center gap-3">
+                    <Building size={16} className="text-slate-400 shrink-0" />
+                    <span className="truncate">{scienceStream}</span>
+                  </div>
                   {profile.emergency_contact && (
                     <div className="flex items-center gap-3">
                       <ShieldAlert size={16} className="text-red-400 shrink-0" />
@@ -248,6 +256,16 @@ export default function StudentProfilePage() {
               </div>
             </div>
           </div>
+
+          {/* Change password button */}
+          <button
+            type="button"
+            onClick={() => setIsPasswordModalOpen(true)}
+            className="w-full flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 font-semibold py-3 px-4 rounded-2xl border border-slate-200 shadow-sm transition-all hover:border-slate-300 active:scale-[0.99]"
+          >
+            <KeyRound size={18} className="text-blue-600" />
+            <span>Change Password</span>
+          </button>
         </div>
 
         {/* Right Column: Science Stream & Courses */}
@@ -293,6 +311,11 @@ export default function StudentProfilePage() {
           </div>
         </div>
       </div>
+
+      <ChangePasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+      />
     </main>
   );
 }

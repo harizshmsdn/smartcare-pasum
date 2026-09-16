@@ -161,8 +161,6 @@ export default function StudentClassesPage() {
         .eq('student_id', user.id)
         .maybeSingle();
 
-      const attRate = enrollData?.current_attendance_rate ? Number(enrollData.current_attendance_rate) : 100;
-
       const fmtTime = (tStr: string | null) => {
         if (!tStr) return "";
         const parts = tStr.split(":");
@@ -185,6 +183,11 @@ export default function StudentClassesPage() {
         `)
         .eq('class_id', classId)
         .order('opened_at', { ascending: false });
+
+      const hasAttendance = Boolean(sessions && sessions.length > 0);
+      const attRate = hasAttendance
+        ? (enrollData?.current_attendance_rate ? Number(enrollData.current_attendance_rate) : 0)
+        : 0;
 
       const attendanceLog = (sessions || []).map((s: any) => {
         const record = (s.attendance_records || []).find((r: any) => r.student_id === user.id);
@@ -232,8 +235,18 @@ export default function StudentClassesPage() {
         };
       });
 
-      const caAvg = scoreCnt > 0 ? (scoreSum / scoreCnt) : 85;
-      const performanceNumeric = Math.round((attRate * 0.6) + (caAvg * 0.4));
+      const hasAssessments = scoreCnt > 0;
+      let performanceNumeric = 0;
+      if (hasAttendance && hasAssessments) {
+        const caAvg = scoreSum / scoreCnt;
+        performanceNumeric = Math.round((attRate * 0.6) + (caAvg * 0.4));
+      } else if (hasAssessments) {
+        performanceNumeric = Math.round(scoreSum / scoreCnt);
+      } else if (hasAttendance) {
+        performanceNumeric = Math.round(attRate);
+      } else {
+        performanceNumeric = 0;
+      }
 
       const lecturerProfile = classData?.profiles as any;
       const lecturerInfo = lecturerProfile ? {

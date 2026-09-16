@@ -267,7 +267,6 @@ def get_student_class_details(class_id: str, user: dict = Depends(get_current_us
             enroll_row = cur.fetchone()
             if not enroll_row:
                 raise HTTPException(status_code=403, detail="Access denied: Student is not enrolled in this class")
-            att_rate = round(float(enroll_row["current_attendance_rate"])) if enroll_row["current_attendance_rate"] is not None else 100
 
             def fmt_time(t_str):
                 if not t_str: return ""
@@ -300,6 +299,16 @@ def get_student_class_details(class_id: str, user: dict = Depends(get_current_us
                 (student_id, class_id)
             )
             sess_rows = cur.fetchall() or []
+
+            # Determine attendance rate accurately
+            has_attendance_data = len(sess_rows) > 0
+            if not has_attendance_data:
+                att_rate = 0
+            elif enroll_row.get("current_attendance_rate") is not None:
+                att_rate = round(float(enroll_row["current_attendance_rate"]))
+            else:
+                attended_cnt = sum(1 for s in sess_rows if str(s.get("status", "")).lower() in ["present", "excused"])
+                att_rate = round((attended_cnt / len(sess_rows)) * 100)
 
             attendance_log = []
             for s in sess_rows:
@@ -354,8 +363,17 @@ def get_student_class_details(class_id: str, user: dict = Depends(get_current_us
                     score_sum += pct
                     cnt += 1
 
-            ca_avg = (score_sum / cnt) if cnt > 0 else (65.0 if att_rate < 80 else 88.0)
-            performance_numeric = round((att_rate * 0.6) + (ca_avg * 0.4))
+            # Calculate composite class performance accurately
+            has_assessment_data = cnt > 0
+            if has_attendance_data and has_assessment_data:
+                ca_avg = score_sum / cnt
+                performance_numeric = round((att_rate * 0.6) + (ca_avg * 0.4))
+            elif has_assessment_data:
+                performance_numeric = round(score_sum / cnt)
+            elif has_attendance_data:
+                performance_numeric = round(att_rate)
+            else:
+                performance_numeric = 0
 
             lecturer_info = {
                 "full_name": class_row.get("lecturer_name"),
