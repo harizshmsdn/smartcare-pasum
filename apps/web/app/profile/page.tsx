@@ -1,4 +1,4 @@
-// apps/web/app/profile/page.tsx
+// Lecturer Profile page in dottxt.ai sharp dark style with emerald accents
 "use client";
 
 import { useState, useEffect } from "react";
@@ -8,9 +8,7 @@ import { ChangePasswordModal } from "../../components/ChangePasswordModal";
 
 export default function LecturerProfilePage() {
   const supabase = createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [profile, setProfile] = useState<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [classesTaught, setClassesTaught] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -43,7 +41,6 @@ export default function LecturerProfilePage() {
           .eq('lecturer_id', user.id);
 
         if (classesData) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const mapped = classesData.map((c: any) => ({
             code: c.subjects?.code || "PASUM",
             title: c.subjects?.name || "Subject",
@@ -58,12 +55,11 @@ export default function LecturerProfilePage() {
       }
     };
     fetchProfile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (isLoading || !profile) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-transparent text-white/70 font-mono text-sm">
+      <div className="flex-1 flex items-center justify-center bg-transparent text-white/70 text-sm">
         <span className="animate-pulse">Loading lecturer profile...</span>
       </div>
     );
@@ -77,12 +73,12 @@ export default function LecturerProfilePage() {
       <header className="mb-6 flex justify-between items-end border-b border-white/10 pb-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-mono text-xs uppercase tracking-widest text-blue-400">PASUM // FACULTY PROFILE</span>
+            <span className="text-xs uppercase tracking-widest text-emerald-400 font-bold">PASUM // FACULTY PROFILE</span>
           </div>
-          <h2 className="text-2xl lg:text-3xl font-bold tracking-tight text-white font-mono">My Profile</h2>
-          <p className="font-mono text-xs text-white/60 mt-0.5">Manage your academic credentials and professional contact details</p>
+          <h2 className="text-2xl lg:text-3xl font-bold tracking-tight text-white uppercase">My Profile</h2>
+          <p className="text-xs text-white/60 mt-0.5">Manage your academic credentials and professional contact details</p>
         </div>
-        <div className="flex items-center gap-2 border border-white/15 bg-white/5 text-blue-300 px-3.5 py-1.5 font-mono text-xs tracking-wider uppercase rounded-none">
+        <div className="flex items-center gap-2 border border-white/15 bg-white/5 text-emerald-300 px-3.5 py-1.5 text-xs tracking-wider uppercase rounded-none font-medium">
           <PixelIcon name="graduation" size={16} />
           PASUM FACULTY
         </div>
@@ -93,30 +89,26 @@ export default function LecturerProfilePage() {
 
         {/* Left Column: Summary Info Card */}
         <div className="space-y-4">
-          <div className="border border-white/15 bg-[#09111e]/80 backdrop-blur-md p-6 rounded-none shadow-xl text-center relative flex flex-col items-center">
-            <div className="w-20 h-20 border border-white/20 bg-blue-500/15 text-blue-300 rounded-none flex items-center justify-center mb-4 font-mono font-bold text-2xl shadow-inner shrink-0">
+          <div className="border border-white/15 bg-[#08090c]/80 backdrop-blur-md p-6 rounded-none shadow-xl text-center relative flex flex-col items-center">
+            <div className="w-20 h-20 border border-emerald-400/30 bg-emerald-500/15 text-emerald-300 rounded-none flex items-center justify-center mb-4 font-bold text-2xl shadow-inner shrink-0">
               {initials}
             </div>
 
-            <h3 className="font-mono text-lg font-bold text-white">{profile.full_name}</h3>
-            <p className="font-mono text-xs text-blue-300 mt-0.5">Senior Lecturer</p>
-            <p className="font-mono text-[11px] text-white/50 mt-0.5">Staff ID: {profile.institutional_id}</p>
+            <h3 className="text-lg font-bold text-white">{profile.full_name}</h3>
+            <p className="text-xs text-emerald-300 mt-0.5">Senior Lecturer</p>
+            <p className="text-[11px] text-white/50 mt-0.5">Staff ID: {profile.institutional_id}</p>
 
-            <div className="border-t border-white/10 mt-5 pt-5 w-full space-y-3 text-left text-xs font-mono">
-              <div className="flex items-center gap-2.5 text-white/70">
-                <PixelIcon name="mail" size={14} className="text-white/40 shrink-0" />
+            <div className="border-t border-white/10 mt-5 pt-5 w-full space-y-3 text-left text-xs">
+              <div className="flex items-center gap-2.5 text-white/80">
+                <PixelIcon name="mail" size={15} className="text-emerald-400 shrink-0" />
                 <span className="truncate">{profile.email}</span>
               </div>
-              <div className="flex items-center gap-2.5 text-white/70">
-                <PixelIcon name="phone" size={14} className="text-white/40 shrink-0" />
+              <div className="flex items-center gap-2.5 text-white/80">
+                <PixelIcon name="phone" size={15} className="text-emerald-400 shrink-0" />
                 <span>{profile.phone_number || "+60 3-7967 4321"}</span>
               </div>
-              <div className="flex items-center gap-2.5 text-white/70">
-                <PixelIcon name="building" size={14} className="text-white/40 shrink-0" />
-                <span className="text-[11px] truncate">{profile.affiliation || "Center for Foundation Studies in Science (PASUM)"}</span>
-              </div>
-              <div className="flex items-center gap-2.5 text-white/70">
-                <PixelIcon name="pin" size={14} className="text-white/40 shrink-0" />
+              <div className="flex items-center gap-2.5 text-white/80">
+                <PixelIcon name="pin" size={15} className="text-emerald-400 shrink-0" />
                 <span className="text-[11px]">{profile.office_location || "PASUM Main Building"}</span>
               </div>
             </div>
@@ -126,9 +118,9 @@ export default function LecturerProfilePage() {
           <button
             type="button"
             onClick={() => setIsPasswordModalOpen(true)}
-            className="w-full flex items-center justify-center gap-2 border border-white/20 bg-white/5 hover:bg-white/10 text-white font-mono text-xs uppercase font-bold py-3 px-4 rounded-none shadow-lg transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 border border-white/20 bg-white/5 hover:bg-white/10 text-white text-xs uppercase font-bold py-3 px-4 rounded-none shadow-lg transition-colors cursor-pointer tracking-wider"
           >
-            <PixelIcon name="key" size={16} className="text-blue-400" />
+            <PixelIcon name="key" size={16} className="text-emerald-400" />
             <span>Change Password</span>
           </button>
         </div>
@@ -136,47 +128,47 @@ export default function LecturerProfilePage() {
         {/* Right Column: Academic Details & Assignments */}
         <div className="lg:col-span-2 space-y-4">
 
-          {/* Department Information */}
-          <div className="border border-white/15 bg-[#09111e]/80 backdrop-blur-md p-5 rounded-none shadow-xl">
+          {/* Department Information - displayed only once here */}
+          <div className="border border-white/15 bg-[#08090c]/80 backdrop-blur-md p-5 rounded-none shadow-xl">
             <div className="border-b border-white/10 pb-3 mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="font-mono text-xs font-bold text-blue-400">01.</span>
-                <span className="font-mono text-xs uppercase tracking-wider text-white/90">INSTITUTIONAL AFFILIATION</span>
+                <span className="text-xs font-bold text-emerald-400">01.</span>
+                <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">DEPARTMENT & AFFILIATION</span>
               </div>
-              <PixelIcon name="building" size={16} className="text-blue-400" />
+              <PixelIcon name="building" size={16} className="text-emerald-400" />
             </div>
-            <p className="font-mono text-xs text-white/80 leading-relaxed border border-white/10 bg-black/40 p-3.5 rounded-none">
+            <p className="text-xs text-white/80 leading-relaxed border border-white/10 bg-black/40 p-3.5 rounded-none">
               {profile.affiliation || "Center for Foundation Studies in Science (PASUM)"}
             </p>
           </div>
 
           {/* Active Course Load Assignments */}
-          <div className="border border-white/15 bg-[#09111e]/80 backdrop-blur-md p-5 rounded-none shadow-xl">
+          <div className="border border-white/15 bg-[#08090c]/80 backdrop-blur-md p-5 rounded-none shadow-xl">
             <div className="border-b border-white/10 pb-3 mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="font-mono text-xs font-bold text-blue-400">02.</span>
-                <span className="font-mono text-xs uppercase tracking-wider text-white/90">ASSIGNED COURSE LOAD (CURRENT SEMESTER)</span>
+                <span className="text-xs font-bold text-emerald-400">02.</span>
+                <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">ASSIGNED COURSE LOAD (CURRENT SEMESTER)</span>
               </div>
-              <PixelIcon name="classes" size={16} className="text-blue-400" />
+              <PixelIcon name="classes" size={16} className="text-emerald-400" />
             </div>
 
             <div className="space-y-3">
               {classesTaught.length > 0 ? (
                 classesTaught.map((course, idx) => (
-                  <div key={idx} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3.5 border border-white/10 bg-white/5 hover:border-blue-400/40 rounded-none transition-colors gap-2">
+                  <div key={idx} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3.5 border border-white/10 bg-white/5 hover:border-emerald-400/40 rounded-none transition-colors gap-2">
                     <div>
-                      <span className="font-mono text-[10px] font-bold border border-blue-400/40 bg-blue-500/15 text-blue-300 px-2 py-0.5 rounded-none">
+                      <span className="text-[10px] font-bold border border-emerald-400/40 bg-emerald-500/15 text-emerald-300 px-2 py-0.5 rounded-none">
                         {course.code}
                       </span>
-                      <h5 className="font-mono font-bold text-white text-sm mt-1.5">{course.title}</h5>
+                      <h5 className="font-bold text-white text-sm mt-1.5">{course.title}</h5>
                     </div>
-                    <span className="font-mono text-[11px] border border-white/20 bg-white/5 text-white/70 px-2.5 py-1 rounded-none">
+                    <span className="text-[11px] border border-white/20 bg-white/5 text-white/70 px-2.5 py-1 rounded-none font-medium">
                       {course.group}
                     </span>
                   </div>
                 ))
               ) : (
-                <p className="font-mono text-xs text-white/40 py-6 text-center">No assigned classes found.</p>
+                <p className="text-xs text-white/40 py-6 text-center">No assigned classes found.</p>
               )}
             </div>
           </div>

@@ -71,28 +71,27 @@ export default function LoginPage() {
 
             {/* Left Side: dottxt.ai Dark Wireframe Login Card */}
             <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 z-10">
-                <div className="w-full max-w-md bg-[#080f1c]/85 backdrop-blur-xl rounded-none border border-white/15 p-8 space-y-7 relative shadow-2xl">
+                <div className="w-full max-w-md bg-[#08090c]/85 backdrop-blur-xl rounded-none border border-white/15 p-8 space-y-7 relative shadow-2xl">
 
                     {/* Success redirect loading overlay */}
                     {isSuccess && (
-                        <div className="absolute inset-0 bg-[#080f1c]/95 backdrop-blur-sm rounded-none flex flex-col items-center justify-center gap-3 z-30 animate-in fade-in duration-200 border border-white/20">
-                            <div className="w-10 h-10 border-2 border-blue-400 border-t-transparent rounded-none animate-spin" />
+                        <div className="absolute inset-0 bg-[#08090c]/95 backdrop-blur-sm rounded-none flex flex-col items-center justify-center gap-3 z-30 animate-in fade-in duration-200 border border-white/20">
+                            <div className="w-10 h-10 border-2 border-emerald-400 border-t-transparent rounded-none animate-spin" />
                             <div className="text-center">
-                                <p className="text-sm font-mono font-bold text-white tracking-wider uppercase">Authenticating</p>
-                                <p className="text-xs font-mono text-white/50 mt-1">Redirecting to dashboard...</p>
+                                <p className="text-xs text-white uppercase tracking-wider">Authenticating credentials...</p>
                             </div>
                         </div>
                     )}
 
-                    {/* Technical Section Index Header */}
-                    <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                    {/* Card Header */}
+                    <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
                         <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs text-blue-400 font-bold">01</span>
-                            <span className="font-mono text-xs uppercase tracking-wider text-white/80">
+                            <span className="text-xs text-emerald-400 font-bold">01</span>
+                            <span className="text-xs uppercase tracking-wider text-white/80 font-medium">
                                 // AUTHENTICATION
                             </span>
                         </div>
-                        <span className="text-[10px] font-mono border border-white/15 px-2 py-0.5 text-white/60 bg-white/5">
+                        <span className="text-[10px] border border-white/15 px-2 py-0.5 text-white/60 bg-white/5 font-semibold">
                             PORTAL
                         </span>
                     </div>
@@ -102,13 +101,13 @@ export default function LoginPage() {
                         <h2 className="text-2xl font-bold tracking-tight text-white font-sans">
                             Sign in to <span className="font-black">tigha.</span>
                         </h2>
-                        <p className="text-white/50 text-xs font-mono">
+                        <p className="text-white/50 text-xs">
                             Enter your PASUM credentials to continue
                         </p>
                     </div>
 
                     {authError && (
-                        <div className="p-3 text-xs font-mono text-red-300 bg-red-950/40 border border-red-500/50 rounded-none flex items-start gap-2.5 animate-in fade-in duration-150">
+                        <div className="p-3 text-xs text-red-300 bg-red-950/40 border border-red-500/50 rounded-none flex items-start gap-2.5 animate-in fade-in duration-150">
                             <PixelIcon name="warning" size={16} className="text-red-400 mt-0.5 shrink-0" />
                             <div>
                                 <p className="font-bold text-red-200 uppercase tracking-wide">
@@ -125,7 +124,7 @@ export default function LoginPage() {
                     <form className="space-y-4">
                         {/* Email Input */}
                         <div className="space-y-1.5">
-                            <label htmlFor="email" className="text-xs font-mono uppercase tracking-wider text-white/70 block">
+                            <label htmlFor="email" className="text-xs uppercase tracking-wider text-white/70 block font-medium">
                                 Email Address
                             </label>
                             <div className="relative">
@@ -141,19 +140,19 @@ export default function LoginPage() {
                                     placeholder="matric@siswa.um.edu.my"
                                     required
                                     disabled={isPending || isSuccess}
-                                    className={`w-full px-3.5 py-2.5 rounded-none border text-sm text-white font-mono placeholder:text-white/20 bg-black/40 focus:outline-none transition-all ${authError
+                                    className={`w-full px-3.5 py-2.5 rounded-none border text-sm text-white placeholder:text-white/20 bg-black/40 focus:outline-none transition-all ${authError
                                         ? 'border-red-500 bg-red-950/20 ring-1 ring-red-500/40'
-                                        : 'border-white/15 focus:border-blue-400'
+                                        : 'border-white/15 focus:border-emerald-400'
                                         }`}
                                 />
                             </div>
                         </div>
 
                         {/* Password Input */}
-                        <div className="space-y-1.5">
-                            <label htmlFor="password" className="text-xs font-mono uppercase tracking-wider text-white/70 block">
-                                Password
-                            </label>
+                        <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                                <label htmlFor="password" className="block text-xs font-medium text-white/80 uppercase tracking-wider">PASSWORD</label>
+                            </div>
                             <div className="relative">
                                 <input
                                     id="password"
@@ -167,27 +166,27 @@ export default function LoginPage() {
                                     placeholder="••••••••"
                                     required
                                     disabled={isPending || isSuccess}
-                                    className={`w-full px-3.5 py-2.5 rounded-none border text-sm text-white font-mono placeholder:text-white/20 bg-black/40 focus:outline-none transition-all ${authError
+                                    className={`w-full px-3.5 py-2.5 rounded-none border text-sm text-white placeholder:text-white/20 bg-black/40 focus:outline-none transition-all ${authError
                                         ? 'border-red-500 bg-red-950/20 ring-1 ring-red-500/40'
-                                        : 'border-white/15 focus:border-blue-400'
+                                        : 'border-white/15 focus:border-emerald-400'
                                         }`}
                                 />
                             </div>
                         </div>
 
-                        {/* Remember Me & Forgot Password */}
-                        <div className="flex items-center justify-between text-xs font-mono text-white/60 pt-1">
-                            <label className="flex items-center gap-2 cursor-pointer hover:text-white transition-colors">
+                        {/* Remember / Forgot */}
+                        <div className="flex items-center justify-between text-xs">
+                            <label className="flex items-center gap-2 text-white/60 cursor-pointer">
                                 <input
                                     type="checkbox"
                                     name="remember"
-                                    className="rounded-none border-white/20 bg-black/40 text-blue-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
+                                    className="rounded-none border-white/20 bg-black/40 text-emerald-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
                                 />
-                                <span>Remember me</span>
+                                <span>Remember device</span>
                             </label>
                             <Link
                                 href="/forgot-password"
-                                className="text-blue-400 hover:text-blue-300 hover:underline transition-colors"
+                                className="text-emerald-400 hover:text-emerald-300 hover:underline transition-colors font-medium"
                             >
                                 Forgot password?
                             </Link>
@@ -198,7 +197,7 @@ export default function LoginPage() {
                             <button
                                 formAction={(formData) => handleAction(login, formData)}
                                 disabled={isPending || isSuccess}
-                                className="flex-1 bg-white text-black hover:bg-white/90 py-2.5 px-4 rounded-none font-mono font-bold text-xs uppercase tracking-wider transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2 cursor-pointer shadow-sm"
+                                className="flex-1 bg-white text-black hover:bg-white/90 py-2.5 px-4 rounded-none font-bold text-xs uppercase tracking-wider transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2 cursor-pointer shadow-sm"
                             >
                                 {isPending || isSuccess ? (
                                     <>
@@ -215,7 +214,7 @@ export default function LoginPage() {
                             <button
                                 formAction={(formData) => handleAction(signup, formData)}
                                 disabled={isPending || isSuccess}
-                                className="flex-1 bg-transparent text-white border border-white/20 hover:border-white/40 hover:bg-white/5 py-2.5 px-4 rounded-none font-mono font-bold text-xs uppercase tracking-wider transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center cursor-pointer"
+                                className="flex-1 bg-transparent text-white border border-white/20 hover:border-white/40 hover:bg-white/5 py-2.5 px-4 rounded-none font-bold text-xs uppercase tracking-wider transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center cursor-pointer"
                             >
                                 SIGN UP
                             </button>
@@ -225,7 +224,7 @@ export default function LoginPage() {
                     {/* Divider */}
                     <div className="relative flex items-center py-1">
                         <div className="flex-grow border-t border-white/10"></div>
-                        <span className="flex-shrink-0 mx-3 text-white/30 text-[11px] font-mono uppercase">or sso</span>
+                        <span className="flex-shrink-0 mx-3 text-white/30 text-[11px] uppercase tracking-wider font-semibold">or sso</span>
                         <div className="flex-grow border-t border-white/10"></div>
                     </div>
 
@@ -236,12 +235,12 @@ export default function LoginPage() {
                             <button
                                 type="button"
                                 disabled
-                                className="w-full flex items-center justify-center gap-2.5 bg-black/25 border border-white/10 text-white/40 py-2.5 px-4 rounded-none text-xs font-mono opacity-50 grayscale cursor-not-allowed pointer-events-none select-none"
+                                className="w-full flex items-center justify-center gap-2.5 bg-black/25 border border-white/10 text-white/40 py-2.5 px-4 rounded-none text-xs opacity-50 grayscale cursor-not-allowed pointer-events-none select-none font-medium"
                             >
                                 <span>[ G ]</span>
                                 <span>Sign in with Google</span>
                             </button>
-                            <div className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 hidden group-hover/disabled:flex items-center px-2 py-0.5 text-[10px] font-mono text-white bg-slate-900 border border-white/20 rounded-none shadow-lg whitespace-nowrap z-50">
+                            <div className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 hidden group-hover/disabled:flex items-center px-2 py-0.5 text-[10px] text-white bg-slate-900 border border-white/20 rounded-none shadow-lg whitespace-nowrap z-50 font-bold">
                                 FEATURE DISABLED
                             </div>
                         </div>
@@ -251,12 +250,12 @@ export default function LoginPage() {
                             <button
                                 type="button"
                                 disabled
-                                className="w-full flex items-center justify-center gap-2.5 bg-black/25 border border-white/10 text-white/40 py-2.5 px-4 rounded-none text-xs font-mono opacity-50 grayscale cursor-not-allowed pointer-events-none select-none"
+                                className="w-full flex items-center justify-center gap-2.5 bg-black/25 border border-white/10 text-white/40 py-2.5 px-4 rounded-none text-xs opacity-50 grayscale cursor-not-allowed pointer-events-none select-none font-medium"
                             >
                                 <span>[ UM ]</span>
                                 <span>Sign in with UM SSO</span>
                             </button>
-                            <div className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 hidden group-hover/disabled:flex items-center px-2 py-0.5 text-[10px] font-mono text-white bg-slate-900 border border-white/20 rounded-none shadow-lg whitespace-nowrap z-50">
+                            <div className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 hidden group-hover/disabled:flex items-center px-2 py-0.5 text-[10px] text-white bg-slate-900 border border-white/20 rounded-none shadow-lg whitespace-nowrap z-50 font-bold">
                                 FEATURE DISABLED
                             </div>
                         </div>
@@ -269,10 +268,10 @@ export default function LoginPage() {
             <div className="hidden lg:flex w-1/2 relative flex-col justify-center p-12 overflow-hidden z-10">
 
                 {/* Top Right Navigation matching dottxt.ai buttons */}
-                <nav className="absolute top-8 right-12 flex gap-3 z-10 font-mono text-xs">
+                <nav className="absolute top-8 right-12 flex gap-3 z-10 text-xs">
                     <button
                         onClick={() => setActiveTab('home')}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-none border transition-all ${activeTab === 'home'
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-none border transition-all font-medium ${activeTab === 'home'
                             ? 'border-white/40 bg-white/10 text-white'
                             : 'border-white/10 bg-black/20 text-white/50 hover:border-white/25 hover:text-white'
                             }`}
@@ -282,7 +281,7 @@ export default function LoginPage() {
                     </button>
                     <button
                         onClick={() => setActiveTab('about')}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-none border transition-all ${activeTab === 'about'
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-none border transition-all font-medium ${activeTab === 'about'
                             ? 'border-white/40 bg-white/10 text-white'
                             : 'border-white/10 bg-black/20 text-white/50 hover:border-white/25 hover:text-white'
                             }`}
@@ -297,14 +296,14 @@ export default function LoginPage() {
                     {activeTab === 'home' ? (
                         <div className="space-y-6 transition-opacity duration-300">
                             {/* Title & IPA */}
-                            <div className="border border-white/15 bg-[#09111e]/70 backdrop-blur-md p-8 rounded-none space-y-4">
+                            <div className="border border-white/15 bg-[#08090c]/70 backdrop-blur-md p-8 rounded-none space-y-4">
                                 <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                                    <span className="font-mono text-xs text-blue-400">00 // PLATFORM</span>
+                                    <span className="text-xs text-emerald-400 font-bold tracking-wider">00 // PLATFORM</span>
                                 </div>
                                 <h1 className="text-6xl sm:text-7xl font-black tracking-tighter text-white font-sans">
-                                    tigha<span className="text-blue-400">.</span>
+                                    tigha<span className="text-emerald-400">.</span>
                                 </h1>
-                                <div className="text-white/60 font-mono text-xs tracking-wide flex items-center gap-2 bg-black/40 border border-white/10 px-3 py-2 rounded-none">
+                                <div className="text-white/60 text-xs tracking-wide flex items-center gap-2 bg-black/40 border border-white/10 px-3 py-2 rounded-none">
                                     <span className="text-white font-bold">/ˈtaɪ.ɡɑː/</span>
                                     <span className="text-white/20">•</span>
                                     <span className="text-white/50 italic font-sans">like &quot;ti&quot; in tiger + &quot;gha&quot; in ghana</span>
@@ -314,22 +313,24 @@ export default function LoginPage() {
                                 </p>
                             </div>
 
-                            {/* Technical Specs Tags */}
-                            <div className="grid grid-cols-2 gap-3 font-mono text-xs">
-                                <div className="border border-white/10 bg-black/30 p-3 rounded-none">
-                                    <span className="text-white/40 block text-[10px]">01 // ATTENDANCE</span>
-                                    <span className="text-white font-semibold mt-1 block">GPS + FaceID Check-In</span>
+                            {/* Bento Feature Cards */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="border border-white/15 bg-[#08090c]/70 backdrop-blur-md p-5 rounded-none space-y-2">
+                                    <span className="text-emerald-400 font-bold text-xs">01</span>
+                                    <h4 className="text-white font-bold text-sm">3-Factor Attendance</h4>
+                                    <p className="text-white/50 text-xs leading-relaxed">Face ID, GPS geofencing & dynamic QR code validation.</p>
                                 </div>
-                                <div className="border border-white/10 bg-black/30 p-3 rounded-none">
-                                    <span className="text-white/40 block text-[10px]">02 // ANALYTICS</span>
-                                    <span className="text-white font-semibold mt-1 block">Early Risk Trajectory</span>
+                                <div className="border border-white/15 bg-[#08090c]/70 backdrop-blur-md p-5 rounded-none space-y-2">
+                                    <span className="text-emerald-400 font-bold text-xs">02</span>
+                                    <h4 className="text-white font-bold text-sm">Realtime Analytics</h4>
+                                    <p className="text-white/50 text-xs leading-relaxed">Early alert flags, continuous assessment matrices, and trajectories.</p>
                                 </div>
                             </div>
                         </div>
                     ) : (
-                        <div className="border border-white/15 bg-[#09111e]/70 backdrop-blur-md p-8 rounded-none space-y-6 transition-opacity duration-300 font-mono">
+                        <div className="border border-white/15 bg-[#08090c]/70 backdrop-blur-md p-8 rounded-none space-y-6 transition-opacity duration-300">
                             <div className="border-b border-white/10 pb-3">
-                                <span className="text-xs text-blue-400">02 // CREATORS</span>
+                                <span className="text-xs text-emerald-400 font-bold tracking-wider">02 // CREATORS</span>
                             </div>
                             <div className="space-y-4">
                                 <div className="border-l-2 border-[#c8d4ff] pl-4 py-1">

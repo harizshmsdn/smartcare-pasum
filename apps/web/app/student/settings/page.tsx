@@ -1,15 +1,8 @@
-// apps/web/app/student/settings/page.tsx
+// Student Settings and Preferences page in dottxt.ai sharp dark style with emerald accents
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  Bell, 
-  Globe, 
-  Save, 
-  ShieldAlert,
-  Smartphone,
-  ScanFace
-} from "lucide-react";
+import { PixelIcon } from "../../../components/PixelIcon";
 import { createClient } from "../../../utils/supabase/client";
 import { studentService } from "../../../lib/services/student";
 
@@ -18,8 +11,6 @@ export default function StudentSettingsPage() {
   const [studentId, setStudentId] = useState("");
   const [language, setLanguage] = useState("en");
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  
-  // Security stats retrieved from profiles
   const [faceRegistered, setFaceRegistered] = useState(false);
   const [deviceRegistered, setDeviceRegistered] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -71,143 +62,158 @@ export default function StudentSettingsPage() {
 
   if (isLoading) {
     return (
-      <main className="flex-1 p-8 overflow-y-auto bg-[#FAF9F6]">
-        <header className="mb-8">
-          <div className="w-48 h-8 bg-slate-200 rounded animate-pulse mb-2"></div>
-          <div className="w-64 h-4 bg-slate-200 rounded animate-pulse"></div>
-        </header>
-        <div className="w-full space-y-6 max-w-4xl">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="bg-slate-200 h-32 rounded-2xl animate-pulse"></div>
-          ))}
-        </div>
-      </main>
+      <div className="flex-1 flex items-center justify-center bg-transparent min-h-screen text-xs text-slate-400">
+        Loading student settings...
+      </div>
     );
   }
 
   return (
-    <main className="flex-1 p-8 overflow-y-auto bg-[#FAF9F6]">
+    <main className="flex-1 p-6 lg:p-8 overflow-y-auto bg-transparent text-white">
       {/* Header */}
-      <header className="mb-8">
-        <h2 className="text-3xl font-semibold text-slate-900">Account Settings</h2>
-        <p className="text-slate-500 mt-1">Configure language, notification routing, and view security profiles</p>
+      <header className="mb-8 pb-4 border-b border-white/10">
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className="w-1.5 h-1.5 bg-emerald-400 rounded-none" />
+          <span className="text-xs text-emerald-400 uppercase tracking-wider font-semibold">
+            PASUM // STUDENT SETTINGS
+          </span>
+        </div>
+        <h2 className="text-3xl font-bold tracking-tight uppercase text-white">
+          Account Settings
+        </h2>
+        <p className="text-xs text-slate-400 mt-1">
+          Configure language, notification routing, and view registered verification profiles
+        </p>
       </header>
 
       {saveSuccess && (
-        <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-sm font-semibold flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-          Settings saved successfully!
+        <div className="mb-6 p-3.5 bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 rounded-none text-xs font-bold flex items-center gap-2">
+          <span className="w-2 h-2 rounded-none bg-emerald-400" />
+          SETTINGS SAVED SUCCESSFULLY
         </div>
       )}
 
-      <div className="w-full space-y-6 max-w-4xl">
+      <div className="w-full space-y-6 text-xs max-w-4xl">
         {/* SECTION 1: SYSTEM NOTIFICATIONS */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="bg-blue-50 p-2 rounded-lg text-blue-600">
-              <Bell size={20} />
+        <div className="bg-[#08090c]/80 p-6 rounded-none border border-white/15 shadow-xl backdrop-blur-md">
+          <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-500/10 border border-emerald-400/30 text-emerald-400 rounded-none">
+                <PixelIcon name="alerts" size={18} />
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-sm uppercase">System Notifications</h3>
+                <p className="text-[11px] text-slate-400">Manage real-time push updates and attendance warning alerts</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-bold text-slate-900 text-lg">System Notifications</h3>
-              <p className="text-xs text-slate-500">Manage real-time updates and push warning notifications</p>
-            </div>
+            <span className="text-[10px] text-emerald-400 font-bold">01 // ALERTS</span>
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between p-3.5 border border-white/10 bg-black/20">
             <div>
-              <label className="text-sm font-semibold text-slate-700 block">Enable Early-Alert Push Notifications</label>
-              <p className="text-xs text-slate-400 mt-0.5">Receive warnings when attendance drops or merit reviews complete.</p>
+              <label className="text-xs font-bold text-white block">Early-Alert Push Notifications</label>
+              <p className="text-[10px] text-slate-400 mt-0.5">Receive warnings when attendance dips or merit reviews complete.</p>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input 
-                type="checkbox" 
-                checked={notificationsEnabled} 
-                onChange={(e) => setNotificationsEnabled(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
+            <button
+              type="button"
+              onClick={() => setNotificationsEnabled(!notificationsEnabled)}
+              className={`px-3 py-1 text-[10px] font-bold rounded-none border transition-colors cursor-pointer ${
+                notificationsEnabled
+                  ? "bg-emerald-600/30 border-emerald-400 text-emerald-300"
+                  : "bg-white/5 border-white/15 text-slate-500"
+              }`}
+            >
+              {notificationsEnabled ? "ENABLED" : "DISABLED"}
+            </button>
           </div>
         </div>
 
         {/* SECTION 2: LOCALIZATION */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="bg-indigo-50 p-2 rounded-lg text-indigo-600">
-              <Globe size={20} />
+        <div className="bg-[#08090c]/80 p-6 rounded-none border border-white/15 shadow-xl backdrop-blur-md">
+          <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-500/10 border border-emerald-400/30 text-emerald-400 rounded-none">
+                <PixelIcon name="globe" size={18} />
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-sm uppercase">Localization & Language</h3>
+                <p className="text-[11px] text-slate-400">Configure language mappings for interfaces and logs</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-bold text-slate-900 text-lg">Localization & Language</h3>
-              <p className="text-xs text-slate-500">Configure language mappings for interfaces and logs</p>
-            </div>
+            <span className="text-[10px] text-emerald-400 font-bold">02 // LOCALE</span>
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Preferred Portal Language</label>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
+              Preferred Portal Language
+            </label>
             <select 
               value={language} 
               onChange={(e) => setLanguage(e.target.value)}
-              className="w-full md:w-64 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+              className="w-full md:w-64 px-3 py-2 bg-black/40 border border-white/20 rounded-none text-xs text-white focus:outline-none focus:border-emerald-400 cursor-pointer"
             >
-              <option value="en">English (UK)</option>
-              <option value="bm">Bahasa Melayu</option>
+              <option value="en" className="bg-[#08090c]">English (UK)</option>
+              <option value="bm" className="bg-[#08090c]">Bahasa Melayu</option>
             </select>
           </div>
         </div>
 
-        {/* SECTION 3: SECURITY & GEOGRAPHIC DEVICE PROFILE */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="bg-emerald-50 p-2 rounded-lg text-emerald-600">
-              <ShieldAlert size={20} />
+        {/* SECTION 3: SECURITY & DEVICE REGISTRY */}
+        <div className="bg-[#08090c]/80 p-6 rounded-none border border-white/15 shadow-xl backdrop-blur-md">
+          <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-500/10 border border-emerald-400/30 text-emerald-400 rounded-none">
+                <PixelIcon name="shield" size={18} />
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-sm uppercase">Security & Device Registry</h3>
+                <p className="text-[11px] text-slate-400">Biometrics and hardware tokens used during active lectures</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-bold text-slate-900 text-lg">Security & Device Registry</h3>
-              <p className="text-xs text-slate-500">Verify biometrics and hardware tokens used during active lectures</p>
-            </div>
+            <span className="text-[10px] text-emerald-400 font-bold">03 // HARDWARE</span>
           </div>
 
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/30">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3.5 border border-white/10 bg-black/20">
               <div className="flex items-center gap-3">
-                <ScanFace className={faceRegistered ? "text-emerald-500" : "text-slate-450"} size={20} />
+                <PixelIcon name="scan" size={18} className={faceRegistered ? "text-emerald-400" : "text-slate-500"} />
                 <div>
-                  <h4 className="text-sm font-bold text-slate-800">Face ID Profile Registration</h4>
-                  <p className="text-xs text-slate-450 mt-0.5">Biometric hash for identity matching during check-in</p>
+                  <h4 className="text-xs font-bold text-white uppercase">Face ID Profile Registration</h4>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Biometric vector embedding for lecture hall check-ins</p>
                 </div>
               </div>
-              <span className={`text-xs font-bold px-2.5 py-1 rounded-md border ${
-                faceRegistered ? "bg-emerald-50 border-emerald-200 text-emerald-800" : "bg-red-50 border-red-200 text-red-800"
+              <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-none border ${
+                faceRegistered ? "bg-emerald-500/15 border-emerald-400/40 text-emerald-300" : "bg-rose-500/15 border-rose-400/40 text-rose-300"
               }`}>
-                {faceRegistered ? "Face Profile Registered" : "Not Set"}
+                {faceRegistered ? "REGISTERED" : "NOT SET"}
               </span>
             </div>
 
-            <div className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/30">
+            <div className="flex items-center justify-between p-3.5 border border-white/10 bg-black/20">
               <div className="flex items-center gap-3">
-                <Smartphone className={deviceRegistered ? "text-emerald-500" : "text-slate-450"} size={20} />
+                <PixelIcon name="phone" size={18} className={deviceRegistered ? "text-emerald-400" : "text-slate-500"} />
                 <div>
-                  <h4 className="text-sm font-bold text-slate-800">Registered Hardware Token (Device ID)</h4>
-                  <p className="text-xs text-slate-450 mt-0.5">Ensures checks are done on student's registered mobile device</p>
+                  <h4 className="text-xs font-bold text-white uppercase">Registered Device Token (Hardware ID)</h4>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Binds attendance check-ins to your primary mobile hardware</p>
                 </div>
               </div>
-              <span className={`text-xs font-bold px-2.5 py-1 rounded-md border ${
-                deviceRegistered ? "bg-emerald-50 border-emerald-200 text-emerald-800" : "bg-red-50 border-red-200 text-red-800"
+              <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-none border ${
+                deviceRegistered ? "bg-emerald-500/15 border-emerald-400/40 text-emerald-300" : "bg-rose-500/15 border-rose-400/40 text-rose-300"
               }`}>
-                {deviceRegistered ? "Primary Device Bound" : "No Associated Device"}
+                {deviceRegistered ? "BOUND" : "UNBOUND"}
               </span>
             </div>
           </div>
         </div>
 
         {/* SAVE TRIGGER BUTTON */}
-        <div className="flex justify-end pt-4">
+        <div className="flex justify-end pt-2">
           <button 
             onClick={handleSave}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold shadow-md shadow-blue-100 transition-all active:scale-95 border-none cursor-pointer"
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400 px-6 py-3 rounded-none font-bold uppercase shadow-lg shadow-emerald-900/30 transition-all cursor-pointer"
           >
-            <Save size={18} />
-            Save Preferences
+            <PixelIcon name="check" size={16} />
+            <span>SAVE PREFERENCES</span>
           </button>
         </div>
       </div>

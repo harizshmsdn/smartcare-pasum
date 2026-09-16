@@ -143,8 +143,9 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-transparent text-white/70 font-mono text-sm">
-        <span className="animate-pulse">Loading analytics dashboard...</span>
+      <div className="flex-1 flex items-center justify-center bg-transparent text-white/70 text-sm">
+        <div className="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-none animate-spin mr-3" />
+        Loading dashboard telemetry...
       </div>
     );
   }
@@ -154,13 +155,10 @@ export default function DashboardPage() {
       {/* Header */}
       <header className="shrink-0 mb-6 flex justify-between items-end">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="font-mono text-xs uppercase tracking-widest text-blue-400">PASUM // FACULTY</span>
-          </div>
-          <h2 className="text-2xl lg:text-3xl font-bold tracking-tight text-white font-mono">Academic Overview</h2>
-          <p className="text-xs lg:text-sm text-white/60 font-mono mt-0.5">Subject analytics, merit distributions, and exam trajectories</p>
+          <h2 className="text-2xl lg:text-3xl font-bold tracking-tight text-white">Academic Overview</h2>
+          <p className="text-xs lg:text-sm text-white/60 mt-0.5">Subject analytics, merit distributions, and exam trajectories</p>
         </div>
-        <div className="flex items-center gap-2 border border-white/15 bg-white/5 text-blue-300 px-3.5 py-1.5 font-mono text-xs tracking-wider uppercase rounded-none">
+        <div className="flex items-center gap-2 border border-white/15 bg-white/5 text-emerald-300 px-3.5 py-1.5 text-xs tracking-wider uppercase rounded-none">
           <PixelIcon name="graduation" size={16} />
           Semester 1 • 2025/2026
         </div>
@@ -170,18 +168,17 @@ export default function DashboardPage() {
       <div className="flex-1 grid grid-cols-1 md:grid-cols-3 grid-rows-2 gap-4 lg:gap-5 min-h-0 pb-2">
 
         {/* ROW 1, COL 1 & 2: Trajectory */}
-        <div className="md:col-span-2 border border-white/15 bg-[#09111e]/80 backdrop-blur-md rounded-none shadow-xl flex flex-col min-h-0 relative">
+        <div className="md:col-span-2 border border-white/15 bg-[#08090c]/80 backdrop-blur-md rounded-none shadow-xl flex flex-col min-h-0 relative">
           <div className="shrink-0 border-b border-white/10 px-4 py-3 flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-bold text-blue-400">01.</span>
-              <span className="font-mono text-xs uppercase tracking-wider text-white/90">ATTENDANCE VS. ASSESSMENT TRAJECTORY</span>
+              <span className="text-xs uppercase tracking-wider text-white/90">ATTENDANCE VS. ASSESSMENT TRAJECTORY</span>
             </div>
 
             {/* Dynamic Class Selection Custom Dropdown */}
             <div className="relative z-20">
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/15 text-white text-xs font-mono px-3 py-1.5 transition-colors cursor-pointer rounded-none"
+                className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/15 text-white text-xs px-3 py-1.5 transition-colors cursor-pointer rounded-none"
               >
                 <span className="truncate max-w-[200px] sm:max-w-[280px]">
                   {assignedClasses.find(c => c.id === selectedClassId)?.label || "Select Class"}
@@ -190,7 +187,7 @@ export default function DashboardPage() {
               </button>
 
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-1 min-w-[220px] max-w-[340px] bg-[#09111e] border border-white/20 shadow-2xl z-50 overflow-hidden py-1 rounded-none">
+                <div className="absolute right-0 mt-1 min-w-[220px] max-w-[340px] bg-[#08090c] border border-white/20 shadow-2xl z-50 overflow-hidden py-1 rounded-none">
                   {assignedClasses.map((cls) => (
                     <button
                       key={cls.id}
@@ -198,11 +195,10 @@ export default function DashboardPage() {
                         setSelectedClassId(cls.id);
                         setIsDropdownOpen(false);
                       }}
-                      className={`w-full text-left px-4 py-2 font-mono text-xs transition-colors rounded-none ${
-                        selectedClassId === cls.id
-                          ? "bg-white/15 text-blue-300 font-bold"
-                          : "text-white/70 hover:bg-white/5 hover:text-white"
-                      }`}
+                      className={`w-full text-left px-4 py-2 text-xs transition-colors rounded-none ${selectedClassId === cls.id
+                        ? "bg-white/15 text-emerald-300 font-bold"
+                        : "text-white/70 hover:bg-white/5 hover:text-white"
+                        }`}
                     >
                       {cls.label}
                     </button>
@@ -221,15 +217,14 @@ export default function DashboardPage() {
                   <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={{ stroke: 'rgba(255,255,255,0.1)' }} domain={[0, 100]} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#09111e',
+                      backgroundColor: '#08090c',
                       borderColor: 'rgba(255, 255, 255, 0.2)',
                       borderRadius: 0,
                       color: '#fff',
-                      fontFamily: 'monospace',
                       fontSize: '11px'
                     }}
                   />
-                  <Legend verticalAlign="top" height={32} iconType="rect" wrapperStyle={{ fontSize: '11px', fontFamily: 'monospace' }} />
+                  <Legend verticalAlign="top" height={32} iconType="rect" wrapperStyle={{ fontSize: '11px' }} />
                   <Line connectNulls type="monotone" dataKey="attendance" name="Avg Attendance %" stroke="#60a5fa" strokeWidth={2} dot={{ r: 3, fill: '#60a5fa' }} activeDot={{ r: 5 }} />
                   <Line connectNulls type="monotone" dataKey="assessment" name="Avg Assessment %" stroke="#f87171" strokeWidth={2} dot={{ r: 3, fill: '#f87171' }} activeDot={{ r: 5 }} />
                 </LineChart>
@@ -237,19 +232,18 @@ export default function DashboardPage() {
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-white/40">
                 <PixelIcon name="trendingUp" size={36} className="text-white/20 mb-2" />
-                <p className="font-mono text-xs uppercase tracking-wider text-white/70">No Trajectory Data Available</p>
-                <p className="font-mono text-[11px] text-white/40 mt-1">Trends will populate once attendance sessions and assessments are recorded.</p>
+                <p className="text-xs uppercase tracking-wider text-white/70">No Trajectory Data Available</p>
+                <p className="text-[11px] text-white/40 mt-1">Trends will populate once attendance sessions and assessments are recorded.</p>
               </div>
             )}
           </div>
         </div>
 
         {/* ROW 1, COL 3: Condensed Risk Clusters */}
-        <div className="border border-white/15 bg-[#09111e]/80 backdrop-blur-md rounded-none shadow-xl p-5 flex flex-col justify-between relative overflow-hidden">
+        <div className="border border-white/15 bg-[#08090c]/80 backdrop-blur-md rounded-none shadow-xl p-5 flex flex-col justify-between relative overflow-hidden">
           <div className="shrink-0 border-b border-white/10 pb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-bold text-red-400">02.</span>
-              <span className="font-mono text-xs uppercase tracking-wider text-white/90">ACTIVE RISK CLUSTERS</span>
+              <span className="text-xs uppercase tracking-wider text-white/90">ACTIVE RISK CLUSTERS</span>
             </div>
             <PixelIcon name="warning" size={18} className="text-red-400" />
           </div>
@@ -257,37 +251,36 @@ export default function DashboardPage() {
           <div className="flex-1 flex flex-col justify-center gap-3 py-4">
             <div className="border border-white/10 bg-white/5 p-3.5 flex justify-between items-center">
               <div>
-                <p className="font-mono text-[10px] text-white/60 font-bold uppercase tracking-wider">Absenteeism</p>
-                <p className="font-mono text-[11px] text-white/40 mt-0.5">Students &lt; 80%</p>
+                <p className="text-[10px] text-white/60 font-bold uppercase tracking-wider">Absenteeism</p>
+                <p className="text-[11px] text-white/40 mt-0.5">Students &lt; 80%</p>
               </div>
-              <span className="font-mono text-3xl font-black text-white">{absenteeismCount}</span>
+              <span className="text-3xl font-black text-white">{absenteeismCount}</span>
             </div>
 
             <div className="border border-white/10 bg-white/5 p-3.5 flex justify-between items-center">
               <div>
-                <p className="font-mono text-[10px] text-red-300 font-bold uppercase tracking-wider">Assessment Drop</p>
-                <p className="font-mono text-[11px] text-white/40 mt-0.5">Sudden Decline</p>
+                <p className="text-[10px] text-red-300 font-bold uppercase tracking-wider">Assessment Drop</p>
+                <p className="text-[11px] text-white/40 mt-0.5">Sudden Decline</p>
               </div>
-              <span className="font-mono text-3xl font-black text-red-400">{assessmentDropCount}</span>
+              <span className="text-3xl font-black text-red-400">{assessmentDropCount}</span>
             </div>
           </div>
 
           <div className="relative group/disabled w-full cursor-not-allowed" title="Disabled Feature">
-            <div className="w-full border border-white/10 bg-white/5 text-white/40 py-2.5 font-mono text-xs uppercase tracking-wider flex items-center justify-center gap-2 pointer-events-none select-none rounded-none">
+            <div className="w-full border border-white/10 bg-white/5 text-white/40 py-2.5 text-xs uppercase tracking-wider flex items-center justify-center gap-2 pointer-events-none select-none rounded-none">
               Review Cases [ DISABLED ]
             </div>
-            <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover/disabled:flex items-center px-2.5 py-1 font-mono text-[11px] text-white bg-black border border-white/20 whitespace-nowrap z-50">
+            <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover/disabled:flex items-center px-2.5 py-1 text-[11px] text-white bg-black border border-white/20 whitespace-nowrap z-50">
               Disabled Feature
             </div>
           </div>
         </div>
 
         {/* ROW 2, COL 1: Raw Merit Scores */}
-        <div className="border border-white/15 bg-[#09111e]/80 backdrop-blur-md rounded-none shadow-xl flex flex-col min-h-0">
+        <div className="border border-white/15 bg-[#08090c]/80 backdrop-blur-md rounded-none shadow-xl flex flex-col min-h-0">
           <div className="shrink-0 border-b border-white/10 px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-bold text-amber-400">03.</span>
-              <span className="font-mono text-xs uppercase tracking-wider text-white/90">MERIT SCORES (RAW)</span>
+              <span className="text-xs uppercase tracking-wider text-white/90">MERIT SCORES (RAW)</span>
             </div>
             <PixelIcon name="award" size={16} className="text-amber-400" />
           </div>
@@ -301,11 +294,10 @@ export default function DashboardPage() {
                   <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={{ stroke: 'rgba(255,255,255,0.1)' }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#09111e',
+                      backgroundColor: '#08090c',
                       borderColor: 'rgba(255, 255, 255, 0.2)',
                       borderRadius: 0,
                       color: '#fff',
-                      fontFamily: 'monospace',
                       fontSize: '11px'
                     }}
                   />
@@ -314,19 +306,18 @@ export default function DashboardPage() {
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-white/40">
-                <p className="font-mono text-xs uppercase tracking-wider text-white/70">No Data Available</p>
-                <p className="font-mono text-[10px] mt-1 text-white/40">Waiting for initial scores to be recorded.</p>
+                <p className="text-xs uppercase tracking-wider text-white/70">No Data Available</p>
+                <p className="text-[10px] mt-1 text-white/40">Waiting for initial scores to be recorded.</p>
               </div>
             )}
           </div>
         </div>
 
         {/* ROW 2, COL 2: Merit CGPA Estimates */}
-        <div className="border border-white/15 bg-[#09111e]/80 backdrop-blur-md rounded-none shadow-xl flex flex-col min-h-0">
+        <div className="border border-white/15 bg-[#08090c]/80 backdrop-blur-md rounded-none shadow-xl flex flex-col min-h-0">
           <div className="shrink-0 border-b border-white/10 px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-bold text-emerald-400">04.</span>
-              <span className="font-mono text-xs uppercase tracking-wider text-white/90">MERIT SCORES (CGPA)</span>
+              <span className="text-xs uppercase tracking-wider text-white/90">MERIT SCORES (CGPA)</span>
             </div>
             <PixelIcon name="graduation" size={16} className="text-emerald-400" />
           </div>
@@ -346,11 +337,10 @@ export default function DashboardPage() {
                   <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={{ stroke: 'rgba(255,255,255,0.1)' }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#09111e',
+                      backgroundColor: '#08090c',
                       borderColor: 'rgba(255, 255, 255, 0.2)',
                       borderRadius: 0,
                       color: '#fff',
-                      fontFamily: 'monospace',
                       fontSize: '11px'
                     }}
                   />
@@ -359,19 +349,18 @@ export default function DashboardPage() {
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-white/40">
-                <p className="font-mono text-xs uppercase tracking-wider text-white/70">No Data Available</p>
-                <p className="font-mono text-[10px] mt-1 text-white/40">Waiting for initial CGPA calculations.</p>
+                <p className="text-xs uppercase tracking-wider text-white/70">No Data Available</p>
+                <p className="text-[10px] mt-1 text-white/40">Waiting for initial CGPA calculations.</p>
               </div>
             )}
           </div>
         </div>
 
         {/* ROW 2, COL 3: Mid-Terms vs Finals Matrix */}
-        <div className="border border-white/15 bg-[#09111e]/80 backdrop-blur-md rounded-none shadow-xl flex flex-col min-h-0">
+        <div className="border border-white/15 bg-[#08090c]/80 backdrop-blur-md rounded-none shadow-xl flex flex-col min-h-0">
           <div className="shrink-0 border-b border-white/10 px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-bold text-sky-400">05.</span>
-              <span className="font-mono text-xs uppercase tracking-wider text-white/90">MAJOR EXAMS MATRIX</span>
+              <span className="text-xs uppercase tracking-wider text-white/90">MAJOR EXAMS MATRIX</span>
             </div>
             <PixelIcon name="book" size={16} className="text-sky-400" />
           </div>
@@ -385,11 +374,10 @@ export default function DashboardPage() {
                   <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={{ stroke: 'rgba(255,255,255,0.1)' }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#09111e',
+                      backgroundColor: '#08090c',
                       borderColor: 'rgba(255, 255, 255, 0.2)',
                       borderRadius: 0,
                       color: '#fff',
-                      fontFamily: 'monospace',
                       fontSize: '11px'
                     }}
                   />
@@ -400,8 +388,8 @@ export default function DashboardPage() {
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-white/40">
                 <PixelIcon name="book" size={32} className="text-white/20 mb-2" />
-                <p className="font-mono text-xs uppercase tracking-wider text-white/70">No Exams Recorded</p>
-                <p className="font-mono text-[10px] mt-1 text-white/40">Matrix will populate after mid-term or final exams are recorded.</p>
+                <p className="text-xs uppercase tracking-wider text-white/70">No Exams Recorded</p>
+                <p className="text-[10px] mt-1 text-white/40">Matrix will populate after mid-term or final exams are recorded.</p>
               </div>
             )}
           </div>

@@ -5,12 +5,17 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import "./globals.css";
 import { Sidebar } from "../components/sidebar";
-import { Geist } from "next/font/google";
+import { Space_Grotesk } from "next/font/google";
 import { cn } from "@/lib/utils";
 import Grainient from "@/components/Grainient";
 import { AuthProvider } from "@/components/AuthProvider";
 
-const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
+// Space Grotesk primary typography
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-space-grotesk',
+  display: 'swap',
+});
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -53,9 +58,9 @@ export default async function RootLayout({
   } = await supabase.auth.getUser();
 
   return (
-    <html lang="en" className={cn("dark font-sans", geist.variable)}>
+    <html lang="en" className={cn("dark font-sans", spaceGrotesk.variable)}>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} flex h-screen bg-[#101a2c] text-slate-100 font-sans overflow-hidden relative`}
+        className={`${spaceGrotesk.className} ${geistMono.variable} flex h-screen bg-[#101a2c] text-slate-100 font-sans overflow-hidden relative`}
       >
         <AuthProvider>
           {/* Animated Background */}

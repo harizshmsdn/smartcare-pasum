@@ -1,4 +1,4 @@
-// apps/web/components/PixelIcon.tsx
+// PixelIcon component rendering official Streamline Pixel icons
 "use client";
 
 import React from "react";
@@ -11,7 +11,7 @@ export interface PixelIconProps extends Omit<IconProps, "icon"> {
   color?: string;
 }
 
-// Streamline Pixel icon name mapping for convenience
+// Verified Streamline Pixel icon name mapping from @iconify-json/streamline-pixel
 export const STREAMLINE_PIXEL_MAP = {
   home: "streamline-pixel:interface-essential-home-1",
   dashboard: "streamline-pixel:business-product-report-present-grahp",
@@ -24,8 +24,8 @@ export const STREAMLINE_PIXEL_MAP = {
   logout: "streamline-pixel:interface-essential-signout-logout",
   graduation: "streamline-pixel:school-science-graduation-cap",
   award: "streamline-pixel:interface-essential-trophy",
-  calendar: "streamline-pixel:time-clock-calendar-schedule",
-  clock: "streamline-pixel:time-clock-alarm-1",
+  calendar: "streamline-pixel:interface-essential-calendar-date",
+  clock: "streamline-pixel:interface-essential-clock",
   check: "streamline-pixel:business-product-check",
   close: "streamline-pixel:interface-essential-alert-circle-1",
   search: "streamline-pixel:interface-essential-search-1",
@@ -33,26 +33,30 @@ export const STREAMLINE_PIXEL_MAP = {
   warning: "streamline-pixel:interface-essential-alert-triangle-1",
   arrowRight: "streamline-pixel:interface-essential-synchronize-arrows-square-1",
   cases: "streamline-pixel:building-real-eastate-project-blueprint",
-  schedules: "streamline-pixel:time-clock-calendar-schedule",
-  phone: "streamline-pixel:communication-call-phone",
-  mail: "streamline-pixel:email-envelope-message",
+  schedules: "streamline-pixel:interface-essential-calendar-appointment",
+  phone: "streamline-pixel:mobile-phone",
+  mail: "streamline-pixel:email-envelope",
   pin: "streamline-pixel:building-real-eastate-location",
   building: "streamline-pixel:building-real-eastate-house-1",
-  key: "streamline-pixel:security-protection-key",
-  eye: "streamline-pixel:interface-essential-eye",
-  eyeOff: "streamline-pixel:interface-essential-eye-blind",
+  key: "streamline-pixel:interface-essential-key",
+  eye: "streamline-pixel:interface-essential-view-eye",
+  eyeOff: "streamline-pixel:interface-essential-view-eye",
   book: "streamline-pixel:content-files-open-book",
   trendingUp: "streamline-pixel:business-product-report-present-grahp",
   chart: "streamline-pixel:interface-essential-pie-chart-poll-report-1",
   edit: "streamline-pixel:interface-essential-pencil-edit-1",
   qrCode: "streamline-pixel:computers-devices-electronics-mobile-qr-scan",
   scan: "streamline-pixel:phone-scan-qr-code-1",
-  checkCircle: "streamline-pixel:business-product-check"
+  checkCircle: "streamline-pixel:business-product-check",
+  globe: "streamline-pixel:interface-essential-share-link",
+  bell: "streamline-pixel:interface-essential-notification-alert",
+  save: "streamline-pixel:business-product-check",
+  server: "streamline-pixel:building-real-eastate-project-blueprint"
 };
 
 export type StreamlinePixelKey = keyof typeof STREAMLINE_PIXEL_MAP;
 
-// Component rendering official Streamline Pixel icons
+// Component rendering official Streamline Pixel icons with crisp edges
 export function PixelIcon({
   name = "home",
   className = "",
@@ -98,11 +102,4 @@ export const PixelSearch = (props: PixelIconProps) => <PixelIcon name="search" {
 export const PixelShield = (props: PixelIconProps) => <PixelIcon name="shield" {...props} />;
 export const PixelWarning = (props: PixelIconProps) => <PixelIcon name="warning" {...props} />;
 export const PixelCases = (props: PixelIconProps) => <PixelIcon name="cases" {...props} />;
-export const PixelSchedules = (props: PixelIconProps) => <PixelIcon name="schedules" {...props} />;
-export const PixelPhone = (props: PixelIconProps) => <PixelIcon name="phone" {...props} />;
-export const PixelMail = (props: PixelIconProps) => <PixelIcon name="mail" {...props} />;
-export const PixelPin = (props: PixelIconProps) => <PixelIcon name="pin" {...props} />;
-export const PixelBuilding = (props: PixelIconProps) => <PixelIcon name="building" {...props} />;
-export const PixelKey = (props: PixelIconProps) => <PixelIcon name="key" {...props} />;
-
 export default PixelIcon;

@@ -97,24 +97,24 @@ export default function AdminDashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-transparent text-white/70 font-mono text-sm">
-        <span className="animate-pulse">Loading Admin Bento Console...</span>
+      <div className="flex-1 flex items-center justify-center bg-transparent text-white/70 text-sm">
+        <span className="animate-pulse">Loading system telemetry...</span>
       </div>
     );
   }
 
   return (
-    <main className="flex-1 flex flex-col p-6 lg:p-8 bg-transparent h-screen overflow-hidden min-h-0 text-white">
-      {/* Page Header */}
-      <div className="shrink-0 mb-4 flex justify-between items-end">
+    <main className="flex-1 flex flex-col p-4 lg:p-6 bg-transparent text-white overflow-hidden h-screen">
+      {/* Header */}
+      <div className="shrink-0 mb-4 flex justify-between items-end border-b border-white/10 pb-3">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-mono text-xs uppercase tracking-widest text-blue-400">PASUM // ADMIN CONSOLE</span>
+            <span className="text-xs uppercase tracking-widest text-emerald-400 font-bold">PASUM // ADMIN CONSOLE</span>
           </div>
-          <h2 className="text-2xl lg:text-3xl font-bold tracking-tight text-white font-mono">System Performance & Insights</h2>
-          <p className="text-xs lg:text-sm text-white/60 font-mono mt-0.5">Live platform telemetry powered by Supabase database metrics.</p>
+          <h2 className="text-2xl lg:text-3xl font-bold tracking-tight text-white">System Performance & Insights</h2>
+          <p className="text-xs lg:text-sm text-white/60 mt-0.5">Live platform telemetry powered by Supabase database metrics.</p>
         </div>
-        <div className="flex items-center gap-2 border border-white/15 bg-white/5 text-blue-300 px-3.5 py-1.5 font-mono text-xs tracking-wider uppercase rounded-none">
+        <div className="flex items-center gap-2 border border-white/15 bg-white/5 text-emerald-300 px-3.5 py-1.5 text-xs tracking-wider uppercase rounded-none font-medium">
           <PixelIcon name="shield" size={16} />
           PASUM ROOT
         </div>
@@ -124,91 +124,91 @@ export default function AdminDashboardPage() {
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 lg:grid-rows-[auto_1fr_1fr] gap-4 lg:gap-5 min-h-0 h-full overflow-hidden pb-1 pr-1">
 
         {/* Bento Cell 1: Platform Overview (Col span 2) */}
-        <div className="lg:col-span-2 border border-white/15 bg-[#09111e]/80 backdrop-blur-md rounded-none shadow-xl p-5 flex flex-col justify-between">
+        <div className="lg:col-span-2 border border-white/15 bg-[#08090c]/80 backdrop-blur-md rounded-none shadow-xl p-5 flex flex-col justify-between">
           <div className="shrink-0 border-b border-white/10 pb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-bold text-blue-400">01.</span>
-              <span className="font-mono text-xs uppercase tracking-wider text-white/90">LIVE SYSTEM DIRECTORY STATUS</span>
+              <span className="text-xs font-bold text-emerald-400">01.</span>
+              <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">LIVE SYSTEM DIRECTORY STATUS</span>
             </div>
-            <span className="font-mono text-[10px] text-emerald-400 border border-emerald-500/30 px-2 py-0.5 uppercase tracking-wider bg-emerald-500/10">
+            <span className="text-[10px] text-emerald-400 border border-emerald-500/30 px-2 py-0.5 uppercase tracking-wider bg-emerald-500/10 font-bold">
               OPERATIONAL
             </span>
           </div>
 
           <div className="flex flex-col md:flex-row justify-between items-stretch gap-6 py-4">
             <div className="flex-1 flex flex-col justify-center">
-              <span className="font-mono text-xs text-white/50 uppercase tracking-widest">Institution Root</span>
-              <h3 className="font-mono text-2xl font-bold text-white mt-1">Pusat Asasi Sains (PASUM)</h3>
-              <p className="font-mono text-xs text-white/40 mt-1">University of Malaya Academic Data Hub</p>
+              <span className="text-xs text-white/50 uppercase tracking-widest font-medium">Institution Root</span>
+              <h3 className="text-2xl font-bold text-white mt-1">Pusat Asasi Sains (PASUM)</h3>
+              <p className="text-xs text-white/40 mt-1">University of Malaya Academic Data Hub</p>
             </div>
 
             <div className="grid grid-cols-2 gap-3 shrink-0">
               <div className="border border-white/10 bg-white/5 p-3 text-right">
-                <span className="font-mono text-[10px] text-white/50 uppercase tracking-wider block">Total Students</span>
-                <span className="font-mono text-2xl font-black text-white">{stats.total_students}</span>
+                <span className="text-[10px] text-white/50 uppercase tracking-wider block font-medium">Total Students</span>
+                <span className="text-2xl font-black text-white">{stats.total_students}</span>
               </div>
               <div className="border border-white/10 bg-white/5 p-3 text-right">
-                <span className="font-mono text-[10px] text-white/50 uppercase tracking-wider block">Total Faculty</span>
-                <span className="font-mono text-2xl font-black text-white">{stats.total_lecturers}</span>
+                <span className="text-[10px] text-white/50 uppercase tracking-wider block font-medium">Total Faculty</span>
+                <span className="text-2xl font-black text-white">{stats.total_lecturers}</span>
               </div>
               <div className="border border-white/10 bg-white/5 p-3 text-right">
-                <span className="font-mono text-[10px] text-white/50 uppercase tracking-wider block">Active Classes</span>
-                <span className="font-mono text-2xl font-black text-white">{stats.total_classes}</span>
+                <span className="text-[10px] text-white/50 uppercase tracking-wider block font-medium">Active Classes</span>
+                <span className="text-2xl font-black text-white">{stats.total_classes}</span>
               </div>
               <div className="border border-white/10 bg-white/5 p-3 text-right">
-                <span className="font-mono text-[10px] text-white/50 uppercase tracking-wider block">Avg Attendance</span>
-                <span className="font-mono text-2xl font-black text-emerald-400">{stats.avg_attendance}%</span>
+                <span className="text-[10px] text-white/50 uppercase tracking-wider block font-medium">Avg Attendance</span>
+                <span className="text-2xl font-black text-emerald-400">{stats.avg_attendance}%</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Bento Cell 2: Site Analytics (Col span 1) */}
-        <div className="lg:col-span-1 border border-white/15 bg-[#09111e]/80 backdrop-blur-md rounded-none shadow-xl p-5 flex flex-col justify-between">
+        <div className="lg:col-span-1 border border-white/15 bg-[#08090c]/80 backdrop-blur-md rounded-none shadow-xl p-5 flex flex-col justify-between">
           <div className="shrink-0 border-b border-white/10 pb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-bold text-indigo-400">02.</span>
-              <span className="font-mono text-xs uppercase tracking-wider text-white/90">SITE ANALYTICS</span>
+              <span className="text-xs font-bold text-indigo-400">02.</span>
+              <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">SITE ANALYTICS</span>
             </div>
             <PixelIcon name="users" size={16} className="text-indigo-400" />
           </div>
 
           <div className="grid grid-cols-2 gap-3 py-3">
             <div className="border border-white/10 bg-white/5 p-4">
-              <span className="font-mono text-[10px] text-white/50 uppercase tracking-wider block">Daily Active</span>
-              <span className="font-mono text-4xl font-black text-white mt-1 block">{metrics.active_today}</span>
+              <span className="text-[10px] text-white/50 uppercase tracking-wider block font-medium">Daily Active</span>
+              <span className="text-4xl font-black text-white mt-1 block">{metrics.active_today}</span>
             </div>
             <div className="border border-white/10 bg-white/5 p-4">
-              <span className="font-mono text-[10px] text-white/50 uppercase tracking-wider block">Weekly Active</span>
-              <span className="font-mono text-4xl font-black text-white mt-1 block">{metrics.active_weekly}</span>
+              <span className="text-[10px] text-white/50 uppercase tracking-wider block font-medium">Weekly Active</span>
+              <span className="text-4xl font-black text-white mt-1 block">{metrics.active_weekly}</span>
             </div>
           </div>
         </div>
 
         {/* Bento Cell 3: Check-In Accuracy (Col span 1) */}
-        <div className="lg:col-span-1 border border-white/15 bg-[#09111e]/80 backdrop-blur-md rounded-none shadow-xl p-5 flex flex-col justify-between">
+        <div className="lg:col-span-1 border border-white/15 bg-[#08090c]/80 backdrop-blur-md rounded-none shadow-xl p-5 flex flex-col justify-between">
           <div className="shrink-0 border-b border-white/10 pb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-bold text-emerald-400">03.</span>
-              <span className="font-mono text-xs uppercase tracking-wider text-white/90">CHECK-IN ACCURACY</span>
+              <span className="text-xs font-bold text-emerald-400">03.</span>
+              <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">CHECK-IN ACCURACY</span>
             </div>
             <PixelIcon name="check" size={16} className="text-emerald-400" />
           </div>
 
           <div className="py-2">
-            <span className="font-mono text-5xl font-black text-white tracking-tight">{metrics.checkin_success_rate}%</span>
-            <p className="font-mono text-xs text-white/60 mt-2">Verified successfully by Face ID, GPS radius limit, or override.</p>
+            <span className="text-5xl font-black text-white tracking-tight">{metrics.checkin_success_rate}%</span>
+            <p className="text-xs text-white/60 mt-2">Verified successfully by Face ID, GPS radius limit, or override.</p>
           </div>
         </div>
 
         {/* Bento Cell 4: Real Database Check-ins Trajectory Chart (Col span 2) */}
-        <div className="lg:col-span-2 border border-white/15 bg-[#09111e]/80 backdrop-blur-md rounded-none shadow-xl p-5 flex flex-col min-h-0">
+        <div className="lg:col-span-2 border border-white/15 bg-[#08090c]/80 backdrop-blur-md rounded-none shadow-xl p-5 flex flex-col min-h-0">
           <div className="shrink-0 border-b border-white/10 pb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-bold text-blue-400">04.</span>
-              <span className="font-mono text-xs uppercase tracking-wider text-white/90">PLATFORM CHECK-IN ACTIVITY</span>
+              <span className="text-xs font-bold text-emerald-400">04.</span>
+              <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">PLATFORM CHECK-IN ACTIVITY</span>
             </div>
-            <PixelIcon name="chart" size={16} className="text-blue-400" />
+            <PixelIcon name="chart" size={16} className="text-emerald-400" />
           </div>
 
           <div className="flex-1 w-full min-h-0 pt-4">
@@ -217,8 +217,8 @@ export default function AdminDashboardPage() {
                 <AreaChart data={metrics.daily_checkins} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorAdminCheckins" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.08)" vertical={false} />
@@ -226,19 +226,18 @@ export default function AdminDashboardPage() {
                   <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={{ stroke: 'rgba(255,255,255,0.1)' }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#09111e',
+                      backgroundColor: '#08090c',
                       borderColor: 'rgba(255, 255, 255, 0.2)',
                       borderRadius: 0,
                       color: '#fff',
-                      fontFamily: 'monospace',
                       fontSize: '11px'
                     }}
                   />
-                  <Area type="monotone" dataKey="count" name="Attendance Logs" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorAdminCheckins)" />
+                  <Area type="monotone" dataKey="count" name="Attendance Logs" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorAdminCheckins)" />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex items-center justify-center h-full text-white/40 font-mono text-xs uppercase">
+              <div className="flex items-center justify-center h-full text-white/40 text-xs uppercase">
                 No check-in logs recorded.
               </div>
             )}
@@ -246,45 +245,45 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Bento Cell 5: Database Schema Metrics (Col span 1) */}
-        <div className="lg:col-span-1 border border-white/15 bg-[#09111e]/80 backdrop-blur-md rounded-none shadow-xl p-5 flex flex-col justify-between">
+        <div className="lg:col-span-1 border border-white/15 bg-[#08090c]/80 backdrop-blur-md rounded-none shadow-xl p-5 flex flex-col justify-between">
           <div className="shrink-0 border-b border-white/10 pb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-bold text-slate-400">05.</span>
-              <span className="font-mono text-xs uppercase tracking-wider text-white/90">SCHEMA METRICS</span>
+              <span className="text-xs font-bold text-slate-400">05.</span>
+              <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">SCHEMA METRICS</span>
             </div>
             <PixelIcon name="dashboard" size={16} className="text-slate-400" />
           </div>
 
           <div className="space-y-2 py-2">
-            <div className="flex justify-between items-center pb-1 border-b border-white/10 font-mono text-xs">
+            <div className="flex justify-between items-center pb-1 border-b border-white/10 text-xs">
               <span className="text-white/60">User Profiles</span>
               <span className="font-bold text-white">{metrics.total_profiles}</span>
             </div>
-            <div className="flex justify-between items-center pb-1 border-b border-white/10 font-mono text-xs">
+            <div className="flex justify-between items-center pb-1 border-b border-white/10 text-xs">
               <span className="text-white/60">Active Support Cases</span>
               <span className="font-bold text-white">{metrics.active_interventions_count}</span>
             </div>
-            <div className="flex justify-between items-center pb-1 border-b border-white/10 font-mono text-xs">
+            <div className="flex justify-between items-center pb-1 border-b border-white/10 text-xs">
               <span className="text-white/60">Pending Merit Claims</span>
               <span className="font-bold text-white">{metrics.pending_claims_count}</span>
             </div>
-            <div className="flex justify-between items-center font-mono text-xs">
+            <div className="flex justify-between items-center text-xs">
               <span className="text-white/60">Unread System Alerts</span>
               <span className="font-bold text-white">{metrics.unread_alerts_count}</span>
             </div>
           </div>
 
-          <div className="border border-emerald-500/30 bg-emerald-500/10 p-2 flex items-center gap-2 font-mono text-[11px] text-emerald-400 uppercase">
+          <div className="border border-emerald-500/30 bg-emerald-500/10 p-2 flex items-center gap-2 text-[11px] text-emerald-400 uppercase font-bold">
             <PixelIcon name="check" size={14} className="text-emerald-400" /> Database Healthy
           </div>
         </div>
 
         {/* Bento Cell 6: Pending Merit Claims (Col span 1) */}
-        <div className="lg:col-span-1 border border-white/15 bg-[#09111e]/80 backdrop-blur-md rounded-none shadow-xl p-5 flex flex-col">
+        <div className="lg:col-span-1 border border-white/15 bg-[#08090c]/80 backdrop-blur-md rounded-none shadow-xl p-5 flex flex-col">
           <div className="shrink-0 border-b border-white/10 pb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-bold text-amber-400">06.</span>
-              <span className="font-mono text-xs uppercase tracking-wider text-white/90">PENDING MERIT CLAIMS</span>
+              <span className="text-xs font-bold text-amber-400">06.</span>
+              <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">PENDING MERIT CLAIMS</span>
             </div>
             <PixelIcon name="award" size={16} className="text-amber-400" />
           </div>
@@ -293,11 +292,11 @@ export default function AdminDashboardPage() {
             {recentClaims.length > 0 ? (
               recentClaims.map((claim) => (
                 <div key={claim.id} className="p-3 border border-white/10 bg-white/5 flex items-center justify-between gap-2">
-                  <div className="truncate pr-2 font-mono">
+                  <div className="truncate pr-2">
                     <p className="text-xs font-bold text-white truncate">{claim.title}</p>
                     <p className="text-[10px] text-white/50 mt-0.5">{claim.student_name}</p>
                   </div>
-                  <span className={`text-[10px] font-mono uppercase px-2 py-0.5 border ${
+                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 border ${
                     claim.status === 'pending'
                       ? 'border-amber-400/30 bg-amber-400/10 text-amber-300'
                       : 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300'
@@ -307,24 +306,24 @@ export default function AdminDashboardPage() {
                 </div>
               ))
             ) : (
-              <div className="text-center py-10 font-mono text-white/40 text-xs uppercase">All claims evaluated.</div>
+              <div className="text-center py-10 text-white/40 text-xs uppercase">All claims evaluated.</div>
             )}
           </div>
         </div>
 
         {/* Bento Cell 7: Active Interventions Cases (Col span 1) (Disabled) */}
         <div className="relative group/disabled lg:col-span-1 h-full cursor-not-allowed" title="Disabled Feature">
-          <div className="pointer-events-none absolute top-3 right-3 hidden group-hover/disabled:flex items-center px-2 py-1 font-mono text-[11px] text-white bg-black border border-white/20 whitespace-nowrap z-50">
+          <div className="pointer-events-none absolute top-3 right-3 hidden group-hover/disabled:flex items-center px-2 py-1 text-[11px] text-white bg-black border border-white/20 whitespace-nowrap z-50 font-bold">
             Disabled Feature
           </div>
           <div className="h-full opacity-40 grayscale pointer-events-none select-none">
-            <div className="border border-white/15 bg-[#09111e]/80 backdrop-blur-md rounded-none shadow-xl p-5 flex flex-col h-full">
+            <div className="border border-white/15 bg-[#08090c]/80 backdrop-blur-md rounded-none shadow-xl p-5 flex flex-col h-full">
               <div className="shrink-0 border-b border-white/10 pb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-bold text-rose-400">07.</span>
-                  <span className="font-mono text-xs uppercase tracking-wider text-white/90">SUPPORT & INTERVENTIONS</span>
+                  <span className="text-xs font-bold text-rose-400">07.</span>
+                  <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">SUPPORT & INTERVENTIONS</span>
                 </div>
-                <span className="font-mono text-[10px] border border-white/20 px-2 py-0.5 text-white/60">
+                <span className="text-[10px] border border-white/20 px-2 py-0.5 text-white/60 font-semibold">
                   DISABLED
                 </span>
               </div>
@@ -333,17 +332,17 @@ export default function AdminDashboardPage() {
                 {recentInterventions.length > 0 ? (
                   recentInterventions.map((item) => (
                     <div key={item.id} className="p-3 border border-white/10 bg-white/5 flex items-center justify-between gap-2">
-                      <div className="truncate pr-2 font-mono">
+                      <div className="truncate pr-2">
                         <p className="text-xs font-bold text-white truncate">{item.issue_description}</p>
                         <p className="text-[10px] text-white/50 mt-0.5">{item.student_name}</p>
                       </div>
-                      <span className="text-[10px] font-mono uppercase px-2 py-0.5 border border-white/20 text-white/70">
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 border border-white/20 text-white/70">
                         {item.status.replace('_', ' ')}
                       </span>
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-10 font-mono text-white/40 text-xs uppercase">No student cases flagged.</div>
+                  <div className="text-center py-10 text-white/40 text-xs uppercase">No student cases flagged.</div>
                 )}
               </div>
             </div>

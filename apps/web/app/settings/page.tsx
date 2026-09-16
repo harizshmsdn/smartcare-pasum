@@ -1,16 +1,9 @@
-// apps/web/app/settings/page.tsx
+// Lecturer Settings page in dottxt.ai sharp dark style with emerald accents
 "use client";
 
 import { useState, useEffect } from "react";
 import ExportReportModal from "../../components/ExportReportModal";
-import { 
-  Bell, 
-  Sliders, 
-  Globe, 
-  Save, 
-  HelpCircle,
-  Clock
-} from "lucide-react";
+import { PixelIcon } from "../../components/PixelIcon";
 import { createClient } from "../../utils/supabase/client";
 
 export default function SettingsPage() {
@@ -53,7 +46,6 @@ export default function SettingsPage() {
       }
     };
     fetchSettings();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSave = async () => {
@@ -91,36 +83,44 @@ export default function SettingsPage() {
   };
 
   if (isLoading) {
-    return <div className="flex-1 flex items-center justify-center bg-slate-50 min-h-screen">Loading settings...</div>;
+    return (
+      <div className="flex-1 flex items-center justify-center bg-transparent min-h-screen text-xs text-slate-400">
+        Loading settings...
+      </div>
+    );
   }
 
   return (
-    <main className="flex-1 p-8 overflow-y-auto bg-[#FAF9F6]">
-      
+    <main className="flex-1 p-6 lg:p-8 overflow-y-auto bg-transparent text-white">
       {/* Header */}
-      <header className="mb-8">
-        <h2 className="text-3xl font-semibold text-slate-900">System Settings</h2>
-        <p className="text-slate-500 mt-1">Configure your workspace thresholds, class policies, notifications, and localization preferences</p>
+      <header className="mb-8 pb-4 border-b border-white/10">
+        <h2 className="text-3xl font-bold tracking-tight uppercase text-white">
+          System Settings
+        </h2>
+        <p className="text-xs text-slate-400 mt-1">
+          Configure workspace thresholds, class policies, notifications, and localization
+        </p>
       </header>
 
       {saveSuccess && (
-        <div className="mb-6 p-4 bg-emerald-50 border border-emerald-250 text-emerald-800 rounded-xl text-sm font-semibold flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-          Settings saved successfully!
+        <div className="mb-6 p-3.5 bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 rounded-none text-xs font-bold flex items-center gap-2">
+          <span className="w-2 h-2 rounded-none bg-emerald-400" />
+          SETTINGS SAVED SUCCESSFULLY
         </div>
       )}
 
-      <div className="w-full space-y-6">
-        
+      <div className="w-full space-y-6 text-xs max-w-4xl">
         {/* SECTION 1: EARLY-ALERT THRESHOLDS */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="bg-blue-50 p-2 rounded-lg text-blue-600">
-              <Sliders size={20} />
-            </div>
-            <div>
-              <h3 className="font-bold text-slate-900 text-lg">Early-Alert Thresholds</h3>
-              <p className="text-xs text-slate-500">Define the exact baseline parameters that trigger student support warning flags</p>
+        <div className="bg-[#08090c]/80 p-6 rounded-none border border-white/15 shadow-xl backdrop-blur-md">
+          <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-500/10 border border-emerald-400/30 text-emerald-400 rounded-none">
+                <PixelIcon name="sliders" size={18} />
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-sm uppercase">Early-Alert Thresholds</h3>
+                <p className="text-[11px] text-slate-400">Parameters triggering student support warning flags</p>
+              </div>
             </div>
           </div>
 
@@ -128,182 +128,187 @@ export default function SettingsPage() {
             {/* Attendance Drift Slider */}
             <div>
               <div className="flex justify-between items-center mb-2">
-                <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                <label className="text-xs font-bold text-slate-300 uppercase">
                   Critical Attendance Breach Limit
-                  <span className="text-slate-400 cursor-help" title="Triggers a warning flag if student attendance dips below this mark."><HelpCircle size={14} /></span>
                 </label>
-                <span className="text-sm bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded-md">
+                <span className="text-xs bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 font-bold px-2 py-0.5 rounded-none">
                   &lt; {attendanceThreshold}%
                 </span>
               </div>
-              <input 
-                type="range" 
-                min="60" 
-                max="90" 
+              <input
+                type="range"
+                min="60"
+                max="90"
                 value={attendanceThreshold}
                 onChange={(e) => setAttendanceThreshold(Number(e.target.value))}
-                className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer transition-colors duration-200 hover:bg-slate-200 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:duration-200 [&::-webkit-slider-thumb]:ease-in-out hover:[&::-webkit-slider-thumb]:scale-125 active:[&::-webkit-slider-thumb]:scale-110 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-blue-600 [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:transition-transform [&::-moz-range-thumb]:duration-200 [&::-moz-range-thumb]:ease-in-out hover:[&::-moz-range-thumb]:scale-125 active:[&::-moz-range-thumb]:scale-110"
+                className="w-full h-1.5 bg-black/40 rounded-none appearance-none cursor-pointer accent-[#34d399] border border-white/15"
               />
-              <p className="text-xs text-slate-400 mt-1.5">Standard PASUM compliance mandates a default evaluation setting of 80%.</p>
+              <p className="text-[10px] text-slate-500 mt-1">Standard PASUM compliance mandates a default evaluation setting of 80%.</p>
             </div>
 
             {/* Assessment Drop Slider */}
-            <div className="border-t border-slate-100 pt-6">
+            <div className="border-t border-white/10 pt-5">
               <div className="flex justify-between items-center mb-2">
-                <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-                  Sudden Continuous Assessment Drop
-                  <span className="text-slate-400 cursor-help" title="Flags a warning if a student's performance drops by this percentage between assessments."><HelpCircle size={14} /></span>
+                <label className="text-xs font-bold text-slate-300 uppercase">
+                  Continuous Assessment Drop Threshold
                 </label>
-                <span className="text-sm bg-orange-50 text-orange-700 font-bold px-2 py-0.5 rounded-md">
+                <span className="text-xs bg-amber-500/15 text-amber-300 border border-amber-400/30 font-bold px-2 py-0.5 rounded-none">
                   {gradeDropThreshold}% Drop
                 </span>
               </div>
-              <input 
-                type="range" 
-                min="10" 
-                max="40" 
+              <input
+                type="range"
+                min="10"
+                max="40"
                 value={gradeDropThreshold}
                 onChange={(e) => setGradeDropThreshold(Number(e.target.value))}
-                className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer transition-colors duration-200 hover:bg-slate-200 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:duration-200 [&::-webkit-slider-thumb]:ease-in-out hover:[&::-webkit-slider-thumb]:scale-125 active:[&::-webkit-slider-thumb]:scale-110 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-blue-600 [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:transition-transform [&::-moz-range-thumb]:duration-200 [&::-moz-range-thumb]:ease-in-out hover:[&::-moz-range-thumb]:scale-125 active:[&::-moz-range-thumb]:scale-110"
+                className="w-full h-1.5 bg-black/40 rounded-none appearance-none cursor-pointer accent-[#fbbf24] border border-white/15"
               />
-              <p className="text-xs text-slate-400 mt-1.5">Flags sudden performance drops between consecutive continuous tests or lab scores.</p>
+              <p className="text-[10px] text-slate-500 mt-1">Flags sudden performance drops between consecutive tests or lab reports.</p>
             </div>
           </div>
         </div>
 
         {/* SECTION 2: CLASSROOM CHECK-IN POLICIES */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="bg-amber-50 p-2 rounded-lg text-amber-600">
-              <Clock size={20} />
-            </div>
-            <div>
-              <h3 className="font-bold text-slate-900 text-lg">Classroom Check-In Policies</h3>
-              <p className="text-xs text-slate-500">Configure grace periods and default verification methods for course attendance</p>
+        <div className="bg-[#08090c]/80 p-6 rounded-none border border-white/15 shadow-xl backdrop-blur-md">
+          <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-500/10 border border-emerald-400/30 text-emerald-400 rounded-none">
+                <PixelIcon name="clock" size={18} />
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-sm uppercase">Classroom Check-In Policies</h3>
+                <p className="text-[11px] text-slate-400">Configure grace periods and default verification methods</p>
+              </div>
             </div>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-5">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">Student Check-In Grace Period</label>
-              <select 
-                value={checkinGracePeriod} 
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
+                Student Check-In Grace Period
+              </label>
+              <select
+                value={checkinGracePeriod}
                 onChange={(e) => setCheckinGracePeriod(Number(e.target.value))}
-                className="w-full md:w-64 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                className="w-full md:w-64 px-3 py-2 bg-black/40 border border-white/20 rounded-none text-xs text-white focus:outline-none focus:border-emerald-400 cursor-pointer"
               >
-                <option value={5}>5 minutes</option>
-                <option value={10}>10 minutes</option>
-                <option value={15}>15 minutes</option>
-                <option value={30}>30 minutes</option>
+                <option value={5} className="bg-[#08090c]">5 minutes</option>
+                <option value={10} className="bg-[#08090c]">10 minutes</option>
+                <option value={15} className="bg-[#08090c]">15 minutes</option>
+                <option value={30} className="bg-[#08090c]">30 minutes</option>
               </select>
-              <p className="text-xs text-slate-400 mt-1.5">Students must submit their check-in within this timeframe after session launch.</p>
+              <p className="text-[10px] text-slate-500 mt-1">Students must submit check-in within this timeframe after session launch.</p>
             </div>
 
-            <div className="border-t border-slate-100 pt-6">
-              <label className="block text-sm font-semibold text-slate-700 mb-2">Default Attendance Mode</label>
-              <select 
-                value={defaultAttendanceMode} 
+            <div className="border-t border-white/10 pt-5">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
+                Default Attendance Mode
+              </label>
+              <select
+                value={defaultAttendanceMode}
                 onChange={(e) => setDefaultAttendanceMode(e.target.value)}
-                className="w-full md:w-64 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                className="w-full md:w-64 px-3 py-2 bg-black/40 border border-white/20 rounded-none text-xs text-white focus:outline-none focus:border-emerald-400 cursor-pointer"
               >
-                <option value="qr">QR Code Check-in</option>
-                <option value="manual">Manual Roll Call</option>
-                <option value="biometric">Face/Biometric Verification</option>
+                <option value="qr" className="bg-[#08090c]">QR Code Check-in</option>
+                <option value="manual" className="bg-[#08090c]">Manual Roll Call</option>
+                <option value="biometric" className="bg-[#08090c]">Face ID / Biometric Verification</option>
               </select>
-              <p className="text-xs text-slate-400 mt-1.5">Pre-selects the primary verification method when starting a new class session.</p>
+              <p className="text-[10px] text-slate-500 mt-1">Default verification method when launching a new class session.</p>
             </div>
           </div>
         </div>
 
         {/* SECTION 3: SYSTEM NOTIFICATIONS */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="bg-blue-50 p-2 rounded-lg text-blue-600">
-              <Bell size={20} />
-            </div>
-            <div>
-              <h3 className="font-bold text-slate-900 text-lg">System Alerts & Notifications</h3>
-              <p className="text-xs text-slate-500">Control in-app notifications for course tracking</p>
+        <div className="bg-[#08090c]/80 p-6 rounded-none border border-white/15 shadow-xl backdrop-blur-md">
+          <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-500/10 border border-emerald-400/30 text-emerald-400 rounded-none">
+                <PixelIcon name="alerts" size={18} />
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-sm uppercase">Alerts & Notifications</h3>
+                <p className="text-[11px] text-slate-400">Control in-app notifications for course tracking</p>
+              </div>
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <label className="text-sm font-semibold text-slate-700 block">In-App Critical Alerts</label>
-                <p className="text-xs text-slate-400 mt-0.5">Receive warning notifications when student thresholds are breached.</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={notificationsEnabled} 
-                  onChange={(e) => setNotificationsEnabled(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-              </label>
+          <div className="flex items-center justify-between p-3.5 border border-white/10 bg-black/20">
+            <div>
+              <label className="text-xs font-bold text-white block">In-App Critical Alerts</label>
+              <p className="text-[10px] text-slate-400 mt-0.5">Receive warning notifications when student thresholds are breached.</p>
             </div>
+            <button
+              type="button"
+              onClick={() => setNotificationsEnabled(!notificationsEnabled)}
+              className={`px-3 py-1 text-[10px] font-bold rounded-none border transition-colors cursor-pointer ${notificationsEnabled
+                ? "bg-emerald-600/30 border-emerald-400 text-emerald-300"
+                : "bg-white/5 border-white/15 text-slate-500"
+                }`}
+            >
+              {notificationsEnabled ? "ENABLED" : "DISABLED"}
+            </button>
           </div>
         </div>
 
         {/* SECTION 4: LOCALIZATION */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="bg-indigo-50 p-2 rounded-lg text-indigo-600">
-              <Globe size={20} />
-            </div>
-            <div>
-              <h3 className="font-bold text-slate-900 text-lg">Localization & Language</h3>
-              <p className="text-xs text-slate-500">Configure language mappings for interfaces and logs</p>
+        <div className="bg-[#08090c]/80 p-6 rounded-none border border-white/15 shadow-xl backdrop-blur-md">
+          <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-500/10 border border-emerald-400/30 text-emerald-400 rounded-none">
+                <PixelIcon name="globe" size={18} />
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-sm uppercase">Localization & Language</h3>
+                <p className="text-[11px] text-slate-400">Configure language mappings for interfaces and logs</p>
+              </div>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Primary Preferred Language</label>
-            <select 
-              value={language} 
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
+              Primary Preferred Language
+            </label>
+            <select
+              value={language}
               onChange={(e) => setLanguage(e.target.value)}
-              className="w-full md:w-64 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+              className="w-full md:w-64 px-3 py-2 bg-black/40 border border-white/20 rounded-none text-xs text-white focus:outline-none focus:border-emerald-400 cursor-pointer"
             >
-              <option value="en">English (UK)</option>
-              <option value="bm">Bahasa Melayu</option>
+              <option value="en" className="bg-[#08090c]">English (UK)</option>
+              <option value="bm" className="bg-[#08090c]">Bahasa Melayu</option>
             </select>
-            <p className="text-xs text-slate-400 mt-1.5">Automated messages routed to advisors support both English and Bahasa Melayu options.</p>
           </div>
         </div>
 
-        {/* SAVE TRIGGER BUTTON CONTAINER */}
-        <div className="flex justify-end pt-4">
-          <button 
+        {/* SAVE TRIGGER BUTTON */}
+        <div className="flex justify-end pt-2">
+          <button
             onClick={handleSave}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold shadow-md shadow-blue-100 transition-all active:scale-95 border-none cursor-pointer"
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400 px-6 py-3 rounded-none font-bold uppercase shadow-lg shadow-emerald-900/30 transition-all cursor-pointer"
           >
-            <Save size={18} />
-            Save Configuration Changes
+            <PixelIcon name="check" size={16} />
+            <span>SAVE CONFIGURATION</span>
           </button>
         </div>
 
-        {/* Compliance & Data Section */}
-        <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
-          <h2 className="text-lg font-bold mb-2">Compliance & Data</h2>
-          <p className="text-slate-500 text-sm mb-4">
-            Export course data, attendance records, and assessment correlations for university auditing purposes.
+        {/* Compliance & Data Export Section */}
+        <div className="border border-white/15 bg-[#08090c]/60 p-6 rounded-none shadow-xl">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-white mb-1">Compliance & Audit Export</h4>
+          <p className="text-slate-400 text-[11px] mb-4">
+            Export official course data, attendance archives, and assessment records for university auditing.
           </p>
-          
-          <button 
+          <button
             onClick={() => setIsExportModalOpen(true)}
-            className="bg-slate-900 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-800 transition-colors border-none cursor-pointer"
+            className="bg-transparent hover:bg-white/10 text-slate-200 border border-white/20 px-4 py-2.5 rounded-none font-bold uppercase text-xs transition-colors cursor-pointer"
           >
-            Export Official Report
+            EXPORT OFFICIAL REPORT →
           </button>
-        </section>
+        </div>
 
-        {/* Render the Export Report Modal */}
-        <ExportReportModal 
-          isOpen={isExportModalOpen} 
-          onClose={() => setIsExportModalOpen(false)} 
+        <ExportReportModal
+          isOpen={isExportModalOpen}
+          onClose={() => setIsExportModalOpen(false)}
         />
-
       </div>
     </main>
   );

@@ -122,101 +122,101 @@ export default function HomePage() {
 
     const classesData = dashboardData.classes;
 
-        const processedClasses = classesData.map((cls: any) => {
-          const subjectName = cls.subjects?.name || "Unknown Class";
-          const subjectCode = cls.subjects?.code || "UNK101";
+    const processedClasses = classesData.map((cls: any) => {
+      const subjectName = cls.subjects?.name || "Unknown Class";
+      const subjectCode = cls.subjects?.code || "UNK101";
 
-          // Format start_time and end_time
-          const formatTimeStr = (timeStr: string | null) => {
-            if (!timeStr) return "";
-            const parts = timeStr.split(':');
-            if (!parts[0] || !parts[1]) return timeStr;
-            const hr = parseInt(parts[0], 10);
-            const ampm = hr >= 12 ? 'PM' : 'AM';
-            const displayHr = hr % 12 === 0 ? 12 : hr % 12;
-            return `${displayHr}:${parts[1]} ${ampm}`;
-          };
+      // Format start_time and end_time
+      const formatTimeStr = (timeStr: string | null) => {
+        if (!timeStr) return "";
+        const parts = timeStr.split(':');
+        if (!parts[0] || !parts[1]) return timeStr;
+        const hr = parseInt(parts[0], 10);
+        const ampm = hr >= 12 ? 'PM' : 'AM';
+        const displayHr = hr % 12 === 0 ? 12 : hr % 12;
+        return `${displayHr}:${parts[1]} ${ampm}`;
+      };
 
-          const formattedTimeRange = cls.start_time && cls.end_time
-            ? `${formatTimeStr(cls.start_time)} - ${formatTimeStr(cls.end_time)}`
-            : (cls.type === 'Lecture' ? '10:00 AM - 12:00 PM' : '2:00 PM - 3:00 PM');
+      const formattedTimeRange = cls.start_time && cls.end_time
+        ? `${formatTimeStr(cls.start_time)} - ${formatTimeStr(cls.end_time)}`
+        : (cls.type === 'Lecture' ? '10:00 AM - 12:00 PM' : '2:00 PM - 3:00 PM');
 
-          const formattedDayTime = cls.day_of_week
-            ? `${cls.day_of_week} • ${formattedTimeRange}`
-            : formattedTimeRange;
+      const formattedDayTime = cls.day_of_week
+        ? `${cls.day_of_week} • ${formattedTimeRange}`
+        : formattedTimeRange;
 
-          return {
-            id: cls.id,
-            title: `${subjectCode} - ${subjectName}`,
-            group: cls.group_code,
-            time: formattedDayTime,
-            location: cls.location || (cls.type === 'Lecture' ? 'Lecture Hall 3' : 'Computer Lab 2'),
-            status: cls.active_session ? 'Ongoing' : 'Scheduled',
-            critical: cls.stats?.critical_count !== undefined ? cls.stats.critical_count : "-",
-            atRisk: cls.stats?.at_risk_count !== undefined ? cls.stats.at_risk_count : "-",
-            attendance: cls.stats?.average_attendance !== undefined ? cls.stats.average_attendance : "-",
-            type: cls.type,
-            dayOfWeek: cls.day_of_week,
-            startTime: cls.start_time,
-            endTime: cls.end_time,
-            activeSessionId: cls.active_session?.id || null,
-            activeSessionPin: cls.active_session?.session_pin || null,
-            activeOnlineMode: cls.active_session?.online_mode || false,
-            activeFaceIdRequired: cls.active_session?.face_id_required || false,
-            activeLocationRequired: cls.active_session?.location_required || false
-          };
-        });
+      return {
+        id: cls.id,
+        title: `${subjectCode} - ${subjectName}`,
+        group: cls.group_code,
+        time: formattedDayTime,
+        location: cls.location || (cls.type === 'Lecture' ? 'Lecture Hall 3' : 'Computer Lab 2'),
+        status: cls.active_session ? 'Ongoing' : 'Scheduled',
+        critical: cls.stats?.critical_count !== undefined ? cls.stats.critical_count : "-",
+        atRisk: cls.stats?.at_risk_count !== undefined ? cls.stats.at_risk_count : "-",
+        attendance: cls.stats?.average_attendance !== undefined ? cls.stats.average_attendance : "-",
+        type: cls.type,
+        dayOfWeek: cls.day_of_week,
+        startTime: cls.start_time,
+        endTime: cls.end_time,
+        activeSessionId: cls.active_session?.id || null,
+        activeSessionPin: cls.active_session?.session_pin || null,
+        activeOnlineMode: cls.active_session?.online_mode || false,
+        activeFaceIdRequired: cls.active_session?.face_id_required || false,
+        activeLocationRequired: cls.active_session?.location_required || false
+      };
+    });
 
-        // Dynamic schedule filtering by current day
-        const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-        const todayDayOfWeek = days[new Date().getDay()];
+    // Dynamic schedule filtering by current day
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const todayDayOfWeek = days[new Date().getDay()];
 
-        const todayClasses = processedClasses.filter((cls: any) => cls.dayOfWeek === todayDayOfWeek);
-        todayClasses.sort((a: any, b: any) => (a.startTime || "").localeCompare(b.startTime || ""));
+    const todayClasses = processedClasses.filter((cls: any) => cls.dayOfWeek === todayDayOfWeek);
+    todayClasses.sort((a: any, b: any) => (a.startTime || "").localeCompare(b.startTime || ""));
 
-        // Fallback: sort all classes by day-of-week index & starting time
-        const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-        const fallbackClasses = [...processedClasses].sort((a: any, b: any) => {
-          const dayA = dayOrder.indexOf(a.dayOfWeek || "");
-          const dayB = dayOrder.indexOf(b.dayOfWeek || "");
-          if (dayA !== dayB) return dayA - dayB;
-          return (a.startTime || "").localeCompare(b.startTime || "");
-        });
+    // Fallback: sort all classes by day-of-week index & starting time
+    const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    const fallbackClasses = [...processedClasses].sort((a: any, b: any) => {
+      const dayA = dayOrder.indexOf(a.dayOfWeek || "");
+      const dayB = dayOrder.indexOf(b.dayOfWeek || "");
+      if (dayA !== dayB) return dayA - dayB;
+      return (a.startTime || "").localeCompare(b.startTime || "");
+    });
 
-        const displaySchedule = todayClasses.length > 0 ? todayClasses : fallbackClasses;
-        const slicedSchedule = displaySchedule.slice(0, 3);
+    const displaySchedule = todayClasses.length > 0 ? todayClasses : fallbackClasses;
+    const slicedSchedule = displaySchedule.slice(0, 3);
 
-        // Find index of ongoing or closest upcoming class in the today list
-        const currentTime = new Date().toLocaleTimeString('en-GB', { hour12: false });
-        let activeIdx = 0;
+    // Find index of ongoing or closest upcoming class in the today list
+    const currentTime = new Date().toLocaleTimeString('en-GB', { hour12: false });
+    let activeIdx = 0;
 
-        if (todayClasses.length > 0) {
-          const firstUpcomingOrOngoing = todayClasses.findIndex((cls: any) => {
-            const start = cls.startTime || "00:00:00";
-            let end = cls.endTime || "";
-            if (!end) {
-              const startHr = parseInt(start.split(':')[0] || "0", 10);
-              end = `${String((startHr + 2) % 24).padStart(2, '0')}:${start.split(':')[1] || "00"}:00`;
-            }
-            const isOngoing = currentTime >= start && currentTime <= end;
-            const isUpcoming = currentTime < start;
-            return isOngoing || isUpcoming;
-          });
-
-          if (firstUpcomingOrOngoing !== -1) {
-            activeIdx = firstUpcomingOrOngoing;
-          } else {
-            activeIdx = todayClasses.length - 1; 
-          }
+    if (todayClasses.length > 0) {
+      const firstUpcomingOrOngoing = todayClasses.findIndex((cls: any) => {
+        const start = cls.startTime || "00:00:00";
+        let end = cls.endTime || "";
+        if (!end) {
+          const startHr = parseInt(start.split(':')[0] || "0", 10);
+          end = `${String((startHr + 2) % 24).padStart(2, '0')}:${start.split(':')[1] || "00"}:00`;
         }
+        const isOngoing = currentTime >= start && currentTime <= end;
+        const isUpcoming = currentTime < start;
+        return isOngoing || isUpcoming;
+      });
 
-        const finalActiveIdx = Math.min(activeIdx, Math.max(0, slicedSchedule.length - 1));
+      if (firstUpcomingOrOngoing !== -1) {
+        activeIdx = firstUpcomingOrOngoing;
+      } else {
+        activeIdx = todayClasses.length - 1;
+      }
+    }
 
-        setScheduleToday(slicedSchedule);
-        setActiveIndex(finalActiveIdx);
-        setAssignedClasses(processedClasses);
-        setHasAnyActiveSession(processedClasses.some((c: any) => !!c.activeSessionId));
-        setIsLoading(false);
+    const finalActiveIdx = Math.min(activeIdx, Math.max(0, slicedSchedule.length - 1));
+
+    setScheduleToday(slicedSchedule);
+    setActiveIndex(finalActiveIdx);
+    setAssignedClasses(processedClasses);
+    setHasAnyActiveSession(processedClasses.some((c: any) => !!c.activeSessionId));
+    setIsLoading(false);
   }, [dashboardData]);
 
   // Realtime subscription to invalidate SWR cache instantly on DB changes
@@ -266,10 +266,10 @@ export default function HomePage() {
         {/* Header Overlay */}
         <div className="absolute top-6 left-8 lg:left-10 z-40">
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-mono text-xs uppercase tracking-widest text-blue-400">PASUM // FACULTY HOME</span>
+            <span className="text-xs uppercase tracking-widest text-emerald-400 font-bold">PASUM</span>
           </div>
-          <h2 className="text-2xl lg:text-3xl font-bold tracking-tight text-white font-mono">Welcome back, {lecturerName}</h2>
-          <p className="font-mono text-xs text-white/60 mt-0.5">{currentDateFormatted}</p>
+          <h2 className="text-2xl lg:text-3xl font-bold tracking-tight text-white">Welcome back, {lecturerName}</h2>
+          <p className="text-xs text-white/60 mt-0.5">{currentDateFormatted}</p>
         </div>
 
         {scheduleToday.length > 1 && (
@@ -278,14 +278,14 @@ export default function HomePage() {
               onClick={prevSlide}
               className="absolute left-6 lg:left-10 z-40 border border-white/20 bg-black/70 hover:bg-white/10 p-2.5 rounded-none shadow-xl text-white transition-colors cursor-pointer"
             >
-              <span className="font-mono text-sm">◀</span>
+              <span className="text-sm">◀</span>
             </button>
 
             <button
               onClick={nextSlide}
               className="absolute right-6 lg:right-10 z-40 border border-white/20 bg-black/70 hover:bg-white/10 p-2.5 rounded-none shadow-xl text-white transition-colors cursor-pointer"
             >
-              <span className="font-mono text-sm">▶</span>
+              <span className="text-sm">▶</span>
             </button>
           </>
         )}
@@ -309,7 +309,7 @@ export default function HomePage() {
 
               let transformClasses = "translate-x-full scale-50 opacity-0 z-0";
               if (isCenter) {
-                transformClasses = "translate-x-0 scale-100 opacity-100 z-30 blur-none shadow-2xl";
+                 transformClasses = "translate-x-0 scale-100 opacity-100 z-30 blur-none shadow-2xl";
               } else if ((isRight && Math.abs(offset) === 1) || (activeIndex === scheduleToday.length - 1 && index === 0)) {
                 transformClasses = "translate-x-[35%] scale-75 opacity-60 z-20 blur-[2px] shadow-lg cursor-pointer hover:opacity-90 hover:blur-none";
               } else if ((isLeft && Math.abs(offset) === 1) || (activeIndex === 0 && index === scheduleToday.length - 1)) {
@@ -320,27 +320,26 @@ export default function HomePage() {
                 <div
                   key={cls.id}
                   onClick={() => !isCenter && setActiveIndex(index)}
-                  className={`absolute w-full max-w-2xl p-6 lg:p-8 border border-white/20 bg-[#09111e]/90 backdrop-blur-md rounded-none transition-all duration-700 ease-[cubic-bezier(0.25,0.8,0.25,1)] ${transformClasses}`}
+                  className={`absolute w-full max-w-2xl p-6 lg:p-8 border border-white/20 bg-[#08090c]/90 backdrop-blur-md rounded-none transition-all duration-700 ease-[cubic-bezier(0.25,0.8,0.25,1)] ${transformClasses}`}
                 >
                   <div className="relative z-10 flex flex-col justify-between h-full gap-6">
                     <div className="flex justify-between items-start">
                       <div>
-                        <span className={`font-mono text-[11px] uppercase tracking-wider px-2.5 py-1 border rounded-none ${
-                          isCenter
-                            ? 'border-blue-400/40 bg-blue-500/15 text-blue-300 font-bold'
-                            : 'border-white/10 bg-white/5 text-white/50'
-                        }`}>
+                        <span className={`text-[11px] uppercase tracking-wider px-2.5 py-1 border rounded-none font-semibold ${isCenter
+                          ? 'border-emerald-400/40 bg-emerald-500/15 text-emerald-300 font-bold'
+                          : 'border-white/10 bg-white/5 text-white/50'
+                          }`}>
                           {cls.status} • {cls.time}
                         </span>
-                        <h3 className="text-2xl lg:text-3xl font-bold font-mono text-white mt-3">{cls.title}</h3>
-                        <p className="font-mono text-sm text-white/60 mt-1">{cls.group} • {cls.location}</p>
+                        <h3 className="text-2xl lg:text-3xl font-bold text-white mt-3">{cls.title}</h3>
+                        <p className="text-sm text-white/60 mt-1">{cls.group} • {cls.location}</p>
                       </div>
 
                       {isCenter && (
                         cls.activeSessionId ? (
                           <button
                             onClick={() => router.push(`/attendance/active?sessionId=${cls.activeSessionId}&classId=${cls.id}&onlineMode=${cls.activeOnlineMode}&faceIdRequired=${cls.activeFaceIdRequired}&locationRequired=${cls.activeLocationRequired}`)}
-                            className="flex flex-col items-center justify-center gap-1.5 border border-emerald-400 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 px-5 py-3 rounded-none font-mono text-xs uppercase tracking-wider transition-all cursor-pointer animate-pulse"
+                            className="flex flex-col items-center justify-center gap-1.5 border border-emerald-400 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 px-5 py-3 rounded-none text-xs uppercase tracking-wider transition-all cursor-pointer animate-pulse font-medium"
                           >
                             <PixelIcon name="qrCode" size={24} />
                             <span>Ongoing Session</span>
@@ -348,7 +347,7 @@ export default function HomePage() {
                         ) : hasAnyActiveSession ? (
                           <button
                             disabled
-                            className="flex flex-col items-center justify-center gap-1.5 border border-white/10 bg-white/5 text-white/30 px-5 py-3 rounded-none font-mono text-xs uppercase tracking-wider cursor-not-allowed text-center"
+                            className="flex flex-col items-center justify-center gap-1.5 border border-white/10 bg-white/5 text-white/30 px-5 py-3 rounded-none text-xs uppercase tracking-wider cursor-not-allowed text-center font-medium"
                           >
                             <PixelIcon name="qrCode" size={24} />
                             <span>Session In Progress</span>
@@ -356,7 +355,7 @@ export default function HomePage() {
                         ) : (
                           <button
                             onClick={() => handleStartSessionClick(cls)}
-                            className="flex flex-col items-center justify-center gap-1.5 border border-blue-400 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 px-5 py-3 rounded-none font-mono text-xs uppercase tracking-wider transition-all cursor-pointer"
+                            className="flex flex-col items-center justify-center gap-1.5 border border-emerald-400 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 px-5 py-3 rounded-none text-xs uppercase tracking-wider transition-all cursor-pointer font-medium"
                           >
                             <PixelIcon name="qrCode" size={24} />
                             <span>Start Session</span>
@@ -367,24 +366,24 @@ export default function HomePage() {
 
                     <div className={`grid grid-cols-3 gap-3 border-t border-white/10 pt-4 transition-opacity duration-500 ${isCenter ? 'opacity-100' : 'opacity-40'}`}>
                       <div className="border border-red-500/30 bg-red-500/10 p-3 rounded-none">
-                        <div className="flex items-center gap-1.5 text-red-300 font-mono text-[10px] font-bold uppercase mb-1">
+                        <div className="flex items-center gap-1.5 text-red-300 text-[10px] font-bold uppercase mb-1">
                           <PixelIcon name="warning" size={12} className="text-red-400" /> Critical
                         </div>
-                        <div className="font-mono text-2xl font-black text-red-400">{cls.critical}</div>
+                        <div className="text-2xl font-black text-red-400">{cls.critical}</div>
                       </div>
 
                       <div className="border border-amber-500/30 bg-amber-500/10 p-3 rounded-none">
-                        <div className="flex items-center gap-1.5 text-amber-300 font-mono text-[10px] font-bold uppercase mb-1">
+                        <div className="flex items-center gap-1.5 text-amber-300 text-[10px] font-bold uppercase mb-1">
                           <PixelIcon name="warning" size={12} className="text-amber-400" /> At-Risk
                         </div>
-                        <div className="font-mono text-2xl font-black text-amber-400">{cls.atRisk}</div>
+                        <div className="text-2xl font-black text-amber-400">{cls.atRisk}</div>
                       </div>
 
                       <div className="border border-emerald-500/30 bg-emerald-500/10 p-3 rounded-none">
-                        <div className="flex items-center gap-1.5 text-emerald-300 font-mono text-[10px] font-bold uppercase mb-1">
+                        <div className="flex items-center gap-1.5 text-emerald-300 text-[10px] font-bold uppercase mb-1">
                           <PixelIcon name="check" size={12} className="text-emerald-400" /> Attendance
                         </div>
-                        <div className="font-mono text-2xl font-black text-emerald-400">{cls.attendance}{cls.attendance !== "-" ? "%" : ""}</div>
+                        <div className="text-2xl font-black text-emerald-400">{cls.attendance}{cls.attendance !== "-" ? "%" : ""}</div>
                       </div>
                     </div>
                   </div>
@@ -400,10 +399,9 @@ export default function HomePage() {
         <div className="flex justify-between items-end mb-4 border-b border-white/10 pb-3">
           <div>
             <div className="flex items-center gap-2 mb-0.5">
-              <span className="font-mono text-xs font-bold text-blue-400">02.</span>
-              <span className="font-mono text-xs uppercase tracking-wider text-white/90">ALL ASSIGNED CLASSES</span>
+              <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">ALL ASSIGNED CLASSES</span>
             </div>
-            <p className="font-mono text-xs text-white/50">Semester 1 • Academic Year 2025/2026</p>
+            <p className="text-xs text-white/50">Semester 1 • Academic Year 2025/2026</p>
           </div>
         </div>
 
@@ -423,23 +421,23 @@ export default function HomePage() {
                   key={item.id}
                   className="block group rounded-none"
                 >
-                  <div className="border border-white/15 bg-[#09111e]/80 hover:border-blue-400/50 backdrop-blur-md p-5 rounded-none shadow-lg transition-colors flex flex-col justify-between h-full">
+                  <div className="border border-white/15 bg-[#08090c]/80 hover:border-emerald-400/50 backdrop-blur-md p-5 rounded-none shadow-lg transition-colors flex flex-col justify-between h-full">
                     <div>
                       <div className="flex justify-between items-start mb-3">
-                        <div className="border border-white/15 bg-white/5 p-2 rounded-none text-blue-400">
+                        <div className="border border-white/15 bg-white/5 p-2 rounded-none text-emerald-400">
                           <PixelIcon name={iconName} size={18} />
                         </div>
-                        <span className="border border-white/10 bg-white/5 font-mono text-[10px] text-white/60 font-bold uppercase tracking-wider px-2 py-0.5 rounded-none">
+                        <span className="border border-white/10 bg-white/5 text-[10px] text-white/60 font-bold uppercase tracking-wider px-2 py-0.5 rounded-none">
                           {item.type}
                         </span>
                       </div>
 
-                      <h4 className="font-mono font-bold text-white text-base leading-tight mb-2 group-hover:text-blue-300 transition-colors">
+                      <h4 className="font-bold text-white text-base leading-tight mb-2 group-hover:text-emerald-300 transition-colors">
                         {item.title}
                       </h4>
                     </div>
 
-                    <div className="space-y-1.5 mt-4 pt-3 border-t border-white/10 font-mono text-xs">
+                    <div className="space-y-1.5 mt-4 pt-3 border-t border-white/10 text-xs">
                       <div className="flex items-center gap-2 text-white/60">
                         <PixelIcon name="clock" size={13} className="text-white/40" />
                         <span>{item.time}</span>
@@ -462,7 +460,7 @@ export default function HomePage() {
       {/* Session Configuration Modal */}
       {showConfigModal && configuringClass && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-[#09111e] rounded-none shadow-2xl w-full max-w-xl overflow-hidden border border-white/20 text-white animate-in zoom-in-95 duration-200">
+          <div className="bg-[#08090c] rounded-none shadow-2xl w-full max-w-xl overflow-hidden border border-white/20 text-white animate-in zoom-in-95 duration-200">
             {/* Header */}
             <div className="border-b border-white/15 p-5 relative">
               <button
@@ -471,17 +469,17 @@ export default function HomePage() {
               >
                 ✕
               </button>
-              <span className="font-mono text-[10px] font-bold tracking-widest uppercase text-blue-400">
+              <span className="text-[10px] font-bold tracking-widest uppercase text-emerald-400">
                 01 // SESSION SETUP
               </span>
-              <h2 className="font-mono text-xl font-bold mt-1 text-white">{configuringClass.title}</h2>
-              <p className="font-mono text-xs text-white/60 mt-0.5">{configuringClass.group} • {configuringClass.location} • {configuringClass.time}</p>
+              <h2 className="text-xl font-bold mt-1 text-white">{configuringClass.title}</h2>
+              <p className="text-xs text-white/60 mt-0.5">{configuringClass.group} • {configuringClass.location} • {configuringClass.time}</p>
             </div>
 
             {/* Modal Body */}
             <div className="p-6 space-y-5">
               <div>
-                <h3 className="font-mono text-xs uppercase tracking-wider text-white/60 mb-2">Choose Attendance Format</h3>
+                <h3 className="text-xs uppercase tracking-wider text-white/60 mb-2 font-semibold">Choose Attendance Format</h3>
                 <div className="grid grid-cols-2 gap-3">
                   {/* Option 1: In-Person */}
                   <div
@@ -490,24 +488,23 @@ export default function HomePage() {
                       setFaceIdRequired(true);
                       setLocationRequired(true);
                     }}
-                    className={`flex flex-col p-4 border rounded-none cursor-pointer transition-all ${
-                      !onlineMode
-                        ? "border-blue-400 bg-blue-500/15"
-                        : "border-white/15 bg-white/5 hover:border-white/30"
-                    }`}
+                    className={`flex flex-col p-4 border rounded-none cursor-pointer transition-all ${!onlineMode
+                      ? "border-emerald-400 bg-emerald-500/15"
+                      : "border-white/15 bg-white/5 hover:border-white/30"
+                      }`}
                   >
                     <div className="flex justify-between items-start mb-2">
-                      <div className="border border-white/15 bg-white/5 p-2 rounded-none text-blue-400">
+                      <div className="border border-white/15 bg-white/5 p-2 rounded-none text-emerald-400">
                         <PixelIcon name="users" size={18} />
                       </div>
                       {!onlineMode && (
-                        <span className="font-mono text-[10px] text-blue-300 font-bold uppercase border border-blue-400/40 px-1.5 py-0.5">
+                        <span className="text-[10px] text-emerald-300 font-bold uppercase border border-emerald-400/40 px-1.5 py-0.5">
                           SELECTED
                         </span>
                       )}
                     </div>
-                    <span className="font-mono font-bold text-white text-sm">In-Person Class</span>
-                    <p className="font-mono text-[11px] text-white/50 mt-1 leading-relaxed">
+                    <span className="font-bold text-white text-sm">In-Person Class</span>
+                    <p className="text-[11px] text-white/50 mt-1 leading-relaxed">
                       Requires Face ID scanning and GPS location validation in class.
                     </p>
                   </div>
@@ -519,24 +516,23 @@ export default function HomePage() {
                       setFaceIdRequired(false);
                       setLocationRequired(false);
                     }}
-                    className={`flex flex-col p-4 border rounded-none cursor-pointer transition-all ${
-                      onlineMode
-                        ? "border-blue-400 bg-blue-500/15"
-                        : "border-white/15 bg-white/5 hover:border-white/30"
-                    }`}
+                    className={`flex flex-col p-4 border rounded-none cursor-pointer transition-all ${onlineMode
+                      ? "border-emerald-400 bg-emerald-500/15"
+                      : "border-white/15 bg-white/5 hover:border-white/30"
+                      }`}
                   >
                     <div className="flex justify-between items-start mb-2">
                       <div className="border border-white/15 bg-white/5 p-2 rounded-none text-indigo-400">
                         <PixelIcon name="classes" size={18} />
                       </div>
                       {onlineMode && (
-                        <span className="font-mono text-[10px] text-blue-300 font-bold uppercase border border-blue-400/40 px-1.5 py-0.5">
+                        <span className="text-[10px] text-emerald-300 font-bold uppercase border border-emerald-400/40 px-1.5 py-0.5">
                           SELECTED
                         </span>
                       )}
                     </div>
-                    <span className="font-mono font-bold text-white text-sm">Online Class</span>
-                    <p className="font-mono text-[11px] text-white/50 mt-1 leading-relaxed">
+                    <span className="font-bold text-white text-sm">Online Class</span>
+                    <p className="text-[11px] text-white/50 mt-1 leading-relaxed">
                       Bypasses Face ID and GPS location geofencing checks.
                     </p>
                   </div>
@@ -546,11 +542,11 @@ export default function HomePage() {
               {/* Granular Authentication Overrides */}
               <div className="border-t border-white/10 pt-4">
                 <div className="flex justify-between items-center mb-3">
-                  <h3 className="font-mono text-xs uppercase tracking-wider text-white/60">
+                  <h3 className="text-xs uppercase tracking-wider text-white/60 font-semibold">
                     Fine-tune Requirements
                   </h3>
                   {onlineMode && (
-                    <span className="font-mono text-[10px] font-bold text-amber-300 border border-amber-400/30 px-2 py-0.5 uppercase tracking-wider">
+                    <span className="text-[10px] font-bold text-amber-300 border border-amber-400/30 px-2 py-0.5 uppercase tracking-wider">
                       Overridden for Online Mode
                     </span>
                   )}
@@ -558,50 +554,46 @@ export default function HomePage() {
 
                 <div className="space-y-2.5">
                   {/* Face ID Switch */}
-                  <div className={`flex items-center justify-between p-3 border rounded-none ${
-                    onlineMode ? 'border-white/10 bg-white/5 opacity-50' : 'border-white/15 bg-white/5'
-                  }`}>
+                  <div className={`flex items-center justify-between p-3 border rounded-none ${onlineMode ? 'border-white/10 bg-white/5 opacity-50' : 'border-white/15 bg-white/5'
+                    }`}>
                     <div className="flex gap-2.5 items-start">
-                      <PixelIcon name="profile" size={16} className={`mt-0.5 ${faceIdRequired ? 'text-blue-400' : 'text-white/40'}`} />
+                      <PixelIcon name="profile" size={16} className={`mt-0.5 ${faceIdRequired ? 'text-emerald-400' : 'text-white/40'}`} />
                       <div>
-                        <div className="font-mono font-bold text-white text-xs">Face ID verification</div>
-                        <div className="font-mono text-[10px] text-white/50">Verify facial features against student profiles</div>
+                        <div className="font-bold text-white text-xs">Face ID verification</div>
+                        <div className="text-[10px] text-white/50">Verify facial features against student profiles</div>
                       </div>
                     </div>
                     <button
                       type="button"
                       disabled={onlineMode}
                       onClick={() => setFaceIdRequired(!faceIdRequired)}
-                      className={`font-mono text-[10px] uppercase font-bold px-2.5 py-1 border transition-colors cursor-pointer rounded-none ${
-                        faceIdRequired
-                          ? "border-blue-400 bg-blue-500/30 text-blue-300"
-                          : "border-white/20 bg-black/40 text-white/50"
-                      } ${onlineMode ? "cursor-not-allowed" : ""}`}
+                      className={`text-[10px] uppercase font-bold px-2.5 py-1 border transition-colors cursor-pointer rounded-none ${faceIdRequired
+                        ? "border-emerald-400 bg-emerald-500/30 text-emerald-300"
+                        : "border-white/20 bg-black/40 text-white/50"
+                        } ${onlineMode ? "cursor-not-allowed" : ""}`}
                     >
                       {faceIdRequired ? "ENABLED" : "DISABLED"}
                     </button>
                   </div>
 
                   {/* Location Switch */}
-                  <div className={`flex items-center justify-between p-3 border rounded-none ${
-                    onlineMode ? 'border-white/10 bg-white/5 opacity-50' : 'border-white/15 bg-white/5'
-                  }`}>
+                  <div className={`flex items-center justify-between p-3 border rounded-none ${onlineMode ? 'border-white/10 bg-white/5 opacity-50' : 'border-white/15 bg-white/5'
+                    }`}>
                     <div className="flex gap-2.5 items-start">
-                      <PixelIcon name="pin" size={16} className={`mt-0.5 ${locationRequired ? 'text-blue-400' : 'text-white/40'}`} />
+                      <PixelIcon name="pin" size={16} className={`mt-0.5 ${locationRequired ? 'text-emerald-400' : 'text-white/40'}`} />
                       <div>
-                        <div className="font-mono font-bold text-white text-xs">Location / GPS matching</div>
-                        <div className="font-mono text-[10px] text-white/50">Verify students are inside lecture hall radius</div>
+                        <div className="font-bold text-white text-xs">Location / GPS matching</div>
+                        <div className="text-[10px] text-white/50">Verify students are inside lecture hall radius</div>
                       </div>
                     </div>
                     <button
                       type="button"
                       disabled={onlineMode}
                       onClick={() => setLocationRequired(!locationRequired)}
-                      className={`font-mono text-[10px] uppercase font-bold px-2.5 py-1 border transition-colors cursor-pointer rounded-none ${
-                        locationRequired
-                          ? "border-blue-400 bg-blue-500/30 text-blue-300"
-                          : "border-white/20 bg-black/40 text-white/50"
-                      } ${onlineMode ? "cursor-not-allowed" : ""}`}
+                      className={`text-[10px] uppercase font-bold px-2.5 py-1 border transition-colors cursor-pointer rounded-none ${locationRequired
+                        ? "border-emerald-400 bg-emerald-500/30 text-emerald-300"
+                        : "border-white/20 bg-black/40 text-white/50"
+                        } ${onlineMode ? "cursor-not-allowed" : ""}`}
                     >
                       {locationRequired ? "ENABLED" : "DISABLED"}
                     </button>
@@ -611,10 +603,10 @@ export default function HomePage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="border-t border-white/15 p-4 flex justify-end gap-2 bg-black/40">
+            <div className="border-t border-white/15 p-4 flex justify-end gap-2 bg-black/40 text-xs">
               <button
                 onClick={() => setShowConfigModal(false)}
-                className="border border-white/20 bg-white/5 hover:bg-white/10 text-white font-mono text-xs uppercase px-4 py-2 rounded-none transition-colors cursor-pointer"
+                className="border border-white/20 bg-white/5 hover:bg-white/10 text-white text-xs uppercase px-4 py-2 rounded-none transition-colors cursor-pointer font-medium"
               >
                 Cancel
               </button>
@@ -659,7 +651,7 @@ export default function HomePage() {
                     alert("Error calling server: " + (err.detail || err.message || "Unknown error"));
                   }
                 }}
-                className="border border-blue-400 bg-blue-600 hover:bg-blue-500 text-white font-mono text-xs uppercase font-bold px-5 py-2 rounded-none shadow-lg transition-colors cursor-pointer"
+                className="border border-emerald-400 bg-emerald-600 hover:bg-emerald-500 text-white text-xs uppercase font-bold px-5 py-2 rounded-none shadow-lg transition-colors cursor-pointer tracking-wider"
               >
                 Start Active Session
               </button>

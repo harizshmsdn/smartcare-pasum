@@ -90,7 +90,7 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200 text-white">
-      <div className="w-full max-w-md rounded-none bg-[#09111e] p-6 sm:p-8 shadow-2xl border border-white/20 relative">
+      <div className="w-full max-w-md rounded-none bg-[#08090c] p-6 sm:p-8 shadow-2xl border border-white/20 relative">
         {/* Close Button */}
         <button
           type="button"
@@ -103,26 +103,26 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
 
         {/* Modal Header */}
         <div className="flex items-center gap-3 mb-5 border-b border-white/10 pb-4">
-          <div className="p-2 border border-white/15 bg-white/5 text-blue-400 rounded-none">
+          <div className="p-2 border border-white/15 bg-white/5 text-emerald-400 rounded-none">
             <PixelIcon name="key" size={20} />
           </div>
           <div>
-            <div className="font-mono text-[10px] uppercase tracking-widest text-blue-400">01 // SECURITY</div>
-            <h3 className="text-xl font-bold font-mono text-white">Change Password</h3>
-            <p className="font-mono text-xs text-white/50 mt-0.5">Update your account credentials</p>
+            <div className="text-[10px] uppercase tracking-widest text-emerald-400 font-bold">01 // SECURITY</div>
+            <h3 className="text-xl font-bold text-white">Change Password</h3>
+            <p className="text-xs text-white/50 mt-0.5">Update your account credentials</p>
           </div>
         </div>
 
         {/* Feedback Alerts */}
         {errorMsg && (
-          <div className="mb-4 p-3 text-xs font-mono text-red-300 bg-red-500/10 border border-red-500/30 rounded-none flex items-start gap-2.5">
+          <div className="mb-4 p-3 text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-none flex items-start gap-2.5">
             <PixelIcon name="warning" size={14} className="shrink-0 mt-0.5 text-red-400" />
             <span>{errorMsg}</span>
           </div>
         )}
 
         {successMsg && (
-          <div className="mb-4 p-3 text-xs font-mono text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded-none flex items-start gap-2.5">
+          <div className="mb-4 p-3 text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded-none flex items-start gap-2.5">
             <PixelIcon name="check" size={14} className="shrink-0 mt-0.5 text-emerald-400" />
             <span>{successMsg}</span>
           </div>
@@ -131,7 +131,7 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Current Password Input */}
           <div className="space-y-1.5">
-            <label className="font-mono text-xs uppercase tracking-wider text-white/70">
+            <label className="text-xs uppercase tracking-wider text-white/70 font-medium">
               Current Password
             </label>
             <div className="relative">
@@ -142,7 +142,7 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
                 required
                 disabled={isSubmitting}
                 placeholder="Enter current password"
-                className="w-full px-3.5 py-2.5 pr-10 rounded-none border border-white/20 bg-black/50 font-mono text-xs text-white focus:outline-none focus:border-blue-400 transition-colors placeholder:text-white/30"
+                className="w-full px-3.5 py-2.5 pr-10 rounded-none border border-white/20 bg-black/50 text-xs text-white focus:outline-none focus:border-emerald-400 transition-colors placeholder:text-white/30"
               />
               <button
                 type="button"
@@ -156,7 +156,7 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
 
           {/* New Password Input */}
           <div className="space-y-1.5">
-            <label className="font-mono text-xs uppercase tracking-wider text-white/70">
+            <label className="text-xs uppercase tracking-wider text-white/70 font-medium">
               New Password
             </label>
             <div className="relative">
@@ -167,7 +167,7 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
                 required
                 disabled={isSubmitting}
                 placeholder="Enter new strong password"
-                className="w-full px-3.5 py-2.5 pr-10 rounded-none border border-white/20 bg-black/50 font-mono text-xs text-white focus:outline-none focus:border-blue-400 transition-colors placeholder:text-white/30"
+                className="w-full px-3.5 py-2.5 pr-10 rounded-none border border-white/20 bg-black/50 text-xs text-white focus:outline-none focus:border-emerald-400 transition-colors placeholder:text-white/30"
               />
               <button
                 type="button"
@@ -179,8 +179,8 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
             </div>
 
             {/* Live Requirement Checklist */}
-            <div className="bg-black/40 border border-white/10 rounded-none p-3 mt-2 space-y-1.5 font-mono text-[11px]">
-              <div className="text-white/60 mb-1 uppercase tracking-wider">
+            <div className="bg-black/40 border border-white/10 rounded-none p-3 mt-2 space-y-1.5 text-[11px]">
+              <div className="text-white/60 mb-1 uppercase tracking-wider font-semibold">
                 Password Requirements:
               </div>
               <div className={`flex items-center gap-2 transition-colors ${hasMinLength ? 'text-emerald-400' : 'text-white/40'}`}>
@@ -210,7 +210,7 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
 
           {/* Confirm Password Input */}
           <div className="space-y-1.5">
-            <label className="font-mono text-xs uppercase tracking-wider text-white/70">
+            <label className="text-xs uppercase tracking-wider text-white/70 font-medium">
               Confirm New Password
             </label>
             <div className="relative">
@@ -221,7 +221,7 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
                 required
                 disabled={isSubmitting}
                 placeholder="Re-enter your new password"
-                className="w-full px-3.5 py-2.5 pr-10 rounded-none border border-white/20 bg-black/50 font-mono text-xs text-white focus:outline-none focus:border-blue-400 transition-colors placeholder:text-white/30"
+                className="w-full px-3.5 py-2.5 pr-10 rounded-none border border-white/20 bg-black/50 text-xs text-white focus:outline-none focus:border-emerald-400 transition-colors placeholder:text-white/30"
               />
               <button
                 type="button"
@@ -232,14 +232,14 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
               </button>
             </div>
             {confirmPassword && (
-              <div className={`flex items-center gap-1.5 font-mono text-xs pt-1 ${passwordsMatch ? 'text-emerald-400' : 'text-red-400'}`}>
+              <div className={`flex items-center gap-1.5 text-xs pt-1 ${passwordsMatch ? 'text-emerald-400' : 'text-red-400'}`}>
                 <PixelIcon name={passwordsMatch ? "check" : "warning"} size={13} className={passwordsMatch ? 'text-emerald-400' : 'text-red-400'} />
                 <span>{passwordsMatch ? "Passwords match" : "Passwords do not match"}</span>
               </div>
             )}
           </div>
 
-          <p className="font-mono text-[10px] text-white/40 leading-normal">
+          <p className="text-[10px] text-white/40 leading-normal">
             Supabase administrators retain access to manage and verify accounts for beta testing.
           </p>
 
@@ -249,14 +249,14 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
               type="button"
               onClick={handleClose}
               disabled={isSubmitting}
-              className="flex-1 px-4 py-2.5 rounded-none border border-white/20 bg-white/5 hover:bg-white/10 text-white font-mono text-xs uppercase transition-colors cursor-pointer"
+              className="flex-1 px-4 py-2.5 rounded-none border border-white/20 bg-white/5 hover:bg-white/10 text-white text-xs uppercase transition-colors cursor-pointer font-medium tracking-wider"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting || !allRequirementsMet || !passwordsMatch || !currentPassword}
-              className="flex-1 px-4 py-2.5 rounded-none border border-blue-400 bg-blue-600 hover:bg-blue-500 text-white font-mono text-xs uppercase font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2.5 rounded-none border border-emerald-400 bg-emerald-600 hover:bg-emerald-500 text-white text-xs uppercase font-bold tracking-wider transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
                 <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-none animate-spin" />

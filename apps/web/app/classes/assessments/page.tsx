@@ -167,22 +167,22 @@ export default function ClassAssessmentsPage() {
           <div className="mb-3">
             <Link
               href={backUrl}
-              className="inline-flex items-center gap-2 text-xs font-mono text-slate-400 hover:text-white transition-colors"
+              className="inline-flex items-center gap-2 text-xs text-slate-400 hover:text-white transition-colors"
             >
               ← BACK TO CLASS ROSTER
             </Link>
           </div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="w-1.5 h-1.5 bg-blue-400 rounded-none" />
-            <span className="font-mono text-xs text-blue-400 uppercase tracking-wider font-semibold">
+            <span className="w-1.5 h-1.5 bg-emerald-400 rounded-none" />
+            <span className="text-xs text-emerald-400 uppercase tracking-wider font-semibold">
               PASUM // GRADING & EXAMS
             </span>
           </div>
-          <h2 className="text-3xl font-bold font-mono tracking-tight uppercase flex items-center gap-3">
-            <PixelIcon name="book" size={28} className="text-blue-400" />
+          <h2 className="text-3xl font-bold tracking-tight uppercase flex items-center gap-3">
+            <PixelIcon name="book" size={28} className="text-emerald-400" />
             Assessments & Gradebook
           </h2>
-          <p className="text-slate-400 text-xs font-mono mt-1">
+          <p className="text-slate-400 text-xs mt-1">
             Manage continuous assessments, major exams, and student scores
           </p>
         </div>
@@ -191,19 +191,19 @@ export default function ClassAssessmentsPage() {
         <div className="relative">
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center gap-3 bg-[#09111e]/90 border border-white/20 text-white px-4 py-2.5 rounded-none font-mono text-xs shadow-lg hover:border-white/40 transition-colors cursor-pointer"
+            className="flex items-center gap-3 bg-[#08090c]/90 border border-white/20 text-white px-4 py-2.5 rounded-none text-xs shadow-lg hover:border-white/40 transition-colors cursor-pointer"
           >
             <div className="flex flex-col text-left">
-              <span className="text-[10px] uppercase font-bold text-blue-400 tracking-widest leading-none mb-1">
+              <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-widest leading-none mb-1">
                 TARGET CLASS
               </span>
               <span className="leading-none font-bold text-white">{selectedClassName}</span>
             </div>
-            <span className="text-slate-400 text-xs font-mono ml-2">▼</span>
+            <span className="text-slate-400 text-xs ml-2">▼</span>
           </button>
 
           {isDropdownOpen && (
-            <div className="absolute right-0 mt-1 w-full min-w-[260px] bg-[#09111e] border border-white/20 rounded-none shadow-2xl z-50 overflow-hidden font-mono text-xs">
+            <div className="absolute right-0 mt-1 w-full min-w-[260px] bg-[#08090c] border border-white/20 rounded-none shadow-2xl z-50 overflow-hidden text-xs">
               {classesList.map((cls) => (
                 <button
                   key={cls.id}
@@ -213,7 +213,7 @@ export default function ClassAssessmentsPage() {
                     setIsDropdownOpen(false);
                   }}
                   className={`w-full text-left px-4 py-3 hover:bg-white/10 transition-colors border-b border-white/10 last:border-b-0 cursor-pointer ${
-                    selectedClassId === cls.id ? 'bg-blue-600/20 text-blue-300 font-bold' : 'text-slate-300'
+                    selectedClassId === cls.id ? 'bg-emerald-600/20 text-emerald-300 font-bold' : 'text-slate-300'
                   }`}
                 >
                   {cls.name}
@@ -226,55 +226,55 @@ export default function ClassAssessmentsPage() {
 
       {/* Top Bento Metrics Row (4 Columns, 1 Row) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6 shrink-0">
-        <div className="bg-[#09111e]/80 p-5 rounded-none border border-white/15 shadow-xl flex items-center gap-4 backdrop-blur-md">
-          <div className="p-3 bg-blue-500/10 border border-blue-400/20 text-blue-400 rounded-none shrink-0">
+        <div className="bg-[#08090c]/80 p-5 rounded-none border border-white/15 shadow-xl flex items-center gap-4 backdrop-blur-md">
+          <div className="p-3 bg-emerald-500/10 border border-emerald-400/20 text-emerald-400 rounded-none shrink-0">
             <PixelIcon name="book" size={24} />
           </div>
           <div>
             <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="font-mono text-[10px] text-blue-400 font-bold">01.</span>
-              <p className="text-xs font-mono text-slate-400 uppercase tracking-wider">Set Assessments</p>
+              <span className="text-[10px] text-emerald-400 font-bold">01.</span>
+              <p className="text-xs text-slate-400 uppercase tracking-wider">Set Assessments</p>
             </div>
-            <p className="text-2xl font-mono font-bold text-white leading-tight">{assessments.length}</p>
+            <p className="text-2xl font-bold text-white leading-tight">{assessments.length}</p>
           </div>
         </div>
 
-        <div className="bg-[#09111e]/80 p-5 rounded-none border border-white/15 shadow-xl flex items-center gap-4 backdrop-blur-md">
+        <div className="bg-[#08090c]/80 p-5 rounded-none border border-white/15 shadow-xl flex items-center gap-4 backdrop-blur-md">
           <div className="p-3 bg-indigo-500/10 border border-indigo-400/20 text-indigo-400 rounded-none shrink-0">
             <PixelIcon name="award" size={24} />
           </div>
           <div>
             <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="font-mono text-[10px] text-indigo-400 font-bold">02.</span>
-              <p className="text-xs font-mono text-slate-400 uppercase tracking-wider">Total Weightage</p>
+              <span className="text-[10px] text-indigo-400 font-bold">02.</span>
+              <p className="text-xs text-slate-400 uppercase tracking-wider">Total Weightage</p>
             </div>
-            <p className="text-2xl font-mono font-bold text-white leading-tight">{totalWeightage}%</p>
+            <p className="text-2xl font-bold text-white leading-tight">{totalWeightage}%</p>
           </div>
         </div>
 
-        <div className="bg-[#09111e]/80 p-5 rounded-none border border-white/15 shadow-xl flex items-center gap-4 backdrop-blur-md">
+        <div className="bg-[#08090c]/80 p-5 rounded-none border border-white/15 shadow-xl flex items-center gap-4 backdrop-blur-md">
           <div className="p-3 bg-emerald-500/10 border border-emerald-400/20 text-emerald-400 rounded-none shrink-0">
             <PixelIcon name="profile" size={24} />
           </div>
           <div>
             <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="font-mono text-[10px] text-emerald-400 font-bold">03.</span>
-              <p className="text-xs font-mono text-slate-400 uppercase tracking-wider">Enrolled Roster</p>
+              <span className="text-[10px] text-emerald-400 font-bold">03.</span>
+              <p className="text-xs text-slate-400 uppercase tracking-wider">Enrolled Roster</p>
             </div>
-            <p className="text-2xl font-mono font-bold text-white leading-tight">{rosterScores.length}</p>
+            <p className="text-2xl font-bold text-white leading-tight">{rosterScores.length}</p>
           </div>
         </div>
 
-        <div className="bg-[#09111e]/80 p-5 rounded-none border border-white/15 shadow-xl flex items-center gap-4 backdrop-blur-md">
+        <div className="bg-[#08090c]/80 p-5 rounded-none border border-white/15 shadow-xl flex items-center gap-4 backdrop-blur-md">
           <div className="p-3 bg-amber-500/10 border border-amber-400/20 text-amber-400 rounded-none shrink-0">
             <PixelIcon name="checkCircle" size={24} />
           </div>
           <div>
             <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="font-mono text-[10px] text-amber-400 font-bold">04.</span>
-              <p className="text-xs font-mono text-slate-400 uppercase tracking-wider">Class Exam Avg</p>
+              <span className="text-[10px] text-amber-400 font-bold">04.</span>
+              <p className="text-xs text-slate-400 uppercase tracking-wider">Class Exam Avg</p>
             </div>
-            <p className="text-2xl font-mono font-bold text-white leading-tight">
+            <p className="text-2xl font-bold text-white leading-tight">
               {overallAvgScore > 0 ? `${overallAvgScore}%` : 'N/A'}
             </p>
           </div>
@@ -282,9 +282,9 @@ export default function ClassAssessmentsPage() {
       </div>
 
       {/* Main Content Container */}
-      <div className="flex-1 min-h-0 bg-[#09111e]/80 rounded-none border border-white/15 shadow-2xl flex flex-col overflow-hidden mb-4 backdrop-blur-md">
+      <div className="flex-1 min-h-0 bg-[#08090c]/80 rounded-none border border-white/15 shadow-2xl flex flex-col overflow-hidden mb-4 backdrop-blur-md">
         {/* Navigation Tabs */}
-        <div className="flex items-center justify-between border-b border-white/10 px-6 py-4 bg-black/20 shrink-0 font-mono text-xs">
+        <div className="flex items-center justify-between border-b border-white/10 px-6 py-4 bg-black/20 shrink-0 text-xs">
           <div className="flex gap-2">
             <button
               onClick={() => setActiveTab("matrix")}
@@ -296,7 +296,7 @@ export default function ClassAssessmentsPage() {
             >
               <span>OVERALL MARKS MATRIX</span>
               <span className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded-none text-[10px] font-bold ${
-                activeTab === "matrix" ? "bg-blue-400 text-black" : "bg-white/10 text-slate-400"
+                activeTab === "matrix" ? "bg-emerald-400 text-black" : "bg-white/10 text-slate-400"
               }`}>
                 {rosterScores.length}
               </span>
@@ -311,7 +311,7 @@ export default function ClassAssessmentsPage() {
             >
               <span>SET ASSESSMENTS</span>
               <span className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded-none text-[10px] font-bold ${
-                activeTab === "list" ? "bg-blue-400 text-black" : "bg-white/10 text-slate-400"
+                activeTab === "list" ? "bg-emerald-400 text-black" : "bg-white/10 text-slate-400"
               }`}>
                 {assessments.length}
               </span>
@@ -328,15 +328,15 @@ export default function ClassAssessmentsPage() {
             </button>
           </div>
 
-          <div className="text-[10px] font-mono text-slate-400 hidden sm:block">
+          <div className="text-[10px] text-slate-400 hidden sm:block">
             AUTO-SAVES DIRECTLY TO REPOSITORY
           </div>
         </div>
 
         {/* Tab Body */}
-        <div className="p-6 overflow-y-auto flex-1 bg-black/10 font-mono">
+        <div className="p-6 overflow-y-auto flex-1 bg-black/10">
           {isLoading ? (
-            <div className="flex items-center justify-center h-full text-slate-400 text-xs font-mono py-16">
+            <div className="flex items-center justify-center h-full text-slate-400 text-xs py-16">
               Loading gradebook matrix...
             </div>
           ) : (
@@ -345,7 +345,7 @@ export default function ClassAssessmentsPage() {
               {activeTab === "matrix" && (
                 <div>
                   {assessments.length === 0 ? (
-                    <div className="text-center py-16 bg-[#09111e] rounded-none border border-white/15 shadow-xl max-w-md mx-auto p-8">
+                    <div className="text-center py-16 bg-[#08090c] rounded-none border border-white/15 shadow-xl max-w-md mx-auto p-8">
                       <PixelIcon name="book" size={40} className="mx-auto text-slate-500 mb-3" />
                       <h3 className="text-lg font-bold text-white uppercase">No assessments set yet</h3>
                       <p className="text-slate-400 text-xs mb-6 mt-1">
@@ -353,14 +353,14 @@ export default function ClassAssessmentsPage() {
                       </p>
                       <button
                         onClick={() => setActiveTab("create")}
-                        className="px-5 py-2.5 bg-blue-600 text-white rounded-none font-bold text-xs hover:bg-blue-500 transition-all border border-blue-400 cursor-pointer"
+                        className="px-5 py-2.5 bg-emerald-600 text-white rounded-none font-bold text-xs hover:bg-emerald-500 transition-all border border-emerald-400 cursor-pointer"
                       >
                         + CONFIGURE FIRST ASSESSMENT
                       </button>
                     </div>
                   ) : (
                     <div className="overflow-x-auto border border-white/10 bg-black/20">
-                      <table className="w-full text-left border-collapse font-mono text-xs">
+                      <table className="w-full text-left border-collapse text-xs">
                         <thead>
                           <tr className="bg-white/5 border-b border-white/10 text-slate-400 text-[10px] font-bold uppercase tracking-wider">
                             <th className="p-3.5">Student</th>
@@ -387,14 +387,14 @@ export default function ClassAssessmentsPage() {
                                     <p className="font-bold text-white leading-none">{student.student_name}</p>
                                     <Link
                                       href={`/classes/${student.student_id}?classId=${selectedClassId}`}
-                                      className="text-[10px] text-blue-400 hover:underline mt-1 inline-block"
+                                      className="text-[10px] text-emerald-400 hover:underline mt-1 inline-block"
                                     >
                                       VIEW PROFILE →
                                     </Link>
                                   </div>
                                 </div>
                               </td>
-                              <td className="p-3.5 text-slate-400 font-mono text-xs">{student.matric_id}</td>
+                              <td className="p-3.5 text-slate-400 text-xs">{student.matric_id}</td>
                               {assessments.map((a) => {
                                 const key = `${student.student_id}_${a.id}`;
                                 const currentScore = editingScores[key] !== undefined ? editingScores[key] : (student.scores?.[a.id] ?? "");
@@ -412,7 +412,7 @@ export default function ClassAssessmentsPage() {
                                           setEditingScores(prev => ({ ...prev, [key]: val }));
                                         }}
                                         placeholder="-"
-                                        className="w-16 text-center bg-black/40 border border-white/20 rounded-none py-1.5 px-2 font-mono font-bold text-white focus:border-blue-400 focus:outline-none text-xs transition-all"
+                                        className="w-16 text-center bg-black/40 border border-white/20 rounded-none py-1.5 px-2 font-bold text-white focus:border-emerald-400 focus:outline-none text-xs transition-all"
                                       />
                                       <button
                                         disabled={isSavingScore || currentScore === ""}
@@ -444,7 +444,7 @@ export default function ClassAssessmentsPage() {
                                             setIsSavingScore(false);
                                           }
                                         }}
-                                        className="p-1.5 bg-blue-600/20 hover:bg-blue-600 hover:text-white text-blue-300 border border-blue-400/30 rounded-none transition-all cursor-pointer disabled:opacity-30 active:scale-95"
+                                        className="p-1.5 bg-emerald-600/20 hover:bg-emerald-600 hover:text-white text-emerald-300 border border-emerald-400/30 rounded-none transition-all cursor-pointer disabled:opacity-30 active:scale-95"
                                         title="Save Mark"
                                       >
                                         <PixelIcon name="check" size={12} />
@@ -472,7 +472,7 @@ export default function ClassAssessmentsPage() {
                       {assessments.map((a) => (
                         <div
                           key={a.id}
-                          className="bg-[#09111e] p-5 rounded-none border border-white/15 shadow-xl flex justify-between items-center group hover:border-white/30 transition-all"
+                          className="bg-[#08090c] p-5 rounded-none border border-white/15 shadow-xl flex justify-between items-center group hover:border-white/30 transition-all"
                         >
                           <div>
                             <div className="flex items-center gap-2 mb-2">
@@ -483,7 +483,7 @@ export default function ClassAssessmentsPage() {
                             </div>
                             <p className="text-xs text-slate-400 mb-2">Weightage: {a.weightage}% of final GPA</p>
                             <div className="w-36 bg-white/10 h-1.5 rounded-none overflow-hidden">
-                              <div className="bg-blue-500 h-full rounded-none" style={{ width: `${Math.min(100, a.weightage * 2.5)}%` }} />
+                              <div className="bg-emerald-500 h-full rounded-none" style={{ width: `${Math.min(100, a.weightage * 2.5)}%` }} />
                             </div>
                           </div>
                           <div className="flex items-center gap-3">
@@ -509,100 +509,98 @@ export default function ClassAssessmentsPage() {
               )}
 
               {/* TAB 3: CREATE NEW ASSESSMENT FORM */}
-              {activeTab === "create" && (
-                <form
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    try {
-                      await api.post(`/api/classes/${selectedClassId}/assessments`, {
-                        title: newTitle,
-                        type: newType,
-                        weightage: parseFloat(newWeightage),
-                        total_marks: parseInt(newTotalMarks, 10)
-                      });
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  try {
+                    await api.post(`/api/classes/${selectedClassId}/assessments`, {
+                      title: newTitle,
+                      type: newType,
+                      weightage: parseFloat(newWeightage),
+                      total_marks: parseInt(newTotalMarks, 10)
+                    });
 
-                      setNewTitle("");
-                      setActiveTab("matrix");
-                      if (selectedClassId) fetchClassAssessmentsData(selectedClassId);
-                    } catch (err: any) {
-                      alert("Failed to create assessment: " + (err.detail || err.message || "Error"));
-                    }
-                  }}
-                  className="bg-[#09111e] p-6 rounded-none border border-white/20 shadow-2xl max-w-md mx-auto space-y-5 text-xs font-mono"
-                >
-                  <div className="pb-3 border-b border-white/10">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="w-1.5 h-1.5 bg-blue-400 rounded-none" />
-                      <span className="text-[10px] text-blue-400 uppercase tracking-wider font-bold">
-                        ASSESSMENT CONFIGURATION
-                      </span>
-                    </div>
-                    <h4 className="font-bold text-white text-base">Configure New Assessment</h4>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Set up quizzes, lab reports, or major exams</p>
+                    setNewTitle("");
+                    setActiveTab("matrix");
+                    if (selectedClassId) fetchClassAssessmentsData(selectedClassId);
+                  } catch (err: any) {
+                    alert("Failed to create assessment: " + (err.detail || err.message || "Error"));
+                  }
+                }}
+                className="bg-[#08090c] p-6 rounded-none border border-white/20 shadow-2xl max-w-md mx-auto space-y-5 text-xs"
+              >
+                <div className="pb-3 border-b border-white/10">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="w-1.5 h-1.5 bg-emerald-400 rounded-none" />
+                    <span className="text-[10px] text-emerald-400 uppercase tracking-wider font-bold">
+                      ASSESSMENT CONFIGURATION
+                    </span>
+                  </div>
+                  <h4 className="font-bold text-white text-base">Configure New Assessment</h4>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Set up quizzes, lab reports, or major exams</p>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">
+                    Assessment Title
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Quiz 2 / Lab Report 1 / Midterm Exam"
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                    className="w-full bg-black/40 border border-white/20 rounded-none px-3 py-2 text-xs text-white focus:border-emerald-400 focus:outline-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Type</label>
+                    <select
+                      value={newType}
+                      onChange={(e) => setNewType(e.target.value)}
+                      className="w-full bg-black/40 border border-white/20 rounded-none px-2 py-2 text-xs text-white focus:border-emerald-400 focus:outline-none"
+                    >
+                      <option value="Continuous" className="bg-[#08090c]">Continuous</option>
+                      <option value="Midterm" className="bg-[#08090c]">Midterm</option>
+                      <option value="Final" className="bg-[#08090c]">Final</option>
+                    </select>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">
-                      Assessment Title
-                    </label>
+                    <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Weight (%)</label>
                     <input
-                      type="text"
+                      type="number"
                       required
-                      placeholder="e.g. Quiz 2 / Lab Report 1 / Midterm Exam"
-                      value={newTitle}
-                      onChange={(e) => setNewTitle(e.target.value)}
-                      className="w-full bg-black/40 border border-white/20 rounded-none px-3 py-2 text-xs font-mono text-white focus:border-blue-400 focus:outline-none"
+                      min="1"
+                      max="100"
+                      value={newWeightage}
+                      onChange={(e) => setNewWeightage(e.target.value)}
+                      className="w-full bg-black/40 border border-white/20 rounded-none px-2 py-2 text-xs text-white focus:border-emerald-400 focus:outline-none"
                     />
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Type</label>
-                      <select
-                        value={newType}
-                        onChange={(e) => setNewType(e.target.value)}
-                        className="w-full bg-black/40 border border-white/20 rounded-none px-2 py-2 text-xs font-mono text-white focus:border-blue-400 focus:outline-none"
-                      >
-                        <option value="Continuous" className="bg-[#09111e]">Continuous</option>
-                        <option value="Midterm" className="bg-[#09111e]">Midterm</option>
-                        <option value="Final" className="bg-[#09111e]">Final</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Weight (%)</label>
-                      <input
-                        type="number"
-                        required
-                        min="1"
-                        max="100"
-                        value={newWeightage}
-                        onChange={(e) => setNewWeightage(e.target.value)}
-                        className="w-full bg-black/40 border border-white/20 rounded-none px-2 py-2 text-xs font-mono text-white focus:border-blue-400 focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Max Marks</label>
-                      <input
-                        type="number"
-                        required
-                        min="1"
-                        value={newTotalMarks}
-                        onChange={(e) => setNewTotalMarks(e.target.value)}
-                        className="w-full bg-black/40 border border-white/20 rounded-none px-2 py-2 text-xs font-mono text-white focus:border-blue-400 focus:outline-none"
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Max Marks</label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      value={newTotalMarks}
+                      onChange={(e) => setNewTotalMarks(e.target.value)}
+                      className="w-full bg-black/40 border border-white/20 rounded-none px-2 py-2 text-xs text-white focus:border-emerald-400 focus:outline-none"
+                    />
                   </div>
+                </div>
 
-                  <button
-                    type="submit"
-                    className="w-full mt-3 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-none border border-blue-400 shadow-lg shadow-blue-900/30 transition-all cursor-pointer uppercase text-xs"
-                  >
-                    SAVE ASSESSMENT
-                  </button>
-                </form>
-              )}
+                <button
+                  type="submit"
+                  className="w-full mt-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-none border border-emerald-400 shadow-lg shadow-emerald-900/30 transition-all cursor-pointer uppercase text-xs"
+                >
+                  SAVE ASSESSMENT
+                </button>
+              </form>
             </>
           )}
         </div>
@@ -611,7 +609,7 @@ export default function ClassAssessmentsPage() {
       {/* Confirmation modal for assessment deletion */}
       {assessmentToDelete && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="bg-[#09111e] rounded-none max-w-md w-full p-6 shadow-2xl border border-white/20 font-mono text-xs text-white">
+          <div className="bg-[#08090c] rounded-none max-w-md w-full p-6 shadow-2xl border border-white/20 text-xs text-white">
             <div className="flex items-center gap-3 mb-4 pb-3 border-b border-white/10">
               <div className="p-2 bg-rose-500/10 border border-rose-400/30 text-rose-300 rounded-none shrink-0">
                 <PixelIcon name="warning" size={20} />

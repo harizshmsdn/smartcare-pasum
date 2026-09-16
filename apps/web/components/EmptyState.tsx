@@ -10,7 +10,7 @@ interface EmptyStateProps {
 
 export default function EmptyState({ icon: Icon, title, description, action }: EmptyStateProps) {
   return (
-    <div className="border border-white/15 bg-[#09111e]/80 backdrop-blur-md rounded-none p-10 text-center shadow-2xl flex flex-col items-center justify-center py-16 w-full mx-auto text-white">
+    <div className="border border-white/15 bg-[#08090c]/80 backdrop-blur-md rounded-none p-10 text-center shadow-2xl flex flex-col items-center justify-center py-16 w-full mx-auto text-white">
       <div className="border border-white/10 bg-white/5 p-4 rounded-none text-white/50 mb-4">
         {Icon ? (
           typeof Icon === 'function' ? <Icon size={36} /> : Icon

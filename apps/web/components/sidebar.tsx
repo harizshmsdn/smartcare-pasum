@@ -87,86 +87,76 @@ export function Sidebar() {
         { name: "Dashboard", href: "/student/dashboard", key: "D", keyBg: "#7F9ACF", keyColor: "#000", icon: "dashboard" },
         { name: "Classes", href: "/student/classes", key: "C", keyBg: "#A6B4A3", keyColor: "#000", icon: "classes" },
         { name: "Alerts", href: "/student/alerts", key: "A", keyBg: "#DDB8CA", keyColor: "#000", icon: "alerts" },
-        { name: "Profile", href: "/student/profile", key: "P", keyBg: "#79311B", keyColor: "#fff", icon: "profile" },
+        { name: "Profile", href: "/student/profile", key: "P", keyBg: "#79311B", keyColor: "#fff", icon: "shield" },
       ]
       : [
         { name: "Home", href: "/", key: "H", keyBg: "#BD932F", keyColor: "#000", icon: "home" },
         { name: "Dashboard", href: "/dashboard", key: "D", keyBg: "#7F9ACF", keyColor: "#000", icon: "dashboard" },
         { name: "Classes", href: "/classes", key: "C", keyBg: "#A6B4A3", keyColor: "#000", icon: "classes" },
         { name: "Alerts", href: "/alerts", key: "A", keyBg: "#DDB8CA", keyColor: "#000", icon: "alerts" },
-        { name: "Profile", href: "/profile", key: "P", keyBg: "#79311B", keyColor: "#fff", icon: "profile" },
+        { name: "Profile", href: "/profile", key: "P", keyBg: "#79311B", keyColor: "#fff", icon: "shield" },
       ];
 
   return (
-    <aside className="w-64 bg-[#09111e]/90 backdrop-blur-md border-r border-white/10 flex flex-col p-5 shrink-0 h-screen overflow-hidden select-none z-20">
-      
+    <aside className="w-44 bg-[#08090c]/95 backdrop-blur-md border-r border-white/10 flex flex-col p-3 shrink-0 h-screen overflow-hidden select-none z-20">
+
       {/* dottxt.ai Brand Title */}
-      <div className="mb-8 pt-2 px-2 flex items-center justify-between border-b border-white/10 pb-4">
+      <div className="mb-2 pt-1 px-1 flex items-center justify-between border-b border-white/10 pb-2.5 shrink-0">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-white font-sans">
-            tigha<span className="text-blue-400">.</span>
+          <h1 className="text-xl font-black tracking-tight text-white font-sans">
+            tigha<span className="text-emerald-400">.</span>
           </h1>
-          <p className="text-[10px] font-mono text-white/40 tracking-wider uppercase mt-0.5">
-            PASUM // MONITORING
-          </p>
         </div>
-        <span className="text-[10px] font-mono bg-white/10 text-white/70 px-1.5 py-0.5 rounded-none border border-white/15">
-          v1.0
-        </span>
       </div>
 
-      {/* dottxt.ai Section Nav Buttons */}
-      <nav className="flex flex-col gap-2 flex-1 overflow-y-auto">
+      {/* dottxt.ai Section Nav Buttons - Flex equally to fit height */}
+      <nav className="flex flex-col gap-2 flex-1 min-h-0 my-1">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           const isDisabled = item.disabled;
 
           const buttonContent = (
             <div
-              className={`group relative flex items-center gap-3 px-3.5 py-3 rounded-none border transition-all text-sm ${
-                isDisabled
-                  ? "border-white/5 bg-black/20 opacity-40 cursor-not-allowed text-slate-500"
-                  : isActive
+              className={`group relative flex flex-col justify-between p-3 rounded-none border transition-all h-full w-full ${isDisabled
+                ? "border-white/5 bg-black/20 opacity-40 cursor-not-allowed text-slate-500"
+                : isActive
                   ? "border-white/40 bg-white/10 text-white shadow-xs"
                   : "border-white/10 bg-black/30 text-slate-300 hover:border-white/30 hover:bg-white/5 hover:text-white"
-              }`}
+                }`}
               title={isDisabled ? "Disabled Feature" : undefined}
             >
-              {/* Colored Key Badge */}
-              <span
-                className="w-5 h-5 flex items-center justify-center text-[11px] font-mono font-bold shrink-0 rounded-none shadow-xs"
-                style={{ backgroundColor: item.keyBg, color: item.keyColor }}
-              >
-                {item.key}
-              </span>
-
-              {/* Streamline Pixel Icon */}
-              <PixelIcon
-                name={item.icon}
-                size={16}
-                className={isActive ? "text-blue-400" : "text-slate-400 group-hover:text-white"}
-              />
-
-              {/* Label */}
-              <span className="font-medium tracking-wide flex-1 text-left truncate">
-                {item.name}
-              </span>
-
-              {/* Unread Alerts Badge */}
-              {item.name === "Alerts" && unreadCount > 0 && (
-                <span className="font-mono text-[11px] font-bold px-1.5 py-0.2 bg-red-500 text-white rounded-none border border-red-400 animate-pulse">
-                  {unreadCount}
+              {/* Top Row: Colored Key Badge on Top Left */}
+              <div className="flex items-start justify-between w-full">
+                <span
+                  className="w-5 h-5 flex items-center justify-center text-[10px] font-mono font-bold shrink-0 rounded-none shadow-xs"
+                  style={{ backgroundColor: item.keyBg, color: item.keyColor }}
+                >
+                  {item.key}
                 </span>
-              )}
 
-              {/* Wireframe Indicator */}
-              <span className={`text-[11px] font-mono transition-transform duration-200 ${isActive ? 'text-blue-400 translate-x-0.5' : 'text-white/20 group-hover:text-white/70 group-hover:translate-x-0.5'}`}>
-                →
-              </span>
+                {/* Unread Alerts Badge */}
+                {item.name === "Alerts" && unreadCount > 0 && (
+                  <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 bg-red-500 text-white rounded-none border border-red-400 animate-pulse">
+                    {unreadCount}
+                  </span>
+                )}
+
+                {/* Active Indicator */}
+                {isActive && !isDisabled && (
+                  <span className="w-1.5 h-1.5 rounded-none bg-emerald-400" />
+                )}
+              </div>
+
+              {/* Bottom Right: Text Label */}
+              <div className="text-right w-full mt-auto">
+                <span className="font-bold text-xs tracking-wide text-white block truncate">
+                  {item.name}
+                </span>
+              </div>
 
               {isDisabled && (
-                <div className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center px-2 py-0.5 text-[10px] font-mono font-semibold text-white bg-slate-900 border border-white/20 rounded-none whitespace-nowrap z-50">
-                  DISABLED FEATURE
+                <div className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center px-2 py-0.5 text-[9px] font-mono font-semibold text-white bg-slate-900 border border-white/20 rounded-none whitespace-nowrap z-50">
+                  DISABLED
                 </div>
               )}
             </div>
@@ -174,29 +164,28 @@ export function Sidebar() {
 
           if (isDisabled) {
             return (
-              <div key={item.name} className="cursor-not-allowed">
+              <div key={item.name} className="flex-1 flex flex-col min-h-0 cursor-not-allowed">
                 {buttonContent}
               </div>
             );
           }
 
           return (
-            <Link key={item.name} href={item.href} className="block">
+            <Link key={item.name} href={item.href} className="flex-1 flex flex-col min-h-0">
               {buttonContent}
             </Link>
           );
         })}
       </nav>
 
-      {/* Settings & Logout in dottxt.ai Wireframe Box */}
-      <div className="flex flex-col gap-2 mt-auto pt-4 border-t border-white/10">
+      {/* Settings & Logout in dottxt.ai Wireframe Box - Increased height */}
+      <div className="flex flex-col gap-2 mt-auto pt-3 border-t border-white/10 shrink-0">
         <Link
           href={isAdmin ? "/admin/settings" : isStudent ? "/student/settings" : "/settings"}
-          className={`flex items-center gap-3 px-3.5 py-2.5 rounded-none border text-xs font-mono transition-all ${
-            pathname === (isAdmin ? "/admin/settings" : isStudent ? "/student/settings" : "/settings")
-              ? "border-white/40 bg-white/10 text-white"
-              : "border-white/10 bg-black/20 text-slate-400 hover:border-white/25 hover:text-white hover:bg-white/5"
-          }`}
+          className={`flex items-center gap-2.5 px-3 py-3 rounded-none border text-xs font-medium tracking-wide transition-all ${pathname === (isAdmin ? "/admin/settings" : isStudent ? "/student/settings" : "/settings")
+            ? "border-white/40 bg-white/10 text-white"
+            : "border-white/10 bg-black/20 text-slate-400 hover:border-white/25 hover:text-white hover:bg-white/5"
+            }`}
         >
           <PixelIcon name="settings" size={15} />
           <span>SETTINGS</span>
@@ -204,7 +193,7 @@ export function Sidebar() {
         <button
           type="button"
           onClick={signOut}
-          className="flex items-center gap-3 px-3.5 py-2.5 rounded-none border border-red-500/20 bg-red-950/20 text-red-400 hover:border-red-500/40 hover:bg-red-950/40 hover:text-red-300 text-xs font-mono transition-all cursor-pointer w-full text-left"
+          className="flex items-center gap-2.5 px-3 py-3 rounded-none border border-red-500/20 bg-red-950/20 text-red-400 hover:border-red-500/40 hover:bg-red-950/40 hover:text-red-300 text-xs font-medium tracking-wide transition-all cursor-pointer w-full text-left"
         >
           <PixelIcon name="logout" size={15} />
           <span>LOG OUT</span>

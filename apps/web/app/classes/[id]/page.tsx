@@ -108,7 +108,7 @@ export default function ProfilePage() {
 
   if (isLoading || !studentProfile) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-transparent min-h-screen font-mono text-xs text-slate-400">
+      <div className="flex-1 flex items-center justify-center bg-transparent min-h-screen text-xs text-slate-400">
         Loading student details...
       </div>
     );
@@ -127,45 +127,45 @@ export default function ProfilePage() {
       <div className="mb-4">
         <Link
           href={backUrl}
-          className="inline-flex items-center gap-2 text-xs font-mono text-slate-400 hover:text-white transition-colors"
+          className="inline-flex items-center gap-2 text-xs text-slate-400 hover:text-white transition-colors"
         >
           ← BACK TO CLASS ROSTER
         </Link>
       </div>
 
       {/* Header Profile Card */}
-      <header className="bg-[#09111e]/80 p-6 rounded-none border border-white/15 shadow-2xl mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 backdrop-blur-md">
+      <header className="bg-[#08090c]/80 p-6 rounded-none border border-white/15 shadow-2xl mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 backdrop-blur-md">
         <div className="flex items-center gap-5">
-          <div className="w-16 h-16 bg-white/10 border border-white/20 rounded-none flex items-center justify-center text-white text-2xl font-bold font-mono">
+          <div className="w-16 h-16 bg-white/10 border border-white/20 rounded-none flex items-center justify-center text-white text-2xl font-bold">
             {studentProfile.full_name.charAt(0)}
           </div>
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <h2 className="text-2xl font-bold font-mono text-white uppercase">{studentProfile.full_name}</h2>
+              <h2 className="text-2xl font-bold text-white uppercase">{studentProfile.full_name}</h2>
               {riskStatus === "critical" && (
-                <span className="inline-flex items-center gap-1 bg-rose-500/10 text-rose-300 border border-rose-400/30 px-2 py-0.5 rounded-none text-[10px] font-mono font-bold uppercase">
+                <span className="inline-flex items-center gap-1 bg-rose-500/10 text-rose-300 border border-rose-400/30 px-2 py-0.5 rounded-none text-[10px] font-bold uppercase">
                   <PixelIcon name="warning" size={12} /> CRITICAL
                 </span>
               )}
               {riskStatus === "at-risk" && (
-                <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded-none text-[10px] font-mono font-bold uppercase">
+                <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded-none text-[10px] font-bold uppercase">
                   <PixelIcon name="warning" size={12} /> AT RISK
                 </span>
               )}
               {riskStatus === "good" && (
-                <span className="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-none text-[10px] font-mono font-bold uppercase">
+                <span className="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-none text-[10px] font-bold uppercase">
                   <PixelIcon name="check" size={12} /> ON TRACK
                 </span>
               )}
               {riskStatus === "no-data" && (
-                <span className="inline-flex items-center gap-1 bg-white/5 text-slate-400 border border-white/10 px-2 py-0.5 rounded-none text-[10px] font-mono font-bold uppercase">
+                <span className="inline-flex items-center gap-1 bg-white/5 text-slate-400 border border-white/10 px-2 py-0.5 rounded-none text-[10px] font-bold uppercase">
                   NO DATA
                 </span>
               )}
             </div>
             
             {/* Class Switcher & Metadata */}
-            <div className="flex flex-wrap items-center mt-1 text-slate-400 font-mono text-xs gap-3">
+            <div className="flex flex-wrap items-center mt-1 text-slate-400 text-xs gap-3">
               <span>MATRIC: {studentProfile.institutional_id}</span>
               {studentProfile.phone_number && (
                 <>
@@ -182,10 +182,10 @@ export default function ProfilePage() {
                 <select
                   value={selectedClassId}
                   onChange={(e) => setSelectedClassId(e.target.value)}
-                  className="bg-black/30 border border-white/20 text-white text-xs font-mono px-2 py-0.5 rounded-none focus:outline-none focus:border-white/40 cursor-pointer"
+                  className="bg-black/30 border border-white/20 text-white text-xs px-2 py-0.5 rounded-none focus:outline-none focus:border-white/40 cursor-pointer"
                 >
                   {enrolledClasses.map((cls) => (
-                    <option key={cls.class_id} value={cls.class_id} className="bg-[#09111e]">
+                    <option key={cls.class_id} value={cls.class_id} className="bg-[#08090c]">
                       {cls.class_name}
                     </option>
                   ))}
@@ -198,7 +198,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-3 w-full md:w-auto font-mono text-xs">
+        <div className="flex gap-3 w-full md:w-auto text-xs">
           <a 
             href={studentProfile.email ? `mailto:${studentProfile.email}` : "#"}
             onClick={(e) => {
@@ -215,7 +215,7 @@ export default function ProfilePage() {
             <div className="flex items-center justify-center gap-2 bg-white/5 border border-white/10 text-slate-500 px-4 py-2 rounded-none opacity-50 grayscale pointer-events-none">
               <PixelIcon name="calendar" size={14} /> INTERVENTION
             </div>
-            <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover/disabled:flex items-center px-2.5 py-1 text-[10px] font-mono font-semibold text-white bg-black/90 border border-white/20 rounded-none shadow-lg whitespace-nowrap z-50">
+            <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover/disabled:flex items-center px-2.5 py-1 text-[10px] font-semibold text-white bg-black/90 border border-white/20 rounded-none shadow-lg whitespace-nowrap z-50">
               Disabled Feature
             </div>
           </div>
@@ -228,12 +228,12 @@ export default function ProfilePage() {
         <div className="lg:col-span-2 space-y-6">
           {/* Core Metrics (3 Cards) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <div className="bg-[#09111e]/80 p-5 rounded-none border border-white/15 shadow-xl backdrop-blur-md">
+            <div className="bg-[#08090c]/80 p-5 rounded-none border border-white/15 shadow-xl backdrop-blur-md">
               <div className="flex items-center gap-1.5 mb-1">
-                <span className="font-mono text-[10px] text-blue-400 font-bold">01.</span>
-                <p className="text-xs font-mono text-slate-400 uppercase tracking-wider">Attendance</p>
+                <span className="text-[10px] text-blue-400 font-bold">01.</span>
+                <p className="text-xs text-slate-400 uppercase tracking-wider">Attendance</p>
               </div>
-              <p className={`text-3xl font-mono font-bold mt-1 ${
+              <p className={`text-3xl font-bold mt-1 ${
                 attendanceRate === null ? 'text-slate-500' :
                 attendanceRate < 80 ? 'text-rose-400' :
                 attendanceRate < 90 ? 'text-amber-400' :
@@ -243,51 +243,51 @@ export default function ProfilePage() {
               </p>
             </div>
             
-            <div className="bg-[#09111e]/80 p-5 rounded-none border border-white/15 shadow-xl backdrop-blur-md">
+            <div className="bg-[#08090c]/80 p-5 rounded-none border border-white/15 shadow-xl backdrop-blur-md">
               <div className="flex items-center gap-1.5 mb-1">
-                <span className="font-mono text-[10px] text-purple-400 font-bold">02.</span>
-                <p className="text-xs font-mono text-slate-400 uppercase tracking-wider">Latest Score</p>
+                <span className="text-[10px] text-purple-400 font-bold">02.</span>
+                <p className="text-xs text-slate-400 uppercase tracking-wider">Latest Score</p>
               </div>
-              <p className="text-3xl font-mono font-bold text-white mt-1">
+              <p className="text-3xl font-bold text-white mt-1">
                 {latestScore}%
               </p>
             </div>
             
-            <div className="bg-[#09111e]/80 p-5 rounded-none border border-white/15 shadow-xl backdrop-blur-md">
+            <div className="bg-[#08090c]/80 p-5 rounded-none border border-white/15 shadow-xl backdrop-blur-md">
               <div className="flex items-center gap-1.5 mb-1">
-                <span className="font-mono text-[10px] text-amber-400 font-bold">03.</span>
-                <p className="text-xs font-mono text-slate-400 uppercase tracking-wider">Risk Level</p>
+                <span className="text-[10px] text-amber-400 font-bold">03.</span>
+                <p className="text-xs text-slate-400 uppercase tracking-wider">Risk Level</p>
               </div>
-              <p className="text-xl font-mono font-bold text-white uppercase mt-2">
+              <p className="text-xl font-bold text-white uppercase mt-2">
                 {riskStatus === "critical" ? "Critical Risk" : riskStatus === "at-risk" ? "Moderate" : riskStatus === "good" ? "On Track" : "No Data"}
               </p>
             </div>
           </div>
 
           {/* Historical Performance Chart */}
-          <div className="bg-[#09111e]/80 p-6 rounded-none border border-white/15 shadow-xl backdrop-blur-md">
+          <div className="bg-[#08090c]/80 p-6 rounded-none border border-white/15 shadow-xl backdrop-blur-md">
             <div className="flex justify-between items-center mb-6 pb-3 border-b border-white/10">
               <div className="flex items-center gap-2">
                 <PixelIcon name="chart" size={18} className="text-blue-400" />
-                <h3 className="font-mono text-sm font-bold text-white uppercase tracking-wider">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
                   Performance Trajectory
                 </h3>
               </div>
-              <span className="font-mono text-[10px] text-slate-400">TREND</span>
+              <span className="text-[10px] text-slate-400">TREND</span>
             </div>
-            <div className="h-72 w-full font-mono text-xs">
+            <div className="h-72 w-full text-xs">
               {chartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#ffffff15" />
-                    <XAxis dataKey="week" stroke="#94a3b8" fontSize={11} fontFamily="monospace" />
-                    <YAxis stroke="#94a3b8" fontSize={11} domain={[0, 100]} fontFamily="monospace" />
+                    <XAxis dataKey="week" stroke="#94a3b8" fontSize={11} fontFamily="var(--font-space-grotesk), sans-serif" />
+                    <YAxis stroke="#94a3b8" fontSize={11} domain={[0, 100]} fontFamily="var(--font-space-grotesk), sans-serif" />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: '#09111e',
+                        backgroundColor: '#08090c',
                         borderColor: '#ffffff30',
                         borderRadius: 0,
-                        fontFamily: 'monospace',
+                        fontFamily: 'var(--font-space-grotesk), sans-serif',
                         fontSize: '11px',
                         color: '#fff'
                       }}
@@ -297,7 +297,7 @@ export default function ProfilePage() {
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-full flex flex-col items-center justify-center text-slate-400 text-xs font-mono gap-2">
+                <div className="h-full flex flex-col items-center justify-center text-slate-400 text-xs gap-2">
                   <PixelIcon name="chart" size={32} className="text-slate-600" />
                   <p className="font-bold">No performance trajectory data available</p>
                   <p className="text-[10px] text-slate-500">Attendance sessions and assessment scores will appear here once recorded.</p>
@@ -309,19 +309,19 @@ export default function ProfilePage() {
 
         {/* Right Column: Recent Activity Feed */}
         <div className="space-y-6">
-          <div className="bg-[#09111e]/80 p-6 rounded-none border border-white/15 shadow-xl backdrop-blur-md">
+          <div className="bg-[#08090c]/80 p-6 rounded-none border border-white/15 shadow-xl backdrop-blur-md">
             <div className="flex items-center justify-between mb-6 pb-3 border-b border-white/10">
               <div className="flex items-center gap-2">
                 <PixelIcon name="clock" size={18} className="text-blue-400" />
-                <h3 className="font-mono text-sm font-bold text-white uppercase tracking-wider">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
                   Recent Activity
                 </h3>
               </div>
-              <span className="font-mono text-[10px] text-slate-400">LOGS</span>
+              <span className="text-[10px] text-slate-400">LOGS</span>
             </div>
             
             {activitiesList.length > 0 ? (
-              <div className="space-y-4 font-mono text-xs">
+              <div className="space-y-4 text-xs">
                 {activitiesList.map((activity) => (
                   <div key={activity.id} className="p-3 bg-black/20 border border-white/10 rounded-none">
                     <div className="flex items-center justify-between mb-1">

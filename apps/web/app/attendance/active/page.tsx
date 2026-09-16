@@ -214,7 +214,7 @@ export default function ActiveAttendancePage() {
       {/* QR Code Overlay Modal */}
       {showQrModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
-          <div className="bg-[#09111e] rounded-none shadow-2xl w-full max-w-md overflow-hidden border border-white/20 text-white font-mono text-xs">
+          <div className="bg-[#08090c] rounded-none shadow-2xl w-full max-w-md overflow-hidden border border-white/20 text-white text-xs">
             <div className="p-6 border-b border-white/10 text-center relative">
               <button
                 onClick={() => setShowQrModal(false)}
@@ -223,8 +223,8 @@ export default function ActiveAttendancePage() {
                 ✕
               </button>
               <div className="flex items-center justify-center gap-2 mb-2">
-                <span className="w-1.5 h-1.5 bg-blue-400 rounded-none" />
-                <span className="text-[10px] text-blue-400 uppercase tracking-wider font-bold">
+                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-none" />
+                <span className="text-[10px] text-emerald-400 uppercase tracking-wider font-bold">
                   ACTIVE SESSION QR
                 </span>
               </div>
@@ -246,14 +246,14 @@ export default function ActiveAttendancePage() {
               </div>
 
               <div className="text-center w-full">
-                <p className="text-slate-300 font-mono text-xs bg-black/40 border border-white/15 py-2.5 rounded-none mb-6">
+                <p className="text-slate-300 text-xs bg-black/40 border border-white/15 py-2.5 rounded-none mb-6">
                   SESSION-PIN: <span className="font-bold text-white text-base tracking-widest">{sessionPin}</span>
                 </p>
                 <button
                   onClick={() => setShowQrModal(false)}
-                  className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-none border border-blue-400 shadow-lg shadow-blue-900/30 transition-colors uppercase cursor-pointer"
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-none border border-emerald-400 shadow-lg shadow-emerald-900/30 transition-colors uppercase cursor-pointer"
                 >
-                  Close QR & View Live Dashboard
+                  CLOSE PREVIEW
                 </button>
               </div>
             </div>
@@ -262,7 +262,7 @@ export default function ActiveAttendancePage() {
       )}
 
       {/* Top Controls Bar */}
-      <div className="mb-6 flex justify-between items-center font-mono text-xs">
+      <div className="mb-6 flex justify-between items-center text-xs">
         <Link
           href="/"
           className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
@@ -277,15 +277,15 @@ export default function ActiveAttendancePage() {
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 pb-6 border-b border-white/10">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="w-1.5 h-1.5 bg-blue-400 rounded-none" />
-            <span className="font-mono text-xs text-blue-400 uppercase tracking-wider font-semibold">
+            <span className="w-1.5 h-1.5 bg-emerald-400 rounded-none" />
+            <span className="text-xs text-emerald-400 uppercase tracking-wider font-semibold">
               PASUM // LIVE SESSION
             </span>
           </div>
-          <h2 className="text-3xl font-bold font-mono tracking-tight uppercase text-white">
+          <h2 className="text-3xl font-bold tracking-tight uppercase text-white">
             {className} - {classGroup}
           </h2>
-          <div className="flex flex-col gap-2 mt-2 font-mono text-xs">
+          <div className="flex flex-col gap-2 mt-2 text-xs">
             <p className="text-slate-400 flex items-center gap-2">
               <PixelIcon name="clock" size={14} /> SESSION PIN: <span className="font-bold text-white">{sessionPin}</span>
             </p>
@@ -295,7 +295,7 @@ export default function ActiveAttendancePage() {
                   ONLINE MODE
                 </span>
               ) : (
-                <span className="bg-blue-500/10 text-blue-300 border border-blue-400/30 px-2.5 py-1 rounded-none">
+                <span className="bg-emerald-500/10 text-emerald-300 border border-emerald-400/30 px-2.5 py-1 rounded-none">
                   IN-PERSON MODE
                 </span>
               )}
@@ -319,7 +319,7 @@ export default function ActiveAttendancePage() {
           </div>
         </div>
 
-        <div className="flex gap-3 w-full md:w-auto font-mono text-xs">
+        <div className="flex gap-3 w-full md:w-auto text-xs">
           <button
             onClick={() => setShowQrModal(true)}
             className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-transparent border border-white/20 text-white px-4 py-2.5 rounded-none hover:bg-white/10 transition-colors cursor-pointer"
@@ -336,8 +336,8 @@ export default function ActiveAttendancePage() {
       </header>
 
       {/* Live Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 font-mono">
-        <div className="bg-[#09111e]/80 p-6 rounded-none border border-white/15 shadow-xl flex justify-between items-center backdrop-blur-md">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-[#08090c]/80 p-6 rounded-none border border-white/15 shadow-xl flex justify-between items-center backdrop-blur-md">
           <div>
             <div className="flex items-center gap-1.5 mb-1">
               <span className="text-[10px] text-emerald-400 font-bold">01.</span>
@@ -354,10 +354,10 @@ export default function ActiveAttendancePage() {
         </div>
 
         {/* Manual Check-in Override Banner */}
-        <div className="md:col-span-2 bg-[#09111e]/80 p-6 rounded-none border border-white/15 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 backdrop-blur-md">
+        <div className="md:col-span-2 bg-[#08090c]/80 p-6 rounded-none border border-white/15 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 backdrop-blur-md">
           <div>
             <h3 className="font-bold text-sm text-white uppercase flex items-center gap-2">
-              <PixelIcon name="warning" size={16} className="text-blue-400" />
+              <PixelIcon name="warning" size={16} className="text-emerald-400" />
               Manual Override Check-in
             </h3>
             <p className="text-slate-400 text-xs mt-1 max-w-md">
@@ -366,7 +366,7 @@ export default function ActiveAttendancePage() {
           </div>
           <button
             onClick={() => setShowOverrideModal(true)}
-            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-none font-bold text-xs border border-blue-400 shadow-lg shadow-blue-900/30 transition-colors uppercase whitespace-nowrap cursor-pointer"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-none font-bold text-xs border border-emerald-400 shadow-lg shadow-emerald-900/30 transition-colors uppercase whitespace-nowrap cursor-pointer"
           >
             + MANUAL OVERRIDE
           </button>
@@ -374,7 +374,7 @@ export default function ActiveAttendancePage() {
       </div>
 
       {/* Live Feed Table */}
-      <div className="bg-[#09111e]/80 border border-white/15 rounded-none shadow-2xl overflow-hidden backdrop-blur-md font-mono text-xs">
+      <div className="bg-[#08090c]/80 border border-white/15 rounded-none shadow-2xl overflow-hidden backdrop-blur-md text-xs">
         <div className="p-4 border-b border-white/10 bg-black/20 flex justify-between items-center">
           <h3 className="font-bold text-white text-xs uppercase tracking-wider">Live Check-in Feed</h3>
           <span className="text-[10px] text-slate-400">{liveAttendees.length} CHECKED IN</span>
@@ -443,7 +443,7 @@ export default function ActiveAttendancePage() {
       {/* Manual Override Modal */}
       {showOverrideModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
-          <div className="bg-[#09111e] rounded-none w-full max-w-md shadow-2xl overflow-hidden border border-white/20 font-mono text-xs text-white">
+          <div className="bg-[#08090c] rounded-none w-full max-w-md shadow-2xl overflow-hidden border border-white/20 text-xs text-white">
             <div className="p-4 border-b border-white/10 flex justify-between items-center">
               <h3 className="font-bold text-xs uppercase text-white flex items-center gap-2">
                 <PixelIcon name="profile" size={14} />
@@ -466,13 +466,13 @@ export default function ActiveAttendancePage() {
                     <button
                       key={student.id}
                       onClick={() => handleManualOverride(student)}
-                      className="w-full flex items-center justify-between p-3 border border-white/10 hover:border-white/30 bg-black/20 hover:bg-white/5 transition-all text-left font-mono cursor-pointer rounded-none"
+                      className="w-full flex items-center justify-between p-3 border border-white/10 hover:border-white/30 bg-black/20 hover:bg-white/5 transition-all text-left cursor-pointer rounded-none"
                     >
                       <div>
                         <p className="font-bold text-white text-xs">{student.full_name}</p>
                         <p className="text-[10px] text-slate-400">{student.institutional_id}</p>
                       </div>
-                      <span className="text-[10px] font-bold text-blue-300 bg-blue-600/20 border border-blue-400/30 px-2 py-1 rounded-none">
+                      <span className="text-[10px] font-bold text-emerald-300 bg-emerald-600/20 border border-emerald-400/30 px-2 py-1 rounded-none">
                         CHECK IN →
                       </span>
                     </button>
