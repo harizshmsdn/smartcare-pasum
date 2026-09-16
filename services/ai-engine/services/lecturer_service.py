@@ -35,11 +35,21 @@ def get_lecturer_dashboard(user: dict, db):
             """, (user_id,))
             pending_interventions = cur.fetchone()["pending_interventions"]
 
+            # Calculate true average attendance
+            cur.execute("""
+                SELECT AVG(e.current_attendance_rate) as average_attendance
+                FROM public.enrollments e
+                JOIN public.classes c ON e.class_id = c.id
+                WHERE c.lecturer_id = %s AND e.current_attendance_rate IS NOT NULL;
+            """, (user_id,))
+            att_res = cur.fetchone()
+            average_attendance = round(att_res["average_attendance"]) if att_res and att_res["average_attendance"] is not None else "-"
+
             return {
                 "total_classes": total_classes,
                 "total_students": total_students,
                 "pending_interventions": pending_interventions,
-                "average_attendance": 100 # Mock average for now
+                "average_attendance": average_attendance
             }
     except Exception as e:
         db.rollback()
@@ -83,20 +93,29 @@ def get_lecturer_classes(user: dict, db):
                 enrollments = cur.fetchall() or []
                 
                 total_enrollments = len(enrollments)
-                avg_attendance = 100
-                critical_count = 0
-                at_risk_count = 0
+                avg_attendance = "-"
+                critical_count = "-"
+                at_risk_count = "-"
                 
                 if total_enrollments > 0:
                     sum_att = 0
+                    valid_att_count = 0
+                    crit = 0
+                    risk = 0
                     for e in enrollments:
-                        rate = float(e["current_attendance_rate"]) if e["current_attendance_rate"] is not None else 100.0
-                        sum_att += rate
-                        if rate < 80:
-                            critical_count += 1
-                        elif rate < 90:
-                            at_risk_count += 1
-                    avg_attendance = round(sum_att / total_enrollments)
+                        if e["current_attendance_rate"] is not None:
+                            rate = float(e["current_attendance_rate"])
+                            sum_att += rate
+                            valid_att_count += 1
+                            if rate < 80:
+                                crit += 1
+                            elif rate < 90:
+                                risk += 1
+                    
+                    if valid_att_count > 0:
+                        avg_attendance = round(sum_att / valid_att_count)
+                        critical_count = crit
+                        at_risk_count = risk
                     
                 # Fetch active session
                 cur.execute("""
@@ -166,7 +185,7 @@ def get_class_roster(class_id: str, user: dict, db):
             formatted_enrollments = []
             for e in enrollments:
                 formatted_enrollments.append({
-                    "current_attendance_rate": float(e["current_attendance_rate"]) if e["current_attendance_rate"] is not None else 0.0,
+                    "current_attendance_rate": float(e["current_attendance_rate"]) if e["current_attendance_rate"] is not None else "-",
                     "profiles": {
                         "id": str(e["id"]),
                         "full_name": e["full_name"],

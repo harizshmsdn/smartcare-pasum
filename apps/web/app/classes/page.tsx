@@ -42,8 +42,8 @@ interface StudentListItem {
   name: string;
   email?: string;
   status: string;
-  attendance: number;
-  latestScore: number;
+  attendance: number | string;
+  latestScore: number | string;
   lastSeen: string;
 }
 
@@ -183,10 +183,17 @@ export default function ClassesPage() {
     if (rosterEnrollments) {
       const formattedStudents = rosterEnrollments.map((e: any) => {
         const profile = e.profiles;
-        const attendance = Number(e.current_attendance_rate);
+        const attendanceRaw = e.current_attendance_rate;
+        const attendance = attendanceRaw !== "-" ? Number(attendanceRaw) : "-";
         let status = 'good';
-        if (attendance < 80) status = 'critical';
-        else if (attendance < 90) status = 'at-risk';
+        
+        if (attendance === "-") {
+          status = 'no-data';
+        } else if (attendance < 80) {
+          status = 'critical';
+        } else if (attendance < 90) {
+          status = 'at-risk';
+        }
 
         return {
           id: profile?.id || '',
@@ -195,8 +202,8 @@ export default function ClassesPage() {
           email: profile?.email || '',
           status,
           attendance,
-          latestScore: attendance < 80 ? 45 : attendance < 90 ? 63 : 88,
-          lastSeen: attendance < 80 ? '3 days ago' : 'Today'
+          latestScore: attendance === "-" ? "-" : (attendance < 80 ? 45 : attendance < 90 ? 63 : 88),
+          lastSeen: attendance === "-" ? "-" : (attendance < 80 ? '3 days ago' : 'Today')
         };
       });
       setStudents(formattedStudents);
@@ -234,10 +241,11 @@ export default function ClassesPage() {
   }, [searchQuery, activeTab]);
 
   //Calculate dynamic alerts count
-  const alertsCount = students.filter(s => s.status !== "good").length;
-  const classAvg = students.length > 0
-    ? Math.round(students.reduce((sum, s) => sum + s.attendance, 0) / students.length)
-    : 100;
+  const alertsCount = students.filter(s => s.status === "critical" || s.status === "at-risk").length;
+  const studentsWithData = students.filter(s => s.attendance !== "-");
+  const classAvg = studentsWithData.length > 0
+    ? Math.round(studentsWithData.reduce((sum, s) => sum + (s.attendance as number), 0) / studentsWithData.length)
+    : "-";
 
   // Pagination logic
   const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage));
@@ -372,7 +380,7 @@ export default function ClassesPage() {
           </div>
           <div className="min-w-0">
             <p className="text-xs font-semibold text-slate-500 truncate mb-1">Class Average</p>
-            <p className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">{classAvg}%</p>
+            <p className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">{classAvg}{classAvg !== "-" ? "%" : ""}</p>
           </div>
         </div>
 
@@ -499,17 +507,22 @@ export default function ClassesPage() {
                           <CheckCircle2 size={14} /> On Track
                         </span>
                       )}
+                      {student.status === "no-data" && (
+                        <span className="inline-flex items-center gap-1.5 bg-slate-50 text-slate-500 border border-slate-200 px-2.5 py-1 rounded-md text-xs font-semibold">
+                          No Data
+                        </span>
+                      )}
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
-                        <span className={`font-semibold ${student.attendance < 80 ? "text-red-600" : "text-slate-700"}`}>
-                          {student.attendance}%
+                        <span className={`font-semibold ${typeof student.attendance === 'number' && student.attendance < 80 ? "text-red-600" : "text-slate-700"}`}>
+                          {student.attendance}{student.attendance !== "-" ? "%" : ""}
                         </span>
                       </div>
                     </td>
                     <td className="p-4">
-                      <span className={`font-semibold ${student.latestScore < 50 ? "text-red-600" : "text-slate-700"}`}>
-                        {student.latestScore}%
+                      <span className={`font-semibold ${typeof student.latestScore === 'number' && student.latestScore < 50 ? "text-red-600" : "text-slate-700"}`}>
+                        {student.latestScore}{student.latestScore !== "-" ? "%" : ""}
                       </span>
                     </td>
                     <td className="p-4 text-right">

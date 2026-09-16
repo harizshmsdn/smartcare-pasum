@@ -36,9 +36,9 @@ interface ScheduleItem {
   time: string;
   location: string;
   status: string;
-  critical: number;
-  atRisk: number;
-  attendance: number;
+  critical: number | string;
+  atRisk: number | string;
+  attendance: number | string;
   activeSessionId?: string | null;
   activeSessionPin?: string | null;
   activeOnlineMode?: boolean;
@@ -51,7 +51,7 @@ interface AssignedClass {
   title: string;
   type: "Lecture" | "Tutorial" | "Lab" | string;
   time: string;
-  attendance: number;
+  attendance: number | string;
 }
 
 //Helper function to dynamically map database strings to icons
@@ -169,9 +169,9 @@ export default function HomePage() {
             time: formattedDayTime,
             location: cls.location || (cls.type === 'Lecture' ? 'Lecture Hall 3' : 'Computer Lab 2'),
             status: cls.active_session ? 'Ongoing' : 'Scheduled',
-            critical: cls.stats?.critical_count || 0,
-            atRisk: cls.stats?.at_risk_count || 0,
-            attendance: cls.stats?.average_attendance || 100,
+            critical: cls.stats?.critical_count !== undefined ? cls.stats.critical_count : "-",
+            atRisk: cls.stats?.at_risk_count !== undefined ? cls.stats.at_risk_count : "-",
+            attendance: cls.stats?.average_attendance !== undefined ? cls.stats.average_attendance : "-",
             type: cls.type,
             dayOfWeek: cls.day_of_week,
             startTime: cls.start_time,
@@ -406,7 +406,7 @@ export default function HomePage() {
                       <div className="flex items-center gap-1.5 text-emerald-700 text-xs font-bold uppercase mb-1">
                         Attendance
                       </div>
-                      <div className="text-2xl font-black text-emerald-700">{cls.attendance}%</div>
+                      <div className="text-2xl font-black text-emerald-700">{cls.attendance}{cls.attendance !== "-" ? "%" : ""}</div>
                     </div>
                   </div>
                 </div>
@@ -472,8 +472,8 @@ export default function HomePage() {
                       </div>
                       <div className="flex justify-between items-center text-sm">
                         <span className="text-slate-500">Overall Attendance</span>
-                        <span className={`font-bold ${item.attendance < 90 ? 'text-orange-600' : 'text-emerald-600'}`}>
-                          {item.attendance}%
+                        <span className={`font-bold ${typeof item.attendance === 'number' && item.attendance < 90 ? 'text-orange-600' : 'text-emerald-600'}`}>
+                          {item.attendance}{item.attendance !== "-" ? "%" : ""}
                         </span>
                       </div>
                     </div>
