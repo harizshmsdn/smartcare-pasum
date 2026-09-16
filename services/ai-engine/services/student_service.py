@@ -15,7 +15,7 @@ def get_student_dashboard_analytics(user: dict = Depends(get_current_user), db =
 
             # 1. Fetch Profile Total Merits & Verify Student Role
             profile = check_user_auth(cur, student_id, "student")
-            total_merits = float(profile["total_merit_score"])
+            total_merits = float(profile.get("total_merit_score") or 0)
 
             # 2. Fetch Enrollments & Class details
             cur.execute(
@@ -175,7 +175,14 @@ def get_student_dashboard_analytics(user: dict = Depends(get_current_user), db =
                 })
 
             return {
-                "profile": {"full_name": profile["full_name"], "email": profile["email"], "institutional_id": profile["institutional_id"]},
+                "profile": {
+                    "id": str(profile["id"]),
+                    "full_name": profile.get("full_name") or "Student",
+                    "email": profile.get("email") or "",
+                    "institutional_id": profile.get("institutional_id") or "",
+                    "phone_number": profile.get("phone_number") or "",
+                    "emergency_contact": profile.get("emergency_contact") or ""
+                },
                 "total_merits": 0,
                 "subjects_list": subjects_list,
                 "class_attendance": class_attendance,

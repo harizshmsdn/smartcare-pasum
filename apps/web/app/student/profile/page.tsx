@@ -32,19 +32,40 @@ export default function StudentProfilePage() {
   const fetchProfile = async () => {
     setIsLoading(true);
     try {
-      const data = await studentService.getDashboard();
-      if (data.profile) {
-        setProfile(data.profile);
-        setEditPhone(data.profile.phone_number || "");
-        setEditEmergency(data.profile.emergency_contact || "");
+      let profileData = null;
+      let assignedClasses: any[] = [];
+
+      try {
+        const data = await studentService.getDashboard();
+        if (data && data.profile) {
+          profileData = data.profile;
+        }
+        assignedClasses = data?.assigned_classes || [];
+      } catch (apiErr) {
+        console.warn("FastAPI student profile error, falling back to direct Supabase:", apiErr);
       }
-      
-      const assigned = data.assigned_classes || [];
-      if (assigned.length > 0) {
-        const formatted = assigned.map((c: any) => ({
+
+      if (!profileData) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: directProfile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+          if (directProfile) {
+            profileData = directProfile;
+          }
+        }
+      }
+
+      if (profileData) {
+        setProfile(profileData);
+        setEditPhone(profileData.phone_number || "");
+        setEditEmergency(profileData.emergency_contact || "");
+      }
+
+      if (assignedClasses.length > 0) {
+        const formatted = assignedClasses.map((c: any) => ({
           code: c.subject || "PHY101",
-          name: c.title || "Unknown Class",
-          group: c.group || "Group A"
+          name: c.name || c.title || "Unknown Class",
+          group: c.code || c.group || "Group A"
         }));
         setEnrolledCourses(formatted);
       }

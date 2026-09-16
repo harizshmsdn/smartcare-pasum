@@ -62,10 +62,18 @@ def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
 
 
 def check_user_auth(cur, user_id: str, required_role: Optional[str] = None) -> dict:
-    """Verifies that the user exists, returns their profile, and optionally validates their role."""
+    # Verifies user profile exists and optionally validates role
     cur.execute(
         """
-        SELECT id, role, full_name, COALESCE(total_merit_score, 0) as total_merit_score 
+        SELECT 
+            id, 
+            role, 
+            full_name, 
+            email, 
+            institutional_id, 
+            phone_number, 
+            emergency_contact, 
+            COALESCE(total_merit_score, 0) as total_merit_score 
         FROM public.profiles 
         WHERE id = %s LIMIT 1;
         """,

@@ -71,13 +71,60 @@ export default function StudentHomePage() {
   }).format(new Date());
 
   const fetchDashboardData = async () => {
-    const data = await studentService.getDashboard();
-    return data;
+    try {
+      const data = await studentService.getDashboard();
+      return data;
+    } catch (err) {
+      console.warn("FastAPI student dashboard error, falling back to direct Supabase:", err);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      const { data: enrollments } = await supabase
+        .from('enrollments')
+        .select(`
+          class_id,
+          current_attendance_rate,
+          classes (
+            group_code,
+            type,
+            day_of_week,
+            start_time,
+            end_time,
+            subjects (code, name),
+            profiles:lecturer_id (full_name)
+          )
+        `)
+        .eq('student_id', user.id);
+
+      const assignedClasses = (enrollments || []).map((e: any) => ({
+        id: e.class_id,
+        name: e.classes?.subjects?.name || "Unknown Class",
+        code: e.classes?.group_code || "Group A",
+        subject: e.classes?.subjects?.code || "SUBJ",
+        lecturer: e.classes?.profiles?.full_name || "Unknown",
+        attendance: e.current_attendance_rate ? Number(e.current_attendance_rate) : 85,
+        latestScore: 0,
+        riskStatus: "Good",
+        type: e.classes?.type || "Lecture",
+        dayOfWeek: e.classes?.day_of_week || "Monday",
+        startTime: e.classes?.start_time || "10:00:00",
+        endTime: e.classes?.end_time || "12:00:00"
+      }));
+
+      return {
+        profile,
+        assigned_classes: assignedClasses
+      };
+    }
   };
 
-  const { data: dashboardData, isLoading: isSwrLoading, mutate } = useSWR('studentDashboard', fetchDashboardData);
+  const { data: dashboardData, error: swrError, isLoading: isSwrLoading, mutate } = useSWR('studentDashboard', fetchDashboardData);
 
   useEffect(() => {
+    if (swrError) {
+      setIsLoading(false);
+      return;
+    }
     if (!dashboardData) return;
 
     if (dashboardData.profile?.full_name) {
@@ -107,7 +154,7 @@ export default function StudentHomePage() {
     setAssignedClasses(processedClasses);
     setActiveIndex(0);
     setIsLoading(false);
-  }, [dashboardData]);
+  }, [dashboardData, swrError]);
 
   // Realtime subscription for live updates
   useEffect(() => {
