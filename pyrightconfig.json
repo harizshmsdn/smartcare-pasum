@@ -1,12 +1,15 @@
 {
-  "venvPath": ".",
-  "venv": "services/ai-engine/venv",
+  "include": [
+    "services/ai-engine"
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__",
+    "services/ai-engine/venv",
+    ".venv"
+  ],
   "extraPaths": [
     "services/ai-engine"
   ],
-  "executionEnvironments": [
-    {
-      "root": "services/ai-engine"
-    }
-  ]
+  "reportMissingModuleSource": false
 }

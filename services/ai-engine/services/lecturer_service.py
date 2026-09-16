@@ -1,7 +1,7 @@
 from fastapi import HTTPException, Depends
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 from pydantic import BaseModel
 
@@ -276,7 +276,7 @@ def update_intervention(intervention_id: str, req: dict, user: dict, db):
                 SET status = %s, updated_at = %s
                 WHERE id = %s
                 RETURNING id, status;
-            """, (req.get("status"), datetime.utcnow().isoformat(), intervention_id))
+            """, (req.get("status"), datetime.now(timezone.utc).isoformat(), intervention_id))
             
             updated = cur.fetchone()
             db.commit()

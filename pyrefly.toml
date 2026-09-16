@@ -1,0 +1,14 @@
+python-interpreter-path = "services/ai-engine/venv/bin/python"
+
+search-path = [
+  "services/ai-engine",
+  "services/ai-engine/venv/lib/python3.9/site-packages",
+  ".venv/lib/python3.11/site-packages"
+]
+
+site-package-path = [
+  "services/ai-engine/venv/lib/python3.9/site-packages"
+]
+
+[errors]
+missing-source-for-stubs = "ignore"

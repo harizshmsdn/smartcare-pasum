@@ -14,8 +14,9 @@ import {
   Users,
   CheckCircle2,
   Award,
-  Layers,
-  Sparkles
+  Sparkles,
+  Trash2,
+  AlertTriangle
 } from "lucide-react";
 import { createClient } from "../../../utils/supabase/client";
 import { api } from "../../../lib/api";
@@ -62,6 +63,8 @@ export default function ClassAssessmentsPage() {
   const [newTotalMarks, setNewTotalMarks] = useState("20");
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingScore, setIsSavingScore] = useState(false);
+  const [assessmentToDelete, setAssessmentToDelete] = useState<AssessmentItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // 1. Fetch lecturer classes
   useEffect(() => {
@@ -143,6 +146,36 @@ export default function ClassAssessmentsPage() {
     });
     overallAvgScore = count > 0 ? Math.round(totalScorePctSum / count) : 0;
   }
+
+  // Remove an assessment and synchronize client state
+  const handleDeleteAssessment = async (assessmentId: string) => {
+    setIsDeleting(true);
+    try {
+      await api.delete(`/api/assessments/${assessmentId}`);
+      setAssessments((prev) => prev.filter((a) => a.id !== assessmentId));
+      setRosterScores((prev) =>
+        prev.map((student) => {
+          const updatedScores = { ...student.scores };
+          delete updatedScores[assessmentId];
+          return { ...student, scores: updatedScores };
+        })
+      );
+      setEditingScores((prev) => {
+        const next = { ...prev };
+        Object.keys(next).forEach((key) => {
+          if (key.endsWith(`_${assessmentId}`)) {
+            delete next[key];
+          }
+        });
+        return next;
+      });
+      setAssessmentToDelete(null);
+    } catch (err: any) {
+      alert("Failed to delete assessment: " + (err.detail || err.message || "Error"));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <main className="flex-1 p-8 h-screen flex flex-col bg-[#FAF9F6] overflow-y-auto">
@@ -433,9 +466,20 @@ export default function ClassAssessmentsPage() {
                               <div className="bg-blue-600 h-full rounded-full" style={{ width: `${Math.min(100, a.weightage * 2.5)}%` }}></div>
                             </div>
                           </div>
-                          <div className="text-right bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                            <span className="text-3xl font-extrabold text-slate-900">{a.total_marks}</span>
-                            <span className="text-xs text-slate-400 block font-semibold mt-0.5">Max Marks</span>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                              <span className="text-3xl font-extrabold text-slate-900">{a.total_marks}</span>
+                              <span className="text-xs text-slate-400 block font-semibold mt-0.5">Max Marks</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setAssessmentToDelete(a)}
+                              className="p-3 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-2xl transition-all cursor-pointer border border-transparent hover:border-red-100 active:scale-95"
+                              title="Delete assessment"
+                              aria-label={`Delete ${a.title}`}
+                            >
+                              <Trash2 size={18} />
+                            </button>
                           </div>
                         </div>
                       ))}
@@ -541,6 +585,46 @@ export default function ClassAssessmentsPage() {
         </div>
 
       </div>
+
+      {/* Confirmation modal for assessment deletion */}
+      {assessmentToDelete && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+            <div className="flex items-center gap-3.5 mb-4">
+              <div className="p-3 bg-red-50 text-red-600 rounded-2xl shrink-0">
+                <AlertTriangle size={24} />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Remove Assessment</h3>
+                <p className="text-xs text-slate-500 font-medium">Permanent deletion</p>
+              </div>
+            </div>
+
+            <p className="text-sm text-slate-600 mb-6 leading-relaxed">
+              Are you sure you want to remove <span className="font-bold text-slate-900">{assessmentToDelete.title}</span>? All student marks recorded for this assessment will be permanently deleted from the database.
+            </p>
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setAssessmentToDelete(null)}
+                className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer border-none bg-transparent disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => handleDeleteAssessment(assessmentToDelete.id)}
+                className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 shadow-sm shadow-red-200 transition-all cursor-pointer border-none flex items-center gap-2 disabled:opacity-50"
+              >
+                {isDeleting ? "Deleting..." : "Remove Assessment"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

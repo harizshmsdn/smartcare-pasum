@@ -1,12 +1,9 @@
 from fastapi import HTTPException, Depends
-import psycopg2
 from psycopg2.extras import RealDictCursor
-import uuid
-import json
 import random
-from datetime import datetime, timedelta
-from models.schemas import *
-from core.auth import check_user_auth, check_admin_auth, get_current_user
+from datetime import datetime, timezone
+from models.schemas import SessionStartRequest, AssessmentCreateRequest, ScoreSaveRequest
+from core.auth import get_current_user
 from core.database import get_db
 
 def generate_complex_pin(conn) -> str:
@@ -60,7 +57,7 @@ def start_session(req: SessionStartRequest, user: dict = Depends(get_current_use
 
             # 3. Generate secure PIN
             session_pin = generate_complex_pin(db)
-            opened_at = req.opened_at if req.opened_at else datetime.utcnow().isoformat()
+            opened_at = req.opened_at if req.opened_at else datetime.now(timezone.utc).isoformat()
 
             # 4. Atomic Database Insert
             cur.execute(
@@ -298,4 +295,48 @@ def save_student_score(assessment_id: str, req: ScoreSaveRequest, user: dict = D
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Save Score Error: {str(e)}")
+
+
+def delete_assessment(assessment_id: str, user: dict = Depends(get_current_user), db = Depends(get_db)):
+    try:
+        with db.cursor(cursor_factory=RealDictCursor) as cur:
+            user_id = user["id"]
+            user_role = user.get("role", "authenticated")
+
+            cur.execute("SELECT role FROM public.profiles WHERE id = %s LIMIT 1;", (user_id,))
+            profile = cur.fetchone()
+            actual_role = profile["role"] if profile else user_role
+
+            # Verify assessment ownership and permission
+            cur.execute(
+                """
+                SELECT a.id, a.class_id, a.title
+                FROM public.assessments a
+                JOIN public.classes c ON a.class_id = c.id
+                WHERE a.id = %s AND (c.lecturer_id = %s OR %s = 'admin')
+                LIMIT 1;
+                """,
+                (assessment_id, user_id, actual_role)
+            )
+            assessment = cur.fetchone()
+            if not assessment:
+                raise HTTPException(status_code=403, detail="Access denied or assessment not found")
+
+            # Delete assessment and cascade delete corresponding student scores
+            cur.execute("DELETE FROM public.assessments WHERE id = %s RETURNING id;", (assessment_id,))
+            deleted = cur.fetchone()
+            db.commit()
+
+            return {
+                "status": "success",
+                "message": "Assessment deleted successfully",
+                "deleted_id": str(deleted["id"])
+            }
+
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Delete Assessment Error: {str(e)}")
 

@@ -3,7 +3,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import uuid
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from models.schemas import *
 from core.auth import check_user_auth, check_admin_auth, get_current_user
 from core.database import get_db
@@ -42,7 +42,7 @@ def get_alerts(filter: Optional[str] = "all", user: dict = Depends(get_current_u
             )
             rows = cur.fetchall() or []
 
-            now_ms = datetime.utcnow().timestamp() * 1000
+            now_ms = datetime.now(timezone.utc).timestamp() * 1000
             formatted_alerts = []
             unread_count = 0
 
