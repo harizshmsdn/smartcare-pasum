@@ -54,9 +54,9 @@ export default function StudentClassesPage() {
 
   // States for Class/Lecturer data
   const [lecturerInfo, setLecturerInfo] = useState<any>(null);
-  const [attendanceRate, setAttendanceRate] = useState(100);
+  const [attendanceRate, setAttendanceRate] = useState(0);
   const [classScheduleText, setClassScheduleText] = useState("Wednesday • 10:00 AM");
-  const [performanceNumeric, setPerformanceNumeric] = useState(100);
+  const [performanceNumeric, setPerformanceNumeric] = useState(0);
 
   // Detailed lists
   const [attendanceLog, setAttendanceLog] = useState<AttendanceLogItem[]>([]);
@@ -184,13 +184,16 @@ export default function StudentClassesPage() {
         .eq('class_id', classId)
         .order('opened_at', { ascending: false });
 
-      const hasAttendance = Boolean(sessions && sessions.length > 0);
-      const attRate = hasAttendance
-        ? (enrollData?.current_attendance_rate ? Number(enrollData.current_attendance_rate) : 0)
-        : 0;
-
+      let attendedCnt = 0;
+      let hasStudentAttRecords = false;
       const attendanceLog = (sessions || []).map((s: any) => {
         const record = (s.attendance_records || []).find((r: any) => r.student_id === user.id);
+        if (record) {
+          hasStudentAttRecords = true;
+          if (["present", "excused"].includes(String(record.status || "").toLowerCase())) {
+            attendedCnt++;
+          }
+        }
         const dateStr = s.opened_at ? new Date(s.opened_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : "N/A";
         const methods: string[] = [];
         if (record?.face_verified) methods.push("Face ID");
@@ -206,6 +209,11 @@ export default function StudentClassesPage() {
         };
       });
 
+      // Calculate attendance rate from real session count and student check-ins
+      const totalSessions = sessions?.length || 0;
+      const hasAttendance = totalSessions > 0 && hasStudentAttRecords;
+      const attRate = hasAttendance ? Math.round((attendedCnt / totalSessions) * 100) : 0;
+
       const { data: assessList } = await supabase
         .from('assessments')
         .select(`
@@ -219,9 +227,11 @@ export default function StudentClassesPage() {
       let scoreCnt = 0;
       const assessments = (assessList || []).map((a: any) => {
         const userScore = (a.student_scores || []).find((sc: any) => sc.student_id === user.id);
-        const scoreAchieved = userScore ? Number(userScore.score_achieved) : 0;
+        const hasScore = userScore !== undefined && userScore.score_achieved !== null && userScore.score_achieved !== undefined;
+        const scoreAchieved = hasScore ? Number(userScore.score_achieved) : 0;
         const totalMarks = Number(a.total_marks) || 100;
-        if (totalMarks > 0) {
+        // Only include in CA average if student has taken and been graded on this assessment
+        if (hasScore && totalMarks > 0) {
           scoreSum += (scoreAchieved / totalMarks) * 100;
           scoreCnt++;
         }

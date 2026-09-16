@@ -2,8 +2,8 @@
 "use client";
 
 import React, { useState } from 'react';
-import { KeyRound, X, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
-import { createClient } from '../utils/supabase/client';
+import { KeyRound, X, Eye, EyeOff, CheckCircle2, AlertCircle, Check, Circle } from 'lucide-react';
+import { changePassword } from '../app/login/actions';
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
@@ -11,41 +11,60 @@ interface ChangePasswordModalProps {
 }
 
 export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProps) {
-  const supabase = createClient();
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  // Handles updating the user's password via Supabase Auth
+  // Real-time live password requirement checks
+  const hasMinLength = newPassword.length >= 8;
+  const hasCapital = /[A-Z]/.test(newPassword);
+  const hasNumber = /[0-9]/.test(newPassword);
+  const hasSpecial = /[^A-Za-z0-9]/.test(newPassword);
+  const isDifferentFromOld = currentPassword.length === 0 || newPassword.length === 0 || newPassword !== currentPassword;
+  const passwordsMatch = newPassword.length > 0 && confirmPassword.length > 0 && newPassword === confirmPassword;
+
+  const allRequirementsMet = hasMinLength && hasCapital && hasNumber && hasSpecial && isDifferentFromOld;
+
+  // Handles updating password via server action
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    if (!newPassword || newPassword.length < 6) {
-      setErrorMsg("Password must be at least 6 characters long.");
+    if (!currentPassword) {
+      setErrorMsg("Please enter your current password.");
       return;
     }
+
+    if (!allRequirementsMet) {
+      setErrorMsg("Please ensure all password criteria are satisfied.");
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
-      setErrorMsg("Passwords do not match.");
+      setErrorMsg("Confirm password does not match new password.");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
+      const res = await changePassword(currentPassword, newPassword);
 
-      if (error) {
-        setErrorMsg(error.message);
+      if (res?.error) {
+        setErrorMsg(res.error);
       } else {
         setSuccessMsg("Password updated successfully!");
+        setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
         setTimeout(() => {
@@ -64,6 +83,7 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
     if (isSubmitting) return;
     setErrorMsg(null);
     setSuccessMsg(null);
+    setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
     onClose();
@@ -74,6 +94,7 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
       <div className="w-full max-w-md rounded-2xl bg-white p-6 sm:p-8 shadow-2xl border border-slate-200 relative">
         {/* Close Button */}
         <button
+          type="button"
           onClick={handleClose}
           disabled={isSubmitting}
           className="absolute top-5 right-5 p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
@@ -82,7 +103,7 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
         </button>
 
         {/* Modal Header */}
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-3 mb-5">
           <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
             <KeyRound size={22} />
           </div>
@@ -94,20 +115,45 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
 
         {/* Feedback Alerts */}
         {errorMsg && (
-          <div className="mb-4 p-3 text-xs sm:text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2">
+          <div className="mb-4 p-3.5 text-xs sm:text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2.5 animate-in fade-in duration-150">
             <AlertCircle size={16} className="shrink-0 mt-0.5 text-red-500" />
             <span>{errorMsg}</span>
           </div>
         )}
 
         {successMsg && (
-          <div className="mb-4 p-3 text-xs sm:text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-2">
+          <div className="mb-4 p-3.5 text-xs sm:text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-2.5 animate-in fade-in duration-150">
             <CheckCircle2 size={16} className="shrink-0 mt-0.5 text-emerald-500" />
             <span>{successMsg}</span>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Current Password Input */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+              Current Password
+            </label>
+            <div className="relative">
+              <input
+                type={showCurrent ? "text" : "password"}
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+                disabled={isSubmitting}
+                placeholder="Enter current password"
+                className="w-full px-4 py-2.5 pr-10 rounded-xl border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all placeholder:text-slate-400"
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrent(!showCurrent)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              >
+                {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+
           {/* New Password Input */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
@@ -115,21 +161,50 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
             </label>
             <div className="relative">
               <input
-                type={showPassword ? "text" : "password"}
+                type={showNew ? "text" : "password"}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
                 disabled={isSubmitting}
-                placeholder="Enter at least 6 characters"
+                placeholder="Enter new strong password"
                 className="w-full px-4 py-2.5 pr-10 rounded-xl border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all placeholder:text-slate-400"
               />
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={() => setShowNew(!showNew)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
               >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
+            </div>
+
+            {/* Live Requirement Checklist */}
+            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 mt-2 space-y-1.5 text-xs">
+              <div className="font-semibold text-slate-600 mb-1 text-[11px] uppercase tracking-wider">
+                Password Requirements:
+              </div>
+              <div className={`flex items-center gap-2 transition-colors ${hasMinLength ? 'text-emerald-600 font-medium' : 'text-slate-400'}`}>
+                {hasMinLength ? <Check size={14} className="text-emerald-500 shrink-0" /> : <Circle size={14} className="text-slate-300 shrink-0" />}
+                <span>At least 8 characters</span>
+              </div>
+              <div className={`flex items-center gap-2 transition-colors ${hasCapital ? 'text-emerald-600 font-medium' : 'text-slate-400'}`}>
+                {hasCapital ? <Check size={14} className="text-emerald-500 shrink-0" /> : <Circle size={14} className="text-slate-300 shrink-0" />}
+                <span>At least one capital letter (A-Z)</span>
+              </div>
+              <div className={`flex items-center gap-2 transition-colors ${hasNumber ? 'text-emerald-600 font-medium' : 'text-slate-400'}`}>
+                {hasNumber ? <Check size={14} className="text-emerald-500 shrink-0" /> : <Circle size={14} className="text-slate-300 shrink-0" />}
+                <span>At least one number (0-9)</span>
+              </div>
+              <div className={`flex items-center gap-2 transition-colors ${hasSpecial ? 'text-emerald-600 font-medium' : 'text-slate-400'}`}>
+                {hasSpecial ? <Check size={14} className="text-emerald-500 shrink-0" /> : <Circle size={14} className="text-slate-300 shrink-0" />}
+                <span>At least one special character (!@#$%^&*)</span>
+              </div>
+              {currentPassword && newPassword && !isDifferentFromOld && (
+                <div className="flex items-center gap-2 text-amber-600 font-medium pt-1">
+                  <AlertCircle size={14} className="text-amber-500 shrink-0" />
+                  <span>Cannot be the same as current password</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -140,7 +215,7 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
             </label>
             <div className="relative">
               <input
-                type={showPassword ? "text" : "password"}
+                type={showConfirm ? "text" : "password"}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
@@ -148,11 +223,33 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
                 placeholder="Re-enter your new password"
                 className="w-full px-4 py-2.5 pr-10 rounded-xl border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all placeholder:text-slate-400"
               />
+              <button
+                type="button"
+                onClick={() => setShowConfirm(!showConfirm)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              >
+                {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
+            {confirmPassword && (
+              <div className={`flex items-center gap-1.5 text-xs pt-1 ${passwordsMatch ? 'text-emerald-600' : 'text-red-500'}`}>
+                {passwordsMatch ? (
+                  <>
+                    <Check size={14} className="text-emerald-500" />
+                    <span>Passwords match</span>
+                  </>
+                ) : (
+                  <>
+                    <X size={14} className="text-red-500" />
+                    <span>Passwords do not match</span>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
-          <p className="text-[11px] text-slate-500 leading-normal">
-            Collaborators retain administrative access to determine and manage passwords for beta testing.
+          <p className="text-[11px] text-slate-400 leading-normal">
+            Supabase administrators retain access to manage and verify accounts for beta testing.
           </p>
 
           {/* Action Buttons */}
@@ -167,8 +264,8 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="flex-1 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition-colors shadow-sm disabled:opacity-70 cursor-pointer flex items-center justify-center gap-2"
+              disabled={isSubmitting || !allRequirementsMet || !passwordsMatch || !currentPassword}
+              className="flex-1 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

@@ -9,17 +9,31 @@ export default function LoginPage() {
     const [activeTab, setActiveTab] = useState<'home' | 'about'>('home');
     const [authError, setAuthError] = useState<{ error: string, code: string | number } | null>(null);
     const [isPending, setIsPending] = useState(false);
+    const [isSuccess, setIsSuccess] = useState(false);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
 
     const isWrongCredentials = authError?.error.toLowerCase().includes('credential') || authError?.error.toLowerCase().includes('invalid login');
 
+    // Submits authentication action and manages loading/error states
     const handleAction = async (action: (formData: FormData) => Promise<any>, formData: FormData) => {
         setAuthError(null);
         setIsPending(true);
-        const res = await action(formData);
-        if (res?.error) {
-            setAuthError(res);
+        try {
+            const res = await action(formData);
+            if (res?.error) {
+                setAuthError(res);
+                setIsPending(false);
+            } else {
+                setIsSuccess(true);
+            }
+        } catch (err: any) {
+            if (err?.message?.includes('NEXT_REDIRECT') || err?.digest?.includes('NEXT_REDIRECT')) {
+                setIsSuccess(true);
+            } else {
+                setIsPending(false);
+            }
         }
-        setIsPending(false);
     };
 
     return (
@@ -27,7 +41,18 @@ export default function LoginPage() {
 
             {/* Login & Signup Card */}
             <div className="w-full lg:w-1/2 flex items-center justify-center bg-[#FAF9F6] p-6 sm:p-12">
-                <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-200 p-8 space-y-8">
+                <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-200 p-8 space-y-8 relative overflow-hidden">
+
+                    {/* Success redirect loading overlay */}
+                    {isSuccess && (
+                        <div className="absolute inset-0 bg-white/95 backdrop-blur-xs rounded-2xl flex flex-col items-center justify-center gap-3 z-30 animate-in fade-in duration-200">
+                            <div className="w-10 h-10 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                            <div className="text-center">
+                                <p className="text-sm font-bold text-slate-800">Signing in...</p>
+                                <p className="text-xs text-slate-500 mt-0.5">Redirecting to dashboard</p>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Header */}
                     <div className="space-y-2 text-center">
@@ -40,15 +65,17 @@ export default function LoginPage() {
                     </div>
 
                     {authError && (
-                        <div className="p-3 text-sm text-red-600 bg-red-50/50 border border-red-200 rounded-lg flex items-start gap-2 animate-in fade-in zoom-in-95 duration-200">
-                            <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="p-3.5 text-sm text-red-700 bg-red-50 border border-red-300 rounded-xl flex items-start gap-2.5 animate-in fade-in slide-in-from-top-1 duration-200 shadow-xs">
+                            <svg className="w-5 h-5 shrink-0 mt-0.5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                             <div>
-                                <p className="font-semibold">
+                                <p className="font-semibold text-red-800">
                                     {isWrongCredentials ? 'Invalid Credentials' : `Error ${authError.code}`}
                                 </p>
-                                <p className="text-red-500/90">{authError.error}</p>
+                                <p className="text-xs text-red-600 mt-0.5">
+                                    {isWrongCredentials ? 'The email or password you entered is incorrect. Please try again.' : authError.error}
+                                </p>
                             </div>
                         </div>
                     )}
@@ -64,11 +91,18 @@ export default function LoginPage() {
                                 id="email"
                                 name="email"
                                 type="email"
+                                value={email}
+                                onChange={(e) => {
+                                    setEmail(e.target.value);
+                                    if (authError) setAuthError(null);
+                                }}
                                 placeholder="matric@siswa.um.edu.my"
                                 required
-                                disabled={isPending}
+                                disabled={isPending || isSuccess}
                                 className={`w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:border-transparent transition-all text-slate-800 placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed ${
-                                    authError ? 'border-red-300 focus:ring-red-500 bg-red-50/20' : 'border-gray-300 focus:ring-blue-600'
+                                    authError 
+                                        ? 'border-red-500 ring-2 ring-red-500/20 bg-red-50/20 focus:ring-red-500' 
+                                        : 'border-gray-300 focus:ring-blue-600'
                                 }`}
                             />
                         </div>
@@ -82,11 +116,18 @@ export default function LoginPage() {
                                 id="password"
                                 name="password"
                                 type="password"
+                                value={password}
+                                onChange={(e) => {
+                                    setPassword(e.target.value);
+                                    if (authError) setAuthError(null);
+                                }}
                                 placeholder="••••••••"
                                 required
-                                disabled={isPending}
+                                disabled={isPending || isSuccess}
                                 className={`w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:border-transparent transition-all text-slate-800 placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed ${
-                                    authError ? 'border-red-300 focus:ring-red-500 bg-red-50/20' : 'border-gray-300 focus:ring-blue-600'
+                                    authError 
+                                        ? 'border-red-500 ring-2 ring-red-500/20 bg-red-50/20 focus:ring-red-500' 
+                                        : 'border-gray-300 focus:ring-blue-600'
                                 }`}
                             />
                         </div>
@@ -113,19 +154,22 @@ export default function LoginPage() {
                         <div className="flex gap-3 pt-2">
                             <button
                                 formAction={(formData) => handleAction(login, formData)}
-                                disabled={isPending}
-                                className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-sm active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center"
+                                disabled={isPending || isSuccess}
+                                className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-sm active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2 cursor-pointer"
                             >
-                                {isPending ? (
-                                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                {isPending || isSuccess ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        <span>Signing in...</span>
+                                    </>
                                 ) : (
                                     'Log In'
                                 )}
                             </button>
                             <button
                                 formAction={(formData) => handleAction(signup, formData)}
-                                disabled={isPending}
-                                className="flex-1 bg-transparent text-blue-600 py-3 px-4 rounded-lg border-2 border-blue-600 hover:bg-blue-50 transition-colors font-semibold active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center"
+                                disabled={isPending || isSuccess}
+                                className="flex-1 bg-transparent text-blue-600 py-3 px-4 rounded-lg border-2 border-blue-600 hover:bg-blue-50 transition-colors font-semibold active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center cursor-pointer"
                             >
                                 Sign Up
                             </button>

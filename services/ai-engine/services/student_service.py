@@ -300,15 +300,12 @@ def get_student_class_details(class_id: str, user: dict = Depends(get_current_us
             )
             sess_rows = cur.fetchall() or []
 
-            # Determine attendance rate accurately
-            has_attendance_data = len(sess_rows) > 0
-            if not has_attendance_data:
-                att_rate = 0
-            elif enroll_row.get("current_attendance_rate") is not None:
-                att_rate = round(float(enroll_row["current_attendance_rate"]))
-            else:
-                attended_cnt = sum(1 for s in sess_rows if str(s.get("status", "")).lower() in ["present", "excused"])
-                att_rate = round((attended_cnt / len(sess_rows)) * 100)
+            # Determine attendance rate accurately based on attendance records
+            total_sessions = len(sess_rows)
+            has_student_records = any(s.get("status") is not None for s in sess_rows)
+            attended_cnt = sum(1 for s in sess_rows if s.get("status") and str(s.get("status", "")).lower() in ["present", "excused"])
+            has_attendance_data = total_sessions > 0 and has_student_records
+            att_rate = round((attended_cnt / total_sessions) * 100) if has_attendance_data else 0
 
             attendance_log = []
             for s in sess_rows:
@@ -334,7 +331,7 @@ def get_student_class_details(class_id: str, user: dict = Depends(get_current_us
                     a.type,
                     a.weightage,
                     a.total_marks,
-                    COALESCE(ss.score_achieved, 0) as score_achieved
+                    ss.score_achieved
                 FROM public.assessments a
                 LEFT JOIN public.student_scores ss ON ss.assessment_id = a.id AND ss.student_id = %s
                 WHERE a.class_id = %s
@@ -348,7 +345,9 @@ def get_student_class_details(class_id: str, user: dict = Depends(get_current_us
             score_sum = 0
             cnt = 0
             for a in assess_rows:
-                score_val = float(a.get("score_achieved") or 0)
+                raw_score = a.get("score_achieved")
+                has_score = raw_score is not None
+                score_val = float(raw_score) if has_score else 0.0
                 tot_marks = int(a["total_marks"]) if a.get("total_marks") is not None else 100
                 assessments.append({
                     "id": str(a["id"]),
@@ -358,7 +357,8 @@ def get_student_class_details(class_id: str, user: dict = Depends(get_current_us
                     "score": score_val,
                     "totalMarks": tot_marks
                 })
-                if tot_marks > 0:
+                # Only include completed assessments in score count and average
+                if has_score and tot_marks > 0:
                     pct = (score_val / float(tot_marks)) * 100
                     score_sum += pct
                     cnt += 1
