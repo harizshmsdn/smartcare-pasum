@@ -276,12 +276,14 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <Link
-            href="/interventions"
-            className="mt-4 w-full bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
-          >
-            Review Cases <ChevronRight size={16} />
-          </Link>
+          <div className="relative group/disabled mt-4 w-full cursor-not-allowed" title="Disabled Feature">
+            <div className="w-full bg-white/5 text-white/40 py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 pointer-events-none grayscale">
+              Review Cases <ChevronRight size={16} />
+            </div>
+            <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover/disabled:flex items-center px-2.5 py-1 text-xs font-semibold text-white bg-slate-800 rounded-md shadow-lg whitespace-nowrap z-50">
+              Disabled Feature
+            </div>
+          </div>
         </BorderGlow>
 
         {/* ROW 2, COL 1: Raw Merit Scores (0-500) */}

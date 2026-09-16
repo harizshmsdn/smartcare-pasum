@@ -214,15 +214,17 @@ export default function StudentProfilePage() {
               )}
             </div>
 
-            {/* Merit Claims Redirect button below details */}
+            {/* Merit Claims Redirect button below details (Disabled) */}
             <div className="w-full border-t border-slate-100 mt-6 pt-6">
-              <Link
-                href="/student/merit-requests"
-                className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl shadow-md shadow-blue-100 transition-all hover:shadow active:scale-95 text-sm"
-              >
-                <Award size={18} />
-                Merit Requests & Claims
-              </Link>
+              <div className="relative group/disabled w-full cursor-not-allowed" title="Disabled Feature">
+                <div className="w-full flex items-center justify-center gap-2 bg-slate-100 border border-slate-200 text-slate-400 font-semibold py-3 px-4 rounded-xl text-sm pointer-events-none grayscale select-none">
+                  <Award size={18} />
+                  Merit Requests & Claims
+                </div>
+                <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover/disabled:flex items-center px-2.5 py-1 text-xs font-semibold text-white bg-slate-800 rounded-md shadow-lg whitespace-nowrap z-50">
+                  Disabled Feature
+                </div>
+              </div>
             </div>
           </div>
         </div>

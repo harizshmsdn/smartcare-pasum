@@ -235,15 +235,14 @@ export default function StudentAlertsPage() {
 
                   {/* Actions */}
                   <div className="flex flex-col items-end gap-2">
-                    <Link
-                      href="/student/interventions"
-                      onClick={() => {
-                        if (!alert.isRead) markAsRead(alert.id);
-                      }}
-                      className="flex items-center gap-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors no-underline cursor-pointer shadow-sm"
-                    >
-                      View Case <ArrowRight size={14} />
-                    </Link>
+                    <div className="relative group/disabled cursor-not-allowed" title="Disabled Feature">
+                      <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-400 px-3 py-1.5 rounded-lg text-sm font-semibold pointer-events-none grayscale select-none">
+                        View Case <ArrowRight size={14} />
+                      </div>
+                      <div className="pointer-events-none absolute -top-8 right-0 hidden group-hover/disabled:flex items-center px-2 py-0.5 text-[10px] font-semibold text-white bg-slate-800 rounded shadow-md whitespace-nowrap z-50">
+                        Disabled Feature
+                      </div>
+                    </div>
                     {!alert.isRead && (
                       <button
                         onClick={() => markAsRead(alert.id)}

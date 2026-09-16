@@ -246,21 +246,24 @@ export default function StudentClassesPage() {
           </div>
         </div>
 
-        {/* Card 4: Support Cases (Same size as other metrics, dark blue background, white text) */}
-        <Link
-          href="/student/interventions"
-          className="group bg-[#0b2240] hover:bg-[#12253f] border border-slate-800 p-5 rounded-3xl shadow-sm flex items-center gap-4 transition-all hover:scale-[1.02] hover:bg-slate-800 cursor-pointer"
+        {/* Card 4: Support Cases (Disabled) */}
+        <div
+          className="relative group/disabled bg-[#0b2240]/60 border border-slate-800 p-5 rounded-3xl shadow-sm flex items-center gap-4 cursor-not-allowed"
+          title="Disabled Feature"
         >
-          <div className="bg-white/10 p-3 rounded-2xl text-white transition-all group-hover:bg-blue-600">
+          <div className="bg-white/5 p-3 rounded-2xl text-slate-500">
             <ShieldAlert size={24} />
           </div>
-          <div>
-            <p className="text-xs font-bold text-slate-300 uppercase tracking-wider">My Support Cases</p>
-            <h4 className="text-base font-bold text-white mt-1 leading-none flex items-center gap-1">
+          <div className="opacity-50 grayscale pointer-events-none select-none">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">My Support Cases</p>
+            <h4 className="text-base font-bold text-slate-400 mt-1 leading-none flex items-center gap-1">
               View Cases <ChevronRight size={14} />
             </h4>
           </div>
-        </Link>
+          <div className="pointer-events-none absolute -top-8 right-6 hidden group-hover/disabled:flex items-center px-2.5 py-1 text-xs font-semibold text-white bg-slate-800 rounded-md shadow-lg whitespace-nowrap z-50">
+            Disabled Feature
+          </div>
+        </div>
       </div>
 
       {/* Main Details Section */}

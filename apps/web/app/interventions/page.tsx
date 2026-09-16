@@ -317,17 +317,38 @@ function InterventionsBoardContent() {
         </div>
       </div>
 
-      {/* Kanban Grid Container */}
-      {filteredItems.length === 0 ? (
-        <div className="flex-1 min-h-0 flex items-center justify-center pb-4">
-          <EmptyState 
-            icon={CheckCircle2}
-            title="No Interventions Found"
-            description="There are no intervention cases matching your current filter. Great job!"
-          />
+      {/* Feature Disabled Banner */}
+      <div className="shrink-0 mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-3 text-amber-900 shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-amber-100 text-amber-700">
+            <Clock size={18} />
+          </div>
+          <div>
+            <p className="text-sm font-bold">Feature Temporarily Disabled</p>
+            <p className="text-xs text-amber-700">Support cases and intervention tracking are currently suspended.</p>
+          </div>
         </div>
-      ) : (
-        <div className="flex-1 min-h-0 flex gap-6 overflow-x-auto pb-4">
+        <span className="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-100 text-amber-800 border border-amber-300">
+          Disabled Feature
+        </span>
+      </div>
+
+      {/* Kanban Grid Container (Disabled) */}
+      <div className="relative group/disabled flex-1 min-h-0 flex flex-col cursor-not-allowed" title="Disabled Feature">
+        <div className="pointer-events-none absolute top-2 right-4 hidden group-hover/disabled:flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-slate-800 rounded-md shadow-lg z-50">
+          Disabled Feature
+        </div>
+        <div className="flex-1 min-h-0 flex flex-col opacity-50 grayscale pointer-events-none select-none">
+          {filteredItems.length === 0 ? (
+            <div className="flex-1 min-h-0 flex items-center justify-center pb-4">
+              <EmptyState 
+                icon={CheckCircle2}
+                title="No Interventions Found"
+                description="There are no intervention cases matching your current filter. Great job!"
+              />
+            </div>
+          ) : (
+            <div className="flex-1 min-h-0 flex gap-6 overflow-x-auto pb-4">
           
           {/* Column 1: Needs Review */}
         <div 
@@ -475,6 +496,8 @@ function InterventionsBoardContent() {
 
         </div>
       )}
+        </div>
+      </div>
 
       {/* Add Intervention Modal Overlay */}
       {isAddModalOpen && (

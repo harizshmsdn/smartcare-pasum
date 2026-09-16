@@ -166,8 +166,30 @@ export default function AdminCasesPage() {
         <p className="text-slate-500 mt-1">Audit active intervention programs and verify student extra-curricular merit applications.</p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex bg-slate-100 p-1 rounded-2xl w-full sm:w-96 shadow-sm border border-slate-200">
+      {/* Feature Disabled Banner */}
+      <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-3 text-amber-900 shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-amber-100 text-amber-700">
+            <Clock size={18} />
+          </div>
+          <div>
+            <p className="text-sm font-bold">Feature Temporarily Disabled</p>
+            <p className="text-xs text-amber-700">Administrative intervention case management and merit claim audits are currently suspended.</p>
+          </div>
+        </div>
+        <span className="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-100 text-amber-800 border border-amber-300">
+          Disabled Feature
+        </span>
+      </div>
+
+      {/* Disabled Container */}
+      <div className="relative group/disabled cursor-not-allowed flex flex-col space-y-8" title="Disabled Feature">
+        <div className="pointer-events-none absolute top-0 right-4 hidden group-hover/disabled:flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-slate-800 rounded-md shadow-lg z-50">
+          Disabled Feature
+        </div>
+        <div className="opacity-50 grayscale pointer-events-none select-none flex flex-col space-y-8">
+          {/* Tabs */}
+          <div className="flex bg-slate-100 p-1 rounded-2xl w-full sm:w-96 shadow-sm border border-slate-200">
         <button
           onClick={() => setActiveTab("interventions")}
           className={`flex-1 px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
@@ -312,6 +334,8 @@ export default function AdminCasesPage() {
           </div>
         )
       )}
+        </div>
+      </div>
 
       {/* ================= EDIT INTERVENTION MODAL ================= */}
       {showEditIntervention && selectedIntervention && (

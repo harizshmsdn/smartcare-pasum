@@ -356,11 +356,17 @@ def get_student_analytics(student_id: str, class_id: Optional[str] = None, user:
             )
             enrollment = cur.fetchone()
             
-            att_rate = float(enrollment["current_attendance_rate"]) if enrollment and enrollment["current_attendance_rate"] is not None else 85.0
+            att_rate = float(enrollment["current_attendance_rate"]) if enrollment and enrollment["current_attendance_rate"] is not None else None
             class_label = f"{enrollment['subject_code']} ({enrollment['group_code']})" if enrollment else "PASUM General"
 
-            # 3. Determine Color-Coded Risk Assessment Status
-            if att_rate < 80:
+            # Determine risk status based on attendance
+            if att_rate is None:
+                risk_status = "no-data"
+                risk_level = "No Data"
+                risk_color = "slate"
+                risk_badge_bg = "bg-slate-50 text-slate-700 border-slate-200"
+                risk_card_bg = "bg-slate-50/70 border-slate-200 text-slate-900"
+            elif att_rate < 80:
                 risk_status = "critical"
                 risk_level = "Critical Risk"
                 risk_color = "red"
@@ -379,7 +385,7 @@ def get_student_analytics(student_id: str, class_id: Optional[str] = None, user:
                 risk_badge_bg = "bg-emerald-50 text-emerald-700 border-emerald-200"
                 risk_card_bg = "bg-emerald-50/70 border-emerald-200 text-emerald-900"
 
-            # 4. Fetch Merit Claims Summary
+            # Fetch Merit Claims Summary
             cur.execute(
                 "SELECT COUNT(*) as pending_count FROM public.merit_claims WHERE student_id = %s AND status = 'pending';",
                 (student_id,)
@@ -393,7 +399,7 @@ def get_student_analytics(student_id: str, class_id: Optional[str] = None, user:
             )
             approved_merits = cur.fetchall() or []
 
-            # 4.5 Fetch all enrolled classes for switcher UI
+            # Fetch all enrolled classes for switcher UI
             cur.execute(
                 """
                 SELECT 
@@ -418,8 +424,34 @@ def get_student_analytics(student_id: str, class_id: Optional[str] = None, user:
                 for row in all_classes_rows
             ]
 
-            # 5. Fetch Assessment Scores for Trajectory (filtered by current class context)
+            # Fetch Latest Assessment Score
             resolved_class_id = str(enrollment["class_id"]) if enrollment else None
+            if resolved_class_id:
+                cur.execute(
+                    """
+                    SELECT ROUND((ss.score_achieved / NULLIF(a.total_marks, 0)) * 100) as latest_score
+                    FROM public.student_scores ss
+                    JOIN public.assessments a ON ss.assessment_id = a.id
+                    WHERE ss.student_id = %s AND a.class_id = %s
+                    ORDER BY ss.date_recorded DESC LIMIT 1;
+                    """,
+                    (student_id, resolved_class_id)
+                )
+            else:
+                cur.execute(
+                    """
+                    SELECT ROUND((ss.score_achieved / NULLIF(a.total_marks, 0)) * 100) as latest_score
+                    FROM public.student_scores ss
+                    JOIN public.assessments a ON ss.assessment_id = a.id
+                    WHERE ss.student_id = %s
+                    ORDER BY ss.date_recorded DESC LIMIT 1;
+                    """,
+                    (student_id,)
+                )
+            latest_row = cur.fetchone()
+            latest_score = int(latest_row["latest_score"]) if latest_row and latest_row["latest_score"] is not None else 0
+
+            # Fetch Assessment Scores for Trajectory
             if resolved_class_id:
                 cur.execute(
                     """
@@ -432,7 +464,7 @@ def get_student_analytics(student_id: str, class_id: Optional[str] = None, user:
                     JOIN public.assessments a ON ss.assessment_id = a.id
                     WHERE ss.student_id = %s AND a.class_id = %s
                     ORDER BY ss.date_recorded ASC
-                    LIMIT 5;
+                    LIMIT 10;
                     """,
                     (student_id, resolved_class_id)
                 )
@@ -448,22 +480,23 @@ def get_student_analytics(student_id: str, class_id: Optional[str] = None, user:
                     JOIN public.assessments a ON ss.assessment_id = a.id
                     WHERE ss.student_id = %s
                     ORDER BY ss.date_recorded ASC
-                    LIMIT 5;
+                    LIMIT 10;
                     """,
                     (student_id,)
                 )
             score_rows = cur.fetchall() or []
 
             student_history = []
-            weeks = ["Week 1", "Week 2", "Week 3", "Week 4", "Week 5"]
-            for i, w in enumerate(weeks):
-                score_val = int(score_rows[i]["score_pct"]) if i < len(score_rows) else (78 if att_rate >= 80 else 45)
-                att_val = max(50, min(100, round(att_rate + [10, 8, 4, 2, 0][i])))
-                student_history.append({
-                    "week": w,
-                    "score": score_val,
-                    "attendance": att_val
-                })
+            if score_rows:
+                for idx, r in enumerate(score_rows):
+                    title = r.get("title") or f"Assessment {idx + 1}"
+                    score_val = int(r["score_pct"]) if r["score_pct"] is not None else 0
+                    att_val = round(att_rate) if att_rate is not None else 0
+                    student_history.append({
+                        "week": title,
+                        "score": score_val,
+                        "attendance": att_val
+                    })
 
             # 6. Fetch Recent Activity logs
             # Query 6.1: Recent Attendance (limit 3)
@@ -582,10 +615,11 @@ def get_student_analytics(student_id: str, class_id: Optional[str] = None, user:
                     "full_name": profile["full_name"],
                     "institutional_id": profile["institutional_id"],
                     "email": profile["email"],
-                    "total_merit_score": profile["total_merit_score"]
+                    "total_merit_score": 0
                 },
                 "enrollment": {
                     "attendance_rate": att_rate,
+                    "latest_score": latest_score,
                     "class_name": class_label,
                     "class_id": resolved_class_id
                 },

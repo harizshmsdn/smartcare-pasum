@@ -200,38 +200,48 @@ export default function AdminSettingsPage() {
 
             </div>
 
-            {/* Category 2: Student Merit & Extra-Curricular Policy */}
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 lg:p-8 shadow-sm space-y-6">
-              <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2 border-b border-slate-100 pb-4">
-                <Award size={20} className="text-amber-500" />
-                Student Merit & Extra-Curricular Rewards Policy
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700">Max Merit Points Per Submission</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={500}
-                    value={settings.max_merit_points_per_claim}
-                    onChange={(e) => updateField('max_merit_points_per_claim', Number(e.target.value))}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-slate-800 font-bold"
-                  />
-                  <p className="text-[11px] text-slate-400">Maximum merit points a student can apply for in a single claim submission.</p>
+            {/* Category 2: Student Merit & Extra-Curricular Policy (Disabled) */}
+            <div className="relative group/disabled cursor-not-allowed" title="Disabled Feature">
+              <div className="pointer-events-none absolute top-4 right-6 hidden group-hover/disabled:flex items-center px-2.5 py-1 text-xs font-semibold text-white bg-slate-800 rounded-md shadow-lg z-50">
+                Disabled Feature
+              </div>
+              <div className="bg-white border border-slate-200 rounded-3xl p-6 lg:p-8 shadow-sm space-y-6 opacity-50 grayscale pointer-events-none select-none">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                  <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
+                    <Award size={20} className="text-amber-500" />
+                    Student Merit & Extra-Curricular Rewards Policy
+                  </h3>
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-200 text-slate-600">
+                    Disabled
+                  </span>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700">Default Evaluator Points Recommendation</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={settings.default_merit_points_recommended}
-                    onChange={(e) => updateField('default_merit_points_recommended', Number(e.target.value))}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-slate-800 font-bold"
-                  />
-                  <p className="text-[11px] text-slate-400">Pre-filled award points value when an administrator approves a claim.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700">Max Merit Points Per Submission</label>
+                    <input
+                      disabled
+                      type="number"
+                      min={1}
+                      max={500}
+                      value={settings.max_merit_points_per_claim}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-400 bg-slate-50 cursor-not-allowed"
+                    />
+                    <p className="text-[11px] text-slate-400">Maximum merit points a student can apply for in a single claim submission.</p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700">Default Evaluator Points Recommendation</label>
+                    <input
+                      disabled
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={settings.default_merit_points_recommended}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-400 bg-slate-50 cursor-not-allowed"
+                    />
+                    <p className="text-[11px] text-slate-400">Pre-filled award points value when an administrator approves a claim.</p>
+                  </div>
                 </div>
               </div>
             </div>

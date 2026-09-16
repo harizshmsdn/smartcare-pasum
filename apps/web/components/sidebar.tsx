@@ -71,7 +71,7 @@ export function Sidebar() {
       { name: "Users", href: "/admin/users", bgColor: "bg-[#0b2240]", borderColor: "border-[#0b2240]" },
       { name: "Classes", href: "/admin/classes", bgColor: "bg-[#12253f]", borderColor: "border-[#12253f]" },
       { name: "Schedules", href: "/admin/schedules", bgColor: "bg-[#152c4c]", borderColor: "border-[#152c4c]" },
-      { name: "Cases", href: "/admin/cases", bgColor: "bg-[#1d3456]", borderColor: "border-[#1d3456]" },
+      { name: "Cases", href: "/admin/cases", bgColor: "bg-[#1d3456]", borderColor: "border-[#1d3456]", disabled: true },
     ]
     : isStudent
       ? [
@@ -101,17 +101,19 @@ export function Sidebar() {
       <nav className="flex flex-col gap-4 flex-1 mb-6">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
+          const isDisabled = (item as any).disabled;
 
           // Card Background & Border Logic
-          const stateClasses = isActive
-            ? `bg-slate-50 ${item.borderColor}` // Constant hollow state when active
-            : `${item.bgColor} ${item.borderColor} hover:bg-slate-50`; // Solid state, turns hollow on hover
+          const stateClasses = isDisabled
+            ? `bg-slate-900/60 border-slate-800 opacity-50 grayscale cursor-not-allowed`
+            : isActive
+            ? `bg-slate-50 ${item.borderColor}`
+            : `${item.bgColor} ${item.borderColor} hover:bg-slate-50`;
 
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={`group relative flex-1 w-full rounded-3xl border-2 transition-all duration-300 shadow-sm hover:shadow-md block overflow-hidden ${stateClasses}`}
+          const content = (
+            <div
+              className={`group/item relative flex-1 w-full rounded-3xl border-2 transition-all duration-300 shadow-sm hover:shadow-md block overflow-hidden ${stateClasses}`}
+              title={isDisabled ? "Disabled Feature" : undefined}
             >
               {/* Chevron Icon - Top Right */}
               <ChevronRight
@@ -119,7 +121,9 @@ export function Sidebar() {
                 strokeWidth={2.5}
                 className={`absolute top-5 right-5 transition-all duration-300 ${isActive
                   ? "text-black rotate-0"
-                  : "text-white -rotate-45 group-hover:rotate-0 group-hover:text-black"
+                  : isDisabled
+                  ? "text-slate-500 -rotate-45"
+                  : "text-white -rotate-45 group-hover/item:rotate-0 group-hover/item:text-black"
                   }`}
               />
 
@@ -127,7 +131,9 @@ export function Sidebar() {
               <div
                 className={`absolute bottom-5 left-5 transition-colors duration-300 font-bold text-xl tracking-wide flex items-center gap-2 ${isActive
                   ? "text-black"
-                  : "text-white group-hover:text-black"
+                  : isDisabled
+                  ? "text-slate-400"
+                  : "text-white group-hover/item:text-black"
                   }`}
               >
                 <span>{item.name}</span>
@@ -137,6 +143,30 @@ export function Sidebar() {
                   </span>
                 )}
               </div>
+
+              {isDisabled && (
+                <div className="pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 hidden group-hover/item:flex items-center px-2 py-0.5 text-[10px] font-semibold text-white bg-slate-800 rounded shadow-md whitespace-nowrap z-50">
+                  Disabled Feature
+                </div>
+              )}
+            </div>
+          );
+
+          if (isDisabled) {
+            return (
+              <div key={item.name} className="flex-1 w-full flex cursor-not-allowed">
+                {content}
+              </div>
+            );
+          }
+
+          return (
+            <Link
+              key={item.name}
+              href={item.href}
+              className="flex-1 w-full flex"
+            >
+              {content}
             </Link>
           );
         })}

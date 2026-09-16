@@ -285,14 +285,34 @@ export default function MeritRequestsPage() {
         </div>
       )}
 
-      {/* Requests Roster Card */}
-      <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden mb-12">
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-          <h2 className="font-extrabold text-slate-900 text-lg">Merit Submissions</h2>
-          <span className="text-xs text-slate-400 font-medium font-sans">Verify submissions by inspecting proof files</span>
+      {/* Feature Disabled Banner */}
+      <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-3 text-amber-900 shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-amber-100 text-amber-700">
+            <Clock size={18} />
+          </div>
+          <div>
+            <p className="text-sm font-bold">Feature Temporarily Disabled</p>
+            <p className="text-xs text-amber-700">Merit verification and approvals are currently suspended.</p>
+          </div>
         </div>
+        <span className="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-100 text-amber-800 border border-amber-300">
+          Disabled Feature
+        </span>
+      </div>
 
-        <div className="overflow-x-auto">
+      {/* Requests Roster Card (Disabled) */}
+      <div className="relative group/disabled cursor-not-allowed mb-12" title="Disabled Feature">
+        <div className="pointer-events-none absolute top-4 right-4 hidden group-hover/disabled:flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-slate-800 rounded-md shadow-lg z-50">
+          Disabled Feature
+        </div>
+        <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden opacity-50 grayscale pointer-events-none select-none">
+          <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+            <h2 className="font-extrabold text-slate-900 text-lg">Merit Submissions</h2>
+            <span className="text-xs text-slate-400 font-medium font-sans">Verify submissions by inspecting proof files</span>
+          </div>
+
+          <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100 font-bold">
@@ -418,6 +438,7 @@ export default function MeritRequestsPage() {
             </tbody>
           </table>
         </div>
+      </div>
       </div>
 
       {/* Proof Inspection Popup Modal */}

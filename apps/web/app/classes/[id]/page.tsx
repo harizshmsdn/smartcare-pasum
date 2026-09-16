@@ -50,7 +50,8 @@ export default function ProfilePage() {
   const supabase = createClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [studentProfile, setStudentProfile] = useState<any>(null);
-  const [attendanceRate, setAttendanceRate] = useState(100);
+  const [attendanceRate, setAttendanceRate] = useState<number | null>(null);
+  const [latestScore, setLatestScore] = useState<number>(0);
   const [className, setClassName] = useState("Physics 101 (Group A)");
   const [enrolledClasses, setEnrolledClasses] = useState<{ class_id: string; class_name: string }[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>(fromClassId || "");
@@ -128,7 +129,16 @@ export default function ProfilePage() {
         const data = await api.get(`/api/students/${studentId}/analytics${selectedClassId ? `?class_id=${selectedClassId}` : ''}`);
         
         setStudentProfile(data.profile);
-        setAttendanceRate(data.enrollment?.attendance_rate || 85);
+        setAttendanceRate(
+          data.enrollment?.attendance_rate !== undefined && data.enrollment?.attendance_rate !== null
+            ? Number(data.enrollment.attendance_rate)
+            : null
+        );
+        setLatestScore(
+          data.enrollment?.latest_score !== undefined && data.enrollment?.latest_score !== null
+            ? Number(data.enrollment.latest_score)
+            : 0
+        );
         setClassName(data.enrollment?.class_name || "PASUM Class");
         setMeritCount(data.merit_summary?.pending_count || 0);
         setMeritHistory(data.merit_summary?.approved_history || []);
@@ -154,9 +164,12 @@ export default function ProfilePage() {
   }
 
   // Derive risk values
-  let riskStatus = "good";
-  if (attendanceRate < 80) riskStatus = "critical";
-  else if (attendanceRate < 90) riskStatus = "at-risk";
+  let riskStatus: "critical" | "at-risk" | "good" | "no-data" = "no-data";
+  if (attendanceRate !== null) {
+    if (attendanceRate < 80) riskStatus = "critical";
+    else if (attendanceRate < 90) riskStatus = "at-risk";
+    else riskStatus = "good";
+  }
 
   return (
     <main className="flex-1 p-8 overflow-y-auto bg-transparent relative">
@@ -191,6 +204,11 @@ export default function ProfilePage() {
               {riskStatus === "good" && (
                 <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider">
                   <CheckCircle2 size={14} /> On Track
+                </span>
+              )}
+              {riskStatus === "no-data" && (
+                <span className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-600 border border-slate-200 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider">
+                  No Attendance Data
                 </span>
               )}
             </div>
@@ -252,19 +270,21 @@ export default function ProfilePage() {
           >
             <Mail size={18} /> Email Student
           </a>
-          <Link 
-            href={`/interventions?studentId=${studentId}&classId=${selectedClassId}`}
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-medium shadow-sm transition-colors no-underline"
-          >
-            <CalendarDays size={18} /> Setup Intervention
-          </Link>
+          <div className="relative group/disabled flex-1 md:flex-none cursor-not-allowed" title="Disabled Feature">
+            <div className="flex items-center justify-center gap-2 bg-blue-600/50 text-white/70 px-4 py-2.5 rounded-xl font-medium shadow-sm pointer-events-none grayscale">
+              <CalendarDays size={18} /> Setup Intervention
+            </div>
+            <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover/disabled:flex items-center px-2.5 py-1 text-xs font-semibold text-white bg-slate-800 rounded-md shadow-lg whitespace-nowrap z-50">
+              Disabled Feature
+            </div>
+          </div>
         </div>
       </header>
 
       {/* --- MERIT SECTION --- */}
       <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-5">
-          <div className="p-4 bg-blue-50 rounded-2xl text-blue-600">
+          <div className="p-4 bg-slate-100 rounded-2xl text-slate-400">
             <Award size={36} strokeWidth={2.5} />
           </div>
           <div>
@@ -272,29 +292,34 @@ export default function ProfilePage() {
               Accumulated Merits
             </h2>
             <div className="text-4xl font-extrabold text-slate-900 mt-1">
-              {studentProfile.total_merit_score || 0}
+              0
             </div>
           </div>
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <Link
-            href={`/classes/${studentId}/merit-requests`}
-            className="flex items-center gap-2 px-5 py-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-xl font-semibold transition-all duration-200 shadow-sm hover:shadow active:scale-95 font-sans"
-          >
-            <Award size={20} />
-            <span>Merit Requests</span>
-            <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-bold bg-blue-600 text-white shadow-sm">
-              {meritCount}
-            </span>
-          </Link>
-          <button
-            onClick={() => setIsHistoryModalOpen(true)}
-            className="flex items-center gap-2 px-5 py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl font-semibold transition-all duration-200 shadow-sm hover:shadow active:scale-95 cursor-pointer font-sans"
-          >
-            <History size={20} />
-            View Merit History
-          </button>
+          <div className="relative group/disabled cursor-not-allowed" title="Disabled Feature">
+            <div className="flex items-center gap-2 px-5 py-3 bg-slate-100 border border-slate-200 text-slate-400 rounded-xl font-semibold pointer-events-none grayscale font-sans">
+              <Award size={20} />
+              <span>Merit Requests</span>
+              <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-bold bg-slate-300 text-slate-600 shadow-sm">
+                0
+              </span>
+            </div>
+            <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover/disabled:flex items-center px-2.5 py-1 text-xs font-semibold text-white bg-slate-800 rounded-md shadow-lg whitespace-nowrap z-50">
+              Disabled Feature
+            </div>
+          </div>
+
+          <div className="relative group/disabled cursor-not-allowed" title="Disabled Feature">
+            <div className="flex items-center gap-2 px-5 py-3 bg-slate-50 border border-slate-200 text-slate-400 rounded-xl font-semibold pointer-events-none grayscale font-sans">
+              <History size={20} />
+              View Merit History
+            </div>
+            <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover/disabled:flex items-center px-2.5 py-1 text-xs font-semibold text-white bg-slate-800 rounded-md shadow-lg whitespace-nowrap z-50">
+              Disabled Feature
+            </div>
+          </div>
         </div>
       </section>
       {/* --- END MERIT SECTION --- */}
@@ -309,8 +334,8 @@ export default function ProfilePage() {
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
               <p className="text-sm font-medium text-slate-500 mb-1">Current Attendance</p>
               <div className="flex items-end gap-2">
-                <p className={`text-3xl font-bold ${attendanceRate < 80 ? 'text-red-600' : attendanceRate < 90 ? 'text-orange-600' : 'text-emerald-600'}`}>
-                  {attendanceRate}%
+                <p className={`text-3xl font-bold ${attendanceRate === null ? 'text-slate-500' : attendanceRate < 80 ? 'text-red-600' : attendanceRate < 90 ? 'text-orange-600' : 'text-emerald-600'}`}>
+                  {attendanceRate !== null ? `${Math.round(attendanceRate)}%` : '-'}
                 </p>
               </div>
             </div>
@@ -318,8 +343,8 @@ export default function ProfilePage() {
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
               <p className="text-sm font-medium text-slate-500 mb-1">Latest Assessment</p>
               <div className="flex items-end gap-2">
-                <p className={`text-3xl font-bold ${attendanceRate < 80 ? 'text-red-600' : 'text-slate-900'}`}>
-                  {attendanceRate < 80 ? '45%' : '88%'}
+                <p className="text-3xl font-bold text-slate-900">
+                  {latestScore}%
                 </p>
                 <p className="text-sm text-slate-400 font-medium mb-1">Overall</p>
               </div>
@@ -330,20 +355,24 @@ export default function ProfilePage() {
               ? "bg-red-50/90 border-red-200 text-red-900"
               : riskStatus === "at-risk"
                 ? "bg-amber-50/90 border-amber-200 text-amber-900"
-                : "bg-emerald-50/90 border-emerald-200 text-emerald-900"
+                : riskStatus === "good"
+                  ? "bg-emerald-50/90 border-emerald-200 text-emerald-900"
+                  : "bg-slate-50/90 border-slate-200 text-slate-700"
               }`}>
               <p className="text-sm font-semibold mb-1 opacity-80">Risk Assessment</p>
               <div className="flex items-center justify-between mt-1">
                 <p className="text-2xl font-extrabold uppercase tracking-wide">
-                  {riskStatus === "critical" ? "Critical Risk" : riskStatus === "at-risk" ? "Moderate Risk" : "Low Risk"}
+                  {riskStatus === "critical" ? "Critical Risk" : riskStatus === "at-risk" ? "Moderate Risk" : riskStatus === "good" ? "Low Risk" : "No Data"}
                 </p>
                 <span className={`text-xs font-bold uppercase px-2.5 py-1 rounded-md border ${riskStatus === "critical"
                   ? "bg-red-100 text-red-800 border-red-300 animate-pulse"
                   : riskStatus === "at-risk"
                     ? "bg-amber-100 text-amber-800 border-amber-300"
-                    : "bg-emerald-100 text-emerald-800 border-emerald-300"
+                    : riskStatus === "good"
+                      ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                      : "bg-slate-200 text-slate-600 border-slate-300"
                   }`}>
-                  {riskStatus === "critical" ? "Action Required" : riskStatus === "at-risk" ? "Watch" : "On Track"}
+                  {riskStatus === "critical" ? "Action Required" : riskStatus === "at-risk" ? "Watch" : riskStatus === "good" ? "On Track" : "Pending Records"}
                 </span>
               </div>
             </div>
@@ -361,7 +390,7 @@ export default function ProfilePage() {
                   <LineChart data={chartData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                     <XAxis dataKey="week" stroke="#94a3b8" fontSize={12} />
-                    <YAxis stroke="#94a3b8" fontSize={12} />
+                    <YAxis stroke="#94a3b8" fontSize={12} domain={[0, 100]} />
                     <Tooltip
                       contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                     />
@@ -370,8 +399,10 @@ export default function ProfilePage() {
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-full flex items-center justify-center text-slate-400 text-sm">
-                  No chart data available for this class.
+                <div className="h-full flex flex-col items-center justify-center text-slate-400 text-sm gap-2">
+                  <TrendingDown size={32} className="text-slate-300 stroke-[1.5]" />
+                  <p className="font-medium">No performance trajectory data available</p>
+                  <p className="text-xs text-slate-400">Attendance sessions and assessment scores will appear here once recorded.</p>
                 </div>
               )}
             </div>

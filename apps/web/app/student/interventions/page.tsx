@@ -116,7 +116,27 @@ export default function StudentInterventionsPage() {
         <p className="text-slate-500 mt-1">Review active support plans or academic warnings initiated by lecturers</p>
       </header>
 
-      <div className="w-full max-w-4xl">
+      {/* Feature Disabled Banner */}
+      <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-3 text-amber-900 shadow-xs max-w-4xl">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-amber-100 text-amber-700">
+            <Clock size={18} />
+          </div>
+          <div>
+            <p className="text-sm font-bold">Feature Temporarily Disabled</p>
+            <p className="text-xs text-amber-700">Student support case tracking and interventions are currently suspended.</p>
+          </div>
+        </div>
+        <span className="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-100 text-amber-800 border border-amber-300">
+          Disabled Feature
+        </span>
+      </div>
+
+      <div className="relative group/disabled w-full max-w-4xl cursor-not-allowed" title="Disabled Feature">
+        <div className="pointer-events-none absolute top-4 right-4 hidden group-hover/disabled:flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-slate-800 rounded-md shadow-lg z-50">
+          Disabled Feature
+        </div>
+        <div className="w-full opacity-50 grayscale pointer-events-none select-none">
         {activeCount > 0 ? (
           <div className="space-y-6">
             {interventions.map((item) => {
@@ -196,6 +216,7 @@ export default function StudentInterventionsPage() {
             />
           </div>
         )}
+        </div>
       </div>
     </main>
   );

@@ -202,7 +202,7 @@ export default function ClassesPage() {
           email: profile?.email || '',
           status,
           attendance,
-          latestScore: attendance === "-" ? "-" : (attendance < 80 ? 45 : attendance < 90 ? 63 : 88),
+          latestScore: typeof e.latest_score === 'number' ? e.latest_score : (e.latest_score !== undefined && e.latest_score !== null && e.latest_score !== "-" ? Number(e.latest_score) : 0),
           lastSeen: attendance === "-" ? "-" : (attendance < 80 ? '3 days ago' : 'Today')
         };
       });
@@ -409,19 +409,22 @@ export default function ClassesPage() {
           </div>
         </Link>
 
-        {/* Card 5: Intervention Board CTA */}
-        <Link
-          href="/interventions"
-          className="bg-slate-900 p-5 sm:p-6 rounded-3xl shadow-md flex items-center gap-5 sm:gap-6 group hover:bg-slate-800 transition-all cursor-pointer min-w-0"
+        {/* Card 5: Intervention Board CTA (Disabled) */}
+        <div
+          className="relative group/disabled bg-slate-900/50 border border-slate-800 p-5 sm:p-6 rounded-3xl shadow-sm flex items-center gap-5 sm:gap-6 cursor-not-allowed min-w-0"
+          title="Disabled Feature"
         >
-          <div className="bg-white/10 p-3.5 rounded-2xl text-white group-hover:scale-110 group-hover:bg-blue-600 transition-all shrink-0">
+          <div className="bg-white/5 p-3.5 rounded-2xl text-slate-500 shrink-0">
             <ArrowRight size={26} />
           </div>
-          <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Action Required</p>
-            <p className="text-lg sm:text-xl font-bold text-white leading-tight truncate">Intervention Board</p>
+          <div className="min-w-0 opacity-50 grayscale">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Action Required</p>
+            <p className="text-lg sm:text-xl font-bold text-slate-400 leading-tight truncate">Intervention Board</p>
           </div>
-        </Link>
+          <div className="pointer-events-none absolute -top-3 right-6 hidden group-hover/disabled:flex items-center px-2.5 py-1 text-xs font-semibold text-white bg-slate-800 rounded-md shadow-lg whitespace-nowrap z-50">
+            Disabled Feature
+          </div>
+        </div>
       </div>
 
       {/* Roster Container */}
@@ -538,22 +541,26 @@ export default function ClassesPage() {
                         >
                           <Mail size={16} />
                         </a>
-                        <Link 
-                          href={`/interventions?studentId=${student.id}`}
-                          onClick={(e) => e.stopPropagation()}
-                          title="Flag for Intervention"
-                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-150 hover:scale-110 active:scale-95 cursor-pointer inline-flex items-center justify-center border-none bg-transparent"
-                        >
-                          <Calendar size={16} />
-                        </Link>
-                        <Link
-                          href={`/classes/${student.id}/merit-requests?classId=${selectedClassId}`}
-                          onClick={(e) => e.stopPropagation()}
-                          title="Verify Merits"
-                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-150 hover:scale-110 active:scale-95 cursor-pointer inline-flex items-center justify-center border-none bg-transparent"
-                        >
-                          <Award size={16} />
-                        </Link>
+                        <div className="relative group/disabled inline-flex cursor-not-allowed" title="Disabled Feature">
+                          <span 
+                            className="p-2 text-slate-300 rounded-lg inline-flex items-center justify-center opacity-40 grayscale pointer-events-none"
+                          >
+                            <Calendar size={16} />
+                          </span>
+                          <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover/disabled:flex items-center px-2 py-0.5 text-[10px] font-semibold text-white bg-slate-800 rounded shadow-md whitespace-nowrap z-50">
+                            Disabled Feature
+                          </div>
+                        </div>
+                        <div className="relative group/disabled inline-flex cursor-not-allowed" title="Disabled Feature">
+                          <span 
+                            className="p-2 text-slate-300 rounded-lg inline-flex items-center justify-center opacity-40 grayscale pointer-events-none"
+                          >
+                            <Award size={16} />
+                          </span>
+                          <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover/disabled:flex items-center px-2 py-0.5 text-[10px] font-semibold text-white bg-slate-800 rounded shadow-md whitespace-nowrap z-50">
+                            Disabled Feature
+                          </div>
+                        </div>
                       </div>
                     </td>
                   </tr>

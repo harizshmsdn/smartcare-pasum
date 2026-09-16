@@ -176,7 +176,7 @@ def get_student_dashboard_analytics(user: dict = Depends(get_current_user), db =
 
             return {
                 "profile": {"full_name": profile["full_name"], "email": profile["email"], "institutional_id": profile["institutional_id"]},
-                "total_merits": total_merits,
+                "total_merits": 0,
                 "subjects_list": subjects_list,
                 "class_attendance": class_attendance,
                 "subject_timelines": subject_timelines,

@@ -168,13 +168,22 @@ def get_class_roster(class_id: str, user: dict, db):
             if cur.fetchone() is None:
                 raise HTTPException(status_code=403, detail="Access denied")
 
+            # Fetch roster with real latest assessment score per student
             cur.execute("""
                 SELECT 
                     e.current_attendance_rate,
                     p.id,
                     p.full_name,
                     p.institutional_id,
-                    p.email
+                    p.email,
+                    (
+                        SELECT ROUND((ss.score_achieved / NULLIF(a.total_marks, 0)) * 100)
+                        FROM public.student_scores ss
+                        JOIN public.assessments a ON ss.assessment_id = a.id
+                        WHERE a.class_id = e.class_id AND ss.student_id = p.id
+                        ORDER BY ss.date_recorded DESC
+                        LIMIT 1
+                    ) as latest_score
                 FROM public.enrollments e
                 JOIN public.profiles p ON e.student_id = p.id
                 WHERE e.class_id = %s;
@@ -184,8 +193,10 @@ def get_class_roster(class_id: str, user: dict, db):
             
             formatted_enrollments = []
             for e in enrollments:
+                latest_score = float(e["latest_score"]) if e["latest_score"] is not None else 0
                 formatted_enrollments.append({
                     "current_attendance_rate": float(e["current_attendance_rate"]) if e["current_attendance_rate"] is not None else "-",
+                    "latest_score": latest_score,
                     "profiles": {
                         "id": str(e["id"]),
                         "full_name": e["full_name"],

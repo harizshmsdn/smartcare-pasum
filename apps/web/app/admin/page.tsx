@@ -330,42 +330,54 @@ export default function AdminDashboardPage() {
           </div>
         </BorderGlow>
 
-        {/* Bento Cell 7: Active Interventions Cases (Col span 1) - Side by Side with Card 6! */}
-        <BorderGlow
-          backgroundColor="#ffffff"
-          borderRadius={24}
-          glowColor="346 84 61"
-          colors={['#ef4444', '#f43f5e', '#fda4af']}
-          className="lg:col-span-1 p-6 shadow-sm flex flex-col space-y-4 h-full overflow-hidden"
-        >
-          <div>
-            <h4 className="font-extrabold text-slate-900 text-base flex items-center gap-1.5">
-              <ShieldAlert className="text-rose-500" size={20} /> Support & Interventions
-            </h4>
-            <p className="text-xs text-slate-500">Urgent intervention cases currently active.</p>
+        {/* Bento Cell 7: Active Interventions Cases (Col span 1) (Disabled) */}
+        <div className="relative group/disabled lg:col-span-1 h-full cursor-not-allowed" title="Disabled Feature">
+          <div className="pointer-events-none absolute top-4 right-4 hidden group-hover/disabled:flex items-center px-2.5 py-1 text-xs font-semibold text-white bg-slate-800 rounded-md shadow-lg z-50">
+            Disabled Feature
           </div>
-
-          <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-            {recentInterventions.length > 0 ? (
-              recentInterventions.map((item) => (
-                <div key={item.id} className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between gap-2 shadow-xs">
-                  <div className="truncate pr-2">
-                    <p className="text-sm font-bold text-slate-800 truncate">{item.issue_description}</p>
-                    <p className="text-xs text-slate-500 mt-0.5 font-medium">{item.student_name}</p>
-                  </div>
-                  <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full capitalize shrink-0 ${item.status === 'needs_review' ? 'bg-rose-100 text-rose-800' :
-                    item.status === 'in_progress' ? 'bg-indigo-100 text-indigo-800' :
-                      'bg-amber-100 text-amber-800'
-                    }`}>
-                    {item.status.replace('_', ' ')}
-                  </span>
+          <div className="h-full opacity-50 grayscale pointer-events-none select-none">
+            <BorderGlow
+              backgroundColor="#ffffff"
+              borderRadius={24}
+              glowColor="346 84 61"
+              colors={['#ef4444', '#f43f5e', '#fda4af']}
+              className="p-6 shadow-sm flex flex-col space-y-4 h-full overflow-hidden"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-extrabold text-slate-900 text-base flex items-center gap-1.5">
+                    <ShieldAlert className="text-rose-500" size={20} /> Support & Interventions
+                  </h4>
+                  <p className="text-xs text-slate-500">Urgent intervention cases currently active.</p>
                 </div>
-              ))
-            ) : (
-              <div className="text-center py-12 text-slate-400 text-xs italic">No urgent student cases flagged.</div>
-            )}
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-200 text-slate-600">
+                  Disabled
+                </span>
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                {recentInterventions.length > 0 ? (
+                  recentInterventions.map((item) => (
+                    <div key={item.id} className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between gap-2 shadow-xs">
+                      <div className="truncate pr-2">
+                        <p className="text-sm font-bold text-slate-800 truncate">{item.issue_description}</p>
+                        <p className="text-xs text-slate-500 mt-0.5 font-medium">{item.student_name}</p>
+                      </div>
+                      <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full capitalize shrink-0 ${item.status === 'needs_review' ? 'bg-rose-100 text-rose-800' :
+                        item.status === 'in_progress' ? 'bg-indigo-100 text-indigo-800' :
+                          'bg-amber-100 text-amber-800'
+                        }`}>
+                        {item.status.replace('_', ' ')}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-12 text-slate-400 text-xs italic">No urgent student cases flagged.</div>
+                )}
+              </div>
+            </BorderGlow>
           </div>
-        </BorderGlow>
+        </div>
 
       </div>
 
