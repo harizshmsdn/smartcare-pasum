@@ -1,8 +1,7 @@
-// apps/web/components/ChangePasswordModal.tsx
 "use client";
 
 import React, { useState } from 'react';
-import { KeyRound, X, Eye, EyeOff, CheckCircle2, AlertCircle, Check, Circle } from 'lucide-react';
+import { PixelIcon } from './PixelIcon';
 import { changePassword } from '../app/login/actions';
 
 interface ChangePasswordModalProps {
@@ -90,40 +89,41 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 sm:p-8 shadow-2xl border border-slate-200 relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200 text-white">
+      <div className="w-full max-w-md rounded-none bg-[#09111e] p-6 sm:p-8 shadow-2xl border border-white/20 relative">
         {/* Close Button */}
         <button
           type="button"
           onClick={handleClose}
           disabled={isSubmitting}
-          className="absolute top-5 right-5 p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+          className="absolute top-5 right-5 border border-white/15 bg-white/5 hover:bg-white/15 p-1 text-white/70 hover:text-white rounded-none transition-colors cursor-pointer"
         >
-          <X size={18} />
+          ✕
         </button>
 
         {/* Modal Header */}
-        <div className="flex items-center gap-3 mb-5">
-          <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
-            <KeyRound size={22} />
+        <div className="flex items-center gap-3 mb-5 border-b border-white/10 pb-4">
+          <div className="p-2 border border-white/15 bg-white/5 text-blue-400 rounded-none">
+            <PixelIcon name="key" size={20} />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-slate-900">Change Password</h3>
-            <p className="text-xs text-slate-500 mt-0.5">Update your account login credentials</p>
+            <div className="font-mono text-[10px] uppercase tracking-widest text-blue-400">01 // SECURITY</div>
+            <h3 className="text-xl font-bold font-mono text-white">Change Password</h3>
+            <p className="font-mono text-xs text-white/50 mt-0.5">Update your account credentials</p>
           </div>
         </div>
 
         {/* Feedback Alerts */}
         {errorMsg && (
-          <div className="mb-4 p-3.5 text-xs sm:text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2.5 animate-in fade-in duration-150">
-            <AlertCircle size={16} className="shrink-0 mt-0.5 text-red-500" />
+          <div className="mb-4 p-3 text-xs font-mono text-red-300 bg-red-500/10 border border-red-500/30 rounded-none flex items-start gap-2.5">
+            <PixelIcon name="warning" size={14} className="shrink-0 mt-0.5 text-red-400" />
             <span>{errorMsg}</span>
           </div>
         )}
 
         {successMsg && (
-          <div className="mb-4 p-3.5 text-xs sm:text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-2.5 animate-in fade-in duration-150">
-            <CheckCircle2 size={16} className="shrink-0 mt-0.5 text-emerald-500" />
+          <div className="mb-4 p-3 text-xs font-mono text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded-none flex items-start gap-2.5">
+            <PixelIcon name="check" size={14} className="shrink-0 mt-0.5 text-emerald-400" />
             <span>{successMsg}</span>
           </div>
         )}
@@ -131,7 +131,7 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Current Password Input */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+            <label className="font-mono text-xs uppercase tracking-wider text-white/70">
               Current Password
             </label>
             <div className="relative">
@@ -142,21 +142,21 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
                 required
                 disabled={isSubmitting}
                 placeholder="Enter current password"
-                className="w-full px-4 py-2.5 pr-10 rounded-xl border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all placeholder:text-slate-400"
+                className="w-full px-3.5 py-2.5 pr-10 rounded-none border border-white/20 bg-black/50 font-mono text-xs text-white focus:outline-none focus:border-blue-400 transition-colors placeholder:text-white/30"
               />
               <button
                 type="button"
                 onClick={() => setShowCurrent(!showCurrent)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors cursor-pointer"
               >
-                {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
+                <PixelIcon name={showCurrent ? "eyeOff" : "eye"} size={16} />
               </button>
             </div>
           </div>
 
           {/* New Password Input */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+            <label className="font-mono text-xs uppercase tracking-wider text-white/70">
               New Password
             </label>
             <div className="relative">
@@ -167,41 +167,41 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
                 required
                 disabled={isSubmitting}
                 placeholder="Enter new strong password"
-                className="w-full px-4 py-2.5 pr-10 rounded-xl border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all placeholder:text-slate-400"
+                className="w-full px-3.5 py-2.5 pr-10 rounded-none border border-white/20 bg-black/50 font-mono text-xs text-white focus:outline-none focus:border-blue-400 transition-colors placeholder:text-white/30"
               />
               <button
                 type="button"
                 onClick={() => setShowNew(!showNew)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors cursor-pointer"
               >
-                {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
+                <PixelIcon name={showNew ? "eyeOff" : "eye"} size={16} />
               </button>
             </div>
 
             {/* Live Requirement Checklist */}
-            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 mt-2 space-y-1.5 text-xs">
-              <div className="font-semibold text-slate-600 mb-1 text-[11px] uppercase tracking-wider">
+            <div className="bg-black/40 border border-white/10 rounded-none p-3 mt-2 space-y-1.5 font-mono text-[11px]">
+              <div className="text-white/60 mb-1 uppercase tracking-wider">
                 Password Requirements:
               </div>
-              <div className={`flex items-center gap-2 transition-colors ${hasMinLength ? 'text-emerald-600 font-medium' : 'text-slate-400'}`}>
-                {hasMinLength ? <Check size={14} className="text-emerald-500 shrink-0" /> : <Circle size={14} className="text-slate-300 shrink-0" />}
+              <div className={`flex items-center gap-2 transition-colors ${hasMinLength ? 'text-emerald-400' : 'text-white/40'}`}>
+                <PixelIcon name={hasMinLength ? "check" : "close"} size={13} className={hasMinLength ? 'text-emerald-400' : 'text-white/20'} />
                 <span>At least 8 characters</span>
               </div>
-              <div className={`flex items-center gap-2 transition-colors ${hasCapital ? 'text-emerald-600 font-medium' : 'text-slate-400'}`}>
-                {hasCapital ? <Check size={14} className="text-emerald-500 shrink-0" /> : <Circle size={14} className="text-slate-300 shrink-0" />}
+              <div className={`flex items-center gap-2 transition-colors ${hasCapital ? 'text-emerald-400' : 'text-white/40'}`}>
+                <PixelIcon name={hasCapital ? "check" : "close"} size={13} className={hasCapital ? 'text-emerald-400' : 'text-white/20'} />
                 <span>At least one capital letter (A-Z)</span>
               </div>
-              <div className={`flex items-center gap-2 transition-colors ${hasNumber ? 'text-emerald-600 font-medium' : 'text-slate-400'}`}>
-                {hasNumber ? <Check size={14} className="text-emerald-500 shrink-0" /> : <Circle size={14} className="text-slate-300 shrink-0" />}
+              <div className={`flex items-center gap-2 transition-colors ${hasNumber ? 'text-emerald-400' : 'text-white/40'}`}>
+                <PixelIcon name={hasNumber ? "check" : "close"} size={13} className={hasNumber ? 'text-emerald-400' : 'text-white/20'} />
                 <span>At least one number (0-9)</span>
               </div>
-              <div className={`flex items-center gap-2 transition-colors ${hasSpecial ? 'text-emerald-600 font-medium' : 'text-slate-400'}`}>
-                {hasSpecial ? <Check size={14} className="text-emerald-500 shrink-0" /> : <Circle size={14} className="text-slate-300 shrink-0" />}
+              <div className={`flex items-center gap-2 transition-colors ${hasSpecial ? 'text-emerald-400' : 'text-white/40'}`}>
+                <PixelIcon name={hasSpecial ? "check" : "close"} size={13} className={hasSpecial ? 'text-emerald-400' : 'text-white/20'} />
                 <span>At least one special character (!@#$%^&*)</span>
               </div>
               {currentPassword && newPassword && !isDifferentFromOld && (
-                <div className="flex items-center gap-2 text-amber-600 font-medium pt-1">
-                  <AlertCircle size={14} className="text-amber-500 shrink-0" />
+                <div className="flex items-center gap-1.5 text-amber-300 pt-1">
+                  <PixelIcon name="warning" size={13} className="text-amber-400 shrink-0" />
                   <span>Cannot be the same as current password</span>
                 </div>
               )}
@@ -210,7 +210,7 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
 
           {/* Confirm Password Input */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+            <label className="font-mono text-xs uppercase tracking-wider text-white/70">
               Confirm New Password
             </label>
             <div className="relative">
@@ -221,54 +221,45 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
                 required
                 disabled={isSubmitting}
                 placeholder="Re-enter your new password"
-                className="w-full px-4 py-2.5 pr-10 rounded-xl border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all placeholder:text-slate-400"
+                className="w-full px-3.5 py-2.5 pr-10 rounded-none border border-white/20 bg-black/50 font-mono text-xs text-white focus:outline-none focus:border-blue-400 transition-colors placeholder:text-white/30"
               />
               <button
                 type="button"
                 onClick={() => setShowConfirm(!showConfirm)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors cursor-pointer"
               >
-                {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+                <PixelIcon name={showConfirm ? "eyeOff" : "eye"} size={16} />
               </button>
             </div>
             {confirmPassword && (
-              <div className={`flex items-center gap-1.5 text-xs pt-1 ${passwordsMatch ? 'text-emerald-600' : 'text-red-500'}`}>
-                {passwordsMatch ? (
-                  <>
-                    <Check size={14} className="text-emerald-500" />
-                    <span>Passwords match</span>
-                  </>
-                ) : (
-                  <>
-                    <X size={14} className="text-red-500" />
-                    <span>Passwords do not match</span>
-                  </>
-                )}
+              <div className={`flex items-center gap-1.5 font-mono text-xs pt-1 ${passwordsMatch ? 'text-emerald-400' : 'text-red-400'}`}>
+                <PixelIcon name={passwordsMatch ? "check" : "warning"} size={13} className={passwordsMatch ? 'text-emerald-400' : 'text-red-400'} />
+                <span>{passwordsMatch ? "Passwords match" : "Passwords do not match"}</span>
               </div>
             )}
           </div>
 
-          <p className="text-[11px] text-slate-400 leading-normal">
+          <p className="font-mono text-[10px] text-white/40 leading-normal">
             Supabase administrators retain access to manage and verify accounts for beta testing.
           </p>
 
           {/* Action Buttons */}
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-2 pt-2">
             <button
               type="button"
               onClick={handleClose}
               disabled={isSubmitting}
-              className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-sm transition-colors cursor-pointer"
+              className="flex-1 px-4 py-2.5 rounded-none border border-white/20 bg-white/5 hover:bg-white/10 text-white font-mono text-xs uppercase transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting || !allRequirementsMet || !passwordsMatch || !currentPassword}
-              className="flex-1 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2.5 rounded-none border border-blue-400 bg-blue-600 hover:bg-blue-500 text-white font-mono text-xs uppercase font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-none animate-spin" />
               ) : (
                 "Update Password"
               )}

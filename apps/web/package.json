@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
+    "@iconify-json/streamline-pixel": "^1.2.0",
+    "@iconify/react": "^6.0.2",
     "@repo/ui": "*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

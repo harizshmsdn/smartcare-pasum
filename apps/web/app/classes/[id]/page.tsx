@@ -1,22 +1,8 @@
-// apps/web/app/classes/[id]/page.tsx
+// Student Profile and Analytics page within Classes in dottxt.ai sharp dark style
 "use client";
 
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import {
-  Mail,
-  CalendarDays,
-  AlertTriangle,
-  TrendingDown,
-  Clock,
-  CheckCircle2,
-  ArrowLeft,
-  Award,
-  History,
-  X,
-  ShieldAlert,
-  Phone
-} from "lucide-react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -30,6 +16,7 @@ import Link from "next/link";
 import { createClient } from "../../../utils/supabase/client";
 import { api } from "../../../lib/api";
 import EmptyState from "../../../components/EmptyState";
+import PixelIcon from "../../../components/PixelIcon";
 
 interface ActivityItem {
   id: string;
@@ -47,20 +34,14 @@ export default function ProfilePage() {
 
   const backUrl = fromClassId ? `/classes?classId=${fromClassId}` : "/classes";
 
-  const supabase = createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [studentProfile, setStudentProfile] = useState<any>(null);
   const [attendanceRate, setAttendanceRate] = useState<number | null>(null);
   const [latestScore, setLatestScore] = useState<number>(0);
   const [className, setClassName] = useState("Physics 101 (Group A)");
   const [enrolledClasses, setEnrolledClasses] = useState<{ class_id: string; class_name: string }[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>(fromClassId || "");
-  const [meritCount, setMeritCount] = useState(0);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [meritHistory, setMeritHistory] = useState<any[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
   const [activitiesList, setActivitiesList] = useState<ActivityItem[]>([]);
-  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // Time formatter helper
@@ -89,37 +70,6 @@ export default function ProfilePage() {
     }
   };
 
-  // Icon renderer helpers
-  const renderActivityIcon = (iconName: string) => {
-    switch (iconName) {
-      case "check_circle":
-        return <CheckCircle2 size={16} />;
-      case "clock":
-        return <Clock size={16} />;
-      case "award":
-        return <Award size={16} />;
-      case "alert_triangle":
-        return <AlertTriangle size={16} />;
-      default:
-        return <Clock size={16} />;
-    }
-  };
-
-  const renderActivityIconBg = (iconName: string): string => {
-    switch (iconName) {
-      case "check_circle":
-        return "bg-emerald-100 text-emerald-600";
-      case "clock":
-        return "bg-slate-100 text-slate-500";
-      case "award":
-        return "bg-blue-100 text-blue-600";
-      case "alert_triangle":
-        return "bg-red-100 text-red-600";
-      default:
-        return "bg-slate-100 text-slate-500";
-    }
-  };
-
   useEffect(() => {
     if (!studentId) return;
 
@@ -140,8 +90,6 @@ export default function ProfilePage() {
             : 0
         );
         setClassName(data.enrollment?.class_name || "PASUM Class");
-        setMeritCount(data.merit_summary?.pending_count || 0);
-        setMeritHistory(data.merit_summary?.approved_history || []);
         setEnrolledClasses(data.enrolled_classes || []);
         setChartData(data.student_history || []);
         setActivitiesList(data.activities || []);
@@ -156,14 +104,16 @@ export default function ProfilePage() {
     };
 
     fetchStudentData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentId, selectedClassId]);
 
   if (isLoading || !studentProfile) {
-    return <div className="flex-1 flex items-center justify-center bg-slate-50 min-h-screen">Loading student details...</div>;
+    return (
+      <div className="flex-1 flex items-center justify-center bg-transparent min-h-screen font-mono text-xs text-slate-400">
+        Loading student details...
+      </div>
+    );
   }
 
-  // Derive risk values
   let riskStatus: "critical" | "at-risk" | "good" | "no-data" = "no-data";
   if (attendanceRate !== null) {
     if (attendanceRate < 80) riskStatus = "critical";
@@ -172,92 +122,83 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="flex-1 p-8 overflow-y-auto bg-transparent relative">
-
-      {/* Navigation Breadcrumb (Preserves Selected Class Page) */}
+    <main className="flex-1 p-8 overflow-y-auto bg-transparent text-white relative">
+      {/* Navigation Breadcrumb */}
       <div className="mb-4">
-        <Link href={backUrl} className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600 transition-colors">
-          <ArrowLeft size={16} /> Back to Class Roster
+        <Link
+          href={backUrl}
+          className="inline-flex items-center gap-2 text-xs font-mono text-slate-400 hover:text-white transition-colors"
+        >
+          ← BACK TO CLASS ROSTER
         </Link>
       </div>
 
       {/* Header Profile Card */}
-      <header className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden">
-        
-        <div className="flex items-center gap-5 z-10">
-          <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center text-slate-700 text-3xl font-bold shadow-inner">
+      <header className="bg-[#09111e]/80 p-6 rounded-none border border-white/15 shadow-2xl mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 backdrop-blur-md">
+        <div className="flex items-center gap-5">
+          <div className="w-16 h-16 bg-white/10 border border-white/20 rounded-none flex items-center justify-center text-white text-2xl font-bold font-mono">
             {studentProfile.full_name.charAt(0)}
           </div>
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <h2 className="text-2xl font-bold text-slate-900">{studentProfile.full_name}</h2>
+              <h2 className="text-2xl font-bold font-mono text-white uppercase">{studentProfile.full_name}</h2>
               {riskStatus === "critical" && (
-                <span className="inline-flex items-center gap-1.5 bg-red-50 text-red-700 border border-red-200 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider">
-                  <AlertTriangle size={14} /> Critical Risk
+                <span className="inline-flex items-center gap-1 bg-rose-500/10 text-rose-300 border border-rose-400/30 px-2 py-0.5 rounded-none text-[10px] font-mono font-bold uppercase">
+                  <PixelIcon name="warning" size={12} /> CRITICAL
                 </span>
               )}
               {riskStatus === "at-risk" && (
-                <span className="inline-flex items-center gap-1.5 bg-orange-50 text-orange-700 border border-orange-200 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider">
-                  <TrendingDown size={14} /> At Risk
+                <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded-none text-[10px] font-mono font-bold uppercase">
+                  <PixelIcon name="warning" size={12} /> AT RISK
                 </span>
               )}
               {riskStatus === "good" && (
-                <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider">
-                  <CheckCircle2 size={14} /> On Track
+                <span className="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-none text-[10px] font-mono font-bold uppercase">
+                  <PixelIcon name="check" size={12} /> ON TRACK
                 </span>
               )}
               {riskStatus === "no-data" && (
-                <span className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-600 border border-slate-200 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider">
-                  No Attendance Data
+                <span className="inline-flex items-center gap-1 bg-white/5 text-slate-400 border border-white/10 px-2 py-0.5 rounded-none text-[10px] font-mono font-bold uppercase">
+                  NO DATA
                 </span>
               )}
             </div>
             
-            {/* Dynamic Class Switcher */}
-            <div className="flex flex-wrap items-center mt-1 text-slate-500 font-medium text-sm" style={{ gap: '1px 10px' }}>
-              <span>Matric: {studentProfile.institutional_id}</span>
+            {/* Class Switcher & Metadata */}
+            <div className="flex flex-wrap items-center mt-1 text-slate-400 font-mono text-xs gap-3">
+              <span>MATRIC: {studentProfile.institutional_id}</span>
               {studentProfile.phone_number && (
                 <>
                   <span>•</span>
                   <span className="flex items-center gap-1">
-                    <Phone size={14} className="text-slate-400" />
+                    <PixelIcon name="phone" size={12} className="text-slate-500" />
                     {studentProfile.phone_number}
                   </span>
                 </>
               )}
-              {studentProfile.emergency_contact && (
-                <>
-                  <span>•</span>
-                  <span className="flex items-center gap-1 text-red-600 font-semibold" title="Emergency Contact">
-                    <ShieldAlert size={14} />
-                    {studentProfile.emergency_contact}
-                  </span>
-                </>
-              )}
               <span>•</span>
-              <span className="text-slate-400">Class Focus:</span>
+              <span className="text-slate-500">CLASS:</span>
               {enrolledClasses.length > 0 ? (
                 <select
                   value={selectedClassId}
                   onChange={(e) => setSelectedClassId(e.target.value)}
-                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold px-2.5 py-1 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer transition-colors"
+                  className="bg-black/30 border border-white/20 text-white text-xs font-mono px-2 py-0.5 rounded-none focus:outline-none focus:border-white/40 cursor-pointer"
                 >
                   {enrolledClasses.map((cls) => (
-                    <option key={cls.class_id} value={cls.class_id}>
+                    <option key={cls.class_id} value={cls.class_id} className="bg-[#09111e]">
                       {cls.class_name}
                     </option>
                   ))}
                 </select>
               ) : (
-                <span>{className}</span>
+                <span className="text-white">{className}</span>
               )}
             </div>
-
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-3 z-10 w-full md:w-auto">
+        <div className="flex gap-3 w-full md:w-auto font-mono text-xs">
           <a 
             href={studentProfile.email ? `mailto:${studentProfile.email}` : "#"}
             onClick={(e) => {
@@ -266,143 +207,100 @@ export default function ProfilePage() {
                 alert("No email address registered for this student.");
               }
             }}
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-medium shadow-sm hover:bg-slate-50 transition-colors no-underline"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-transparent border border-white/20 text-slate-300 px-4 py-2 rounded-none hover:bg-white/10 transition-colors"
           >
-            <Mail size={18} /> Email Student
+            <PixelIcon name="mail" size={14} /> EMAIL STUDENT
           </a>
           <div className="relative group/disabled flex-1 md:flex-none cursor-not-allowed" title="Disabled Feature">
-            <div className="flex items-center justify-center gap-2 bg-blue-600/50 text-white/70 px-4 py-2.5 rounded-xl font-medium shadow-sm pointer-events-none grayscale">
-              <CalendarDays size={18} /> Setup Intervention
+            <div className="flex items-center justify-center gap-2 bg-white/5 border border-white/10 text-slate-500 px-4 py-2 rounded-none opacity-50 grayscale pointer-events-none">
+              <PixelIcon name="calendar" size={14} /> INTERVENTION
             </div>
-            <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover/disabled:flex items-center px-2.5 py-1 text-xs font-semibold text-white bg-slate-800 rounded-md shadow-lg whitespace-nowrap z-50">
+            <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover/disabled:flex items-center px-2.5 py-1 text-[10px] font-mono font-semibold text-white bg-black/90 border border-white/20 rounded-none shadow-lg whitespace-nowrap z-50">
               Disabled Feature
             </div>
           </div>
         </div>
       </header>
 
-      {/* --- MERIT SECTION --- */}
-      <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-        <div className="flex items-center gap-5">
-          <div className="p-4 bg-slate-100 rounded-2xl text-slate-400">
-            <Award size={36} strokeWidth={2.5} />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold tracking-wider text-slate-500 uppercase">
-              Accumulated Merits
-            </h2>
-            <div className="text-4xl font-extrabold text-slate-900 mt-1">
-              0
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-3">
-          <div className="relative group/disabled cursor-not-allowed" title="Disabled Feature">
-            <div className="flex items-center gap-2 px-5 py-3 bg-slate-100 border border-slate-200 text-slate-400 rounded-xl font-semibold pointer-events-none grayscale font-sans">
-              <Award size={20} />
-              <span>Merit Requests</span>
-              <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-bold bg-slate-300 text-slate-600 shadow-sm">
-                0
-              </span>
-            </div>
-            <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover/disabled:flex items-center px-2.5 py-1 text-xs font-semibold text-white bg-slate-800 rounded-md shadow-lg whitespace-nowrap z-50">
-              Disabled Feature
-            </div>
-          </div>
-
-          <div className="relative group/disabled cursor-not-allowed" title="Disabled Feature">
-            <div className="flex items-center gap-2 px-5 py-3 bg-slate-50 border border-slate-200 text-slate-400 rounded-xl font-semibold pointer-events-none grayscale font-sans">
-              <History size={20} />
-              View Merit History
-            </div>
-            <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover/disabled:flex items-center px-2.5 py-1 text-xs font-semibold text-white bg-slate-800 rounded-md shadow-lg whitespace-nowrap z-50">
-              Disabled Feature
-            </div>
-          </div>
-        </div>
-      </section>
-      {/* --- END MERIT SECTION --- */}
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
+      {/* Main Details Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Metrics & Performance */}
-        <div className="lg:col-span-2 space-y-8">
-
-          {/* Core Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-              <p className="text-sm font-medium text-slate-500 mb-1">Current Attendance</p>
-              <div className="flex items-end gap-2">
-                <p className={`text-3xl font-bold ${attendanceRate === null ? 'text-slate-500' : attendanceRate < 80 ? 'text-red-600' : attendanceRate < 90 ? 'text-orange-600' : 'text-emerald-600'}`}>
-                  {attendanceRate !== null ? `${Math.round(attendanceRate)}%` : '-'}
-                </p>
+        <div className="lg:col-span-2 space-y-6">
+          {/* Core Metrics (3 Cards) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="bg-[#09111e]/80 p-5 rounded-none border border-white/15 shadow-xl backdrop-blur-md">
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="font-mono text-[10px] text-blue-400 font-bold">01.</span>
+                <p className="text-xs font-mono text-slate-400 uppercase tracking-wider">Attendance</p>
               </div>
-            </div>
-            
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-              <p className="text-sm font-medium text-slate-500 mb-1">Latest Assessment</p>
-              <div className="flex items-end gap-2">
-                <p className="text-3xl font-bold text-slate-900">
-                  {latestScore}%
-                </p>
-                <p className="text-sm text-slate-400 font-medium mb-1">Overall</p>
-              </div>
-            </div>
-            
-            {/* Color-Coded Risk Assessment Card */}
-            <div className={`p-5 rounded-2xl border shadow-sm transition-all ${riskStatus === "critical"
-              ? "bg-red-50/90 border-red-200 text-red-900"
-              : riskStatus === "at-risk"
-                ? "bg-amber-50/90 border-amber-200 text-amber-900"
-                : riskStatus === "good"
-                  ? "bg-emerald-50/90 border-emerald-200 text-emerald-900"
-                  : "bg-slate-50/90 border-slate-200 text-slate-700"
+              <p className={`text-3xl font-mono font-bold mt-1 ${
+                attendanceRate === null ? 'text-slate-500' :
+                attendanceRate < 80 ? 'text-rose-400' :
+                attendanceRate < 90 ? 'text-amber-400' :
+                'text-emerald-400'
               }`}>
-              <p className="text-sm font-semibold mb-1 opacity-80">Risk Assessment</p>
-              <div className="flex items-center justify-between mt-1">
-                <p className="text-2xl font-extrabold uppercase tracking-wide">
-                  {riskStatus === "critical" ? "Critical Risk" : riskStatus === "at-risk" ? "Moderate Risk" : riskStatus === "good" ? "Low Risk" : "No Data"}
-                </p>
-                <span className={`text-xs font-bold uppercase px-2.5 py-1 rounded-md border ${riskStatus === "critical"
-                  ? "bg-red-100 text-red-800 border-red-300 animate-pulse"
-                  : riskStatus === "at-risk"
-                    ? "bg-amber-100 text-amber-800 border-amber-300"
-                    : riskStatus === "good"
-                      ? "bg-emerald-100 text-emerald-800 border-emerald-300"
-                      : "bg-slate-200 text-slate-600 border-slate-300"
-                  }`}>
-                  {riskStatus === "critical" ? "Action Required" : riskStatus === "at-risk" ? "Watch" : riskStatus === "good" ? "On Track" : "Pending Records"}
-                </span>
+                {attendanceRate !== null ? `${Math.round(attendanceRate)}%` : '-'}
+              </p>
+            </div>
+            
+            <div className="bg-[#09111e]/80 p-5 rounded-none border border-white/15 shadow-xl backdrop-blur-md">
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="font-mono text-[10px] text-purple-400 font-bold">02.</span>
+                <p className="text-xs font-mono text-slate-400 uppercase tracking-wider">Latest Score</p>
               </div>
+              <p className="text-3xl font-mono font-bold text-white mt-1">
+                {latestScore}%
+              </p>
+            </div>
+            
+            <div className="bg-[#09111e]/80 p-5 rounded-none border border-white/15 shadow-xl backdrop-blur-md">
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="font-mono text-[10px] text-amber-400 font-bold">03.</span>
+                <p className="text-xs font-mono text-slate-400 uppercase tracking-wider">Risk Level</p>
+              </div>
+              <p className="text-xl font-mono font-bold text-white uppercase mt-2">
+                {riskStatus === "critical" ? "Critical Risk" : riskStatus === "at-risk" ? "Moderate" : riskStatus === "good" ? "On Track" : "No Data"}
+              </p>
             </div>
           </div>
 
           {/* Historical Performance Chart */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <div className="mb-6">
-              <h3 className="text-lg font-bold text-slate-900">Performance Trajectory</h3>
-              <p className="text-sm text-slate-500">Correlation between attendance and assessment scores</p>
+          <div className="bg-[#09111e]/80 p-6 rounded-none border border-white/15 shadow-xl backdrop-blur-md">
+            <div className="flex justify-between items-center mb-6 pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <PixelIcon name="chart" size={18} className="text-blue-400" />
+                <h3 className="font-mono text-sm font-bold text-white uppercase tracking-wider">
+                  Performance Trajectory
+                </h3>
+              </div>
+              <span className="font-mono text-[10px] text-slate-400">TREND</span>
             </div>
-            <div className="h-72 w-full">
+            <div className="h-72 w-full font-mono text-xs">
               {chartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="week" stroke="#94a3b8" fontSize={12} />
-                    <YAxis stroke="#94a3b8" fontSize={12} domain={[0, 100]} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff15" />
+                    <XAxis dataKey="week" stroke="#94a3b8" fontSize={11} fontFamily="monospace" />
+                    <YAxis stroke="#94a3b8" fontSize={11} domain={[0, 100]} fontFamily="monospace" />
                     <Tooltip
-                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                      contentStyle={{
+                        backgroundColor: '#09111e',
+                        borderColor: '#ffffff30',
+                        borderRadius: 0,
+                        fontFamily: 'monospace',
+                        fontSize: '11px',
+                        color: '#fff'
+                      }}
                     />
-                    <Line type="monotone" dataKey="score" stroke="#3b82f6" strokeWidth={3} name="Score %" dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                    <Line type="monotone" dataKey="attendance" stroke="#ef4444" strokeWidth={3} name="Attendance %" dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="score" stroke="#60a5fa" strokeWidth={2} name="Score %" dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                    <Line type="monotone" dataKey="attendance" stroke="#f43f5e" strokeWidth={2} name="Attendance %" dot={{ r: 3 }} activeDot={{ r: 5 }} />
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-full flex flex-col items-center justify-center text-slate-400 text-sm gap-2">
-                  <TrendingDown size={32} className="text-slate-300 stroke-[1.5]" />
-                  <p className="font-medium">No performance trajectory data available</p>
-                  <p className="text-xs text-slate-400">Attendance sessions and assessment scores will appear here once recorded.</p>
+                <div className="h-full flex flex-col items-center justify-center text-slate-400 text-xs font-mono gap-2">
+                  <PixelIcon name="chart" size={32} className="text-slate-600" />
+                  <p className="font-bold">No performance trajectory data available</p>
+                  <p className="text-[10px] text-slate-500">Attendance sessions and assessment scores will appear here once recorded.</p>
                 </div>
               )}
             </div>
@@ -410,31 +308,34 @@ export default function ProfilePage() {
         </div>
 
         {/* Right Column: Recent Activity Feed */}
-        <div className="space-y-8">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <h3 className="font-bold text-slate-900 mb-6">Recent Activity</h3>
+        <div className="space-y-6">
+          <div className="bg-[#09111e]/80 p-6 rounded-none border border-white/15 shadow-xl backdrop-blur-md">
+            <div className="flex items-center justify-between mb-6 pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <PixelIcon name="clock" size={18} className="text-blue-400" />
+                <h3 className="font-mono text-sm font-bold text-white uppercase tracking-wider">
+                  Recent Activity
+                </h3>
+              </div>
+              <span className="font-mono text-[10px] text-slate-400">LOGS</span>
+            </div>
             
             {activitiesList.length > 0 ? (
-              <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-200 before:to-transparent">
+              <div className="space-y-4 font-mono text-xs">
                 {activitiesList.map((activity) => (
-                  <div key={activity.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                    <div className={`flex items-center justify-center w-10 h-10 rounded-full border border-white shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow flex-col absolute left-0 md:left-1/2 -translate-x-1/2 ${renderActivityIconBg(activity.icon)}`}>
-                      {renderActivityIcon(activity.icon)}
+                  <div key={activity.id} className="p-3 bg-black/20 border border-white/10 rounded-none">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="font-bold text-white text-xs">{activity.title}</div>
+                      <time className="text-[10px] text-slate-400">{formatActivityTime(activity.timestamp)}</time>
                     </div>
-                    <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] ml-12 md:ml-0 p-4 rounded-xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition-shadow">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="font-bold text-slate-900 text-sm">{activity.title}</div>
-                        <time className="font-medium text-xs text-slate-500">{formatActivityTime(activity.timestamp)}</time>
-                      </div>
-                      <div className="text-slate-500 text-xs">{activity.description}</div>
-                    </div>
+                    <div className="text-slate-400 text-[11px]">{activity.description}</div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="py-12">
+              <div className="py-8">
                 <EmptyState 
-                  icon={History}
+                  icon="clock"
                   title="No Recent Activity"
                   description="No recent activity logged for this student."
                 />
@@ -443,51 +344,6 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
-
-      {/* Merit History Modal */}
-      {isHistoryModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
-            <div className="flex items-center justify-between p-6 border-b border-slate-100">
-              <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                <Award className="text-blue-600" size={24} />
-                Merit History
-              </h3>
-              <button
-                onClick={() => setIsHistoryModalOpen(false)}
-                className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors"
-              >
-                <X size={20} strokeWidth={2.5} />
-              </button>
-            </div>
-
-            <div className="p-6 overflow-y-auto flex-1">
-              {meritHistory.length > 0 ? (
-                <ul className="space-y-4">
-                  {meritHistory.map((item, index) => (
-                    <li key={index} className="flex justify-between items-center pb-4 border-b border-slate-50 last:border-0 last:pb-0">
-                      <div>
-                        <p className="font-semibold text-slate-800">{item.title}</p>
-                        <p className="text-sm text-slate-500">Submitted at {new Date(item.submitted_at).toLocaleDateString()}</p>
-                      </div>
-                      <span className="font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">+{item.awarded_points || item.points || 10}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="py-12">
-                  <EmptyState 
-                    icon={Award}
-                    title="No Merit History"
-                    description="No verified merits in history."
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
     </main>
   );
 }

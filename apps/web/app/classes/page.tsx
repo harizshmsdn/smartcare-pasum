@@ -1,39 +1,14 @@
-// apps/web/app/classes/page.tsx
+// Lecturer Classes and Cohort Roster page in dottxt.ai sharp dark style
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  Search,
-  ChevronDown,
-  AlertTriangle,
-  TrendingDown,
-  CheckCircle2,
-  Users,
-  Calendar,
-  MoreVertical,
-  Filter,
-  ArrowRight,
-  QrCode,
-  X,
-  ScanFace,
-  MapPin,
-  Laptop,
-  Check,
-  BookOpen,
-  FileSpreadsheet,
-  Plus,
-  Save,
-  Mail,
-  Eye,
-  Award
-} from "lucide-react";
 import { createClient } from "../../utils/supabase/client";
 import { lecturerService } from "../../lib/services/lecturer";
 import { api } from "../../lib/api";
-import { useEffect } from "react";
 import EmptyState from "../../components/EmptyState";
+import PixelIcon from "../../components/PixelIcon";
 import useSWR from "swr";
 
 interface StudentListItem {
@@ -79,23 +54,6 @@ export default function ClassesPage() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [hasAnyActiveSession, setHasAnyActiveSession] = useState(false);
   const [nextSessionTime, setNextSessionTime] = useState<string>("Wed, 10:00 AM");
-  const [activeMenuStudentId, setActiveMenuStudentId] = useState<string | null>(null);
-
-  // States for Assessments & Marks Modal
-  const [isAssessmentsModalOpen, setIsAssessmentsModalOpen] = useState(false);
-  const [assessmentsTab, setAssessmentsTab] = useState<"matrix" | "list" | "create">("matrix");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [classAssessments, setClassAssessments] = useState<any[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [classRosterScores, setClassRosterScores] = useState<any[]>([]);
-  const [editingScores, setEditingScores] = useState<{ [key: string]: number | string }>({});
-
-  // New assessment form
-  const [newTitle, setNewTitle] = useState("");
-  const [newType, setNewType] = useState("Continuous");
-  const [newWeightage, setNewWeightage] = useState("10");
-  const [newTotalMarks, setNewTotalMarks] = useState("20");
-  const [isSavingScore, setIsSavingScore] = useState(false);
 
   const handleStartSessionClick = () => {
     setOnlineMode(false);
@@ -105,7 +63,6 @@ export default function ClassesPage() {
     setCustomDateTime("");
     setShowConfigModal(true);
   };
-
 
   // Fetch classes taught by this lecturer using SWR
   const { data: classesDataRaw, isLoading: isSwrLoadingClasses } = useSWR('lecturerClassesList', async () => {
@@ -150,19 +107,8 @@ export default function ClassesPage() {
     setIsLoadingClasses(false);
   }, [classesDataRaw]);
 
-  // Fetch class assessments and gradebook scores from FastAPI
-  const fetchClassAssessments = async (classId: string) => {
-    try {
-      const data = await api.get(`/api/classes/${classId}/assessments`);
-      setClassAssessments(data.assessments || []);
-      setClassRosterScores(data.roster || []);
-    } catch (err: any) {
-      console.error("Failed to fetch class assessments:", err);
-    }
-  };
-
   // Fetch student roster for selected class using SWR
-  const { data: rosterEnrollments, isLoading: isLoadingRoster, mutate: mutateRoster } = useSWR(
+  const { data: rosterEnrollments, mutate: mutateRoster } = useSWR(
     selectedClassId ? `roster_${selectedClassId}` : null,
     async () => {
       const response = await lecturerService.getClassRoster(selectedClassId);
@@ -173,11 +119,8 @@ export default function ClassesPage() {
   useEffect(() => {
     if (!selectedClassId) return;
 
-    // Sync active session ID from classesList
     const currentClass = classesList.find((c: any) => c.id === selectedClassId);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setActiveSessionId((currentClass as any)?.activeSessionId || null);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setHasAnyActiveSession(classesList.some((c: any) => !!c.activeSessionId));
 
     if (rosterEnrollments) {
@@ -223,70 +166,58 @@ export default function ClassesPage() {
     };
   }, [selectedClassId, mutateRoster, supabase]);
 
-  //Filter Logic: Applies Tab selection AND Search Query
+  // Filter students based on active tab and search query
   const filteredStudents = students.filter((student) => {
-    //Tab Filter
     const matchesTab = activeTab === "all" || (activeTab === "alerts" && student.status !== "good");
-
-    //Search Filter (matches name or ID)
     const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       student.matricId.includes(searchQuery);
-
     return matchesTab && matchesSearch;
   });
 
-  // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, activeTab]);
 
-  //Calculate dynamic alerts count
   const alertsCount = students.filter(s => s.status === "critical" || s.status === "at-risk").length;
   const studentsWithData = students.filter(s => s.attendance !== "-");
   const classAvg = studentsWithData.length > 0
     ? Math.round(studentsWithData.reduce((sum, s) => sum + (s.attendance as number), 0) / studentsWithData.length)
     : "-";
 
-  // Pagination logic
   const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage));
   const paginatedStudents = filteredStudents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   if (isLoadingClasses || isSwrLoadingClasses) {
     return (
-      <main className="flex-1 p-8 overflow-y-auto bg-[#FAF9F6]">
-        <div className="w-64 h-10 bg-slate-200 rounded-lg animate-pulse mb-2"></div>
-        <div className="w-48 h-5 bg-slate-200 rounded-lg animate-pulse mb-8"></div>
-        
+      <main className="flex-1 p-8 overflow-y-auto bg-transparent text-white">
+        <div className="w-64 h-8 bg-white/10 rounded-none animate-pulse mb-2 border border-white/10" />
+        <div className="w-48 h-4 bg-white/10 rounded-none animate-pulse mb-8 border border-white/10" />
         <div className="grid grid-cols-5 gap-5 mb-8">
           {[1, 2, 3, 4, 5].map(i => (
-            <div key={i} className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm animate-pulse h-28 flex items-center gap-4">
-              <div className="w-14 h-14 bg-slate-200 rounded-2xl shrink-0"></div>
-              <div className="flex-1">
-                <div className="w-24 h-4 bg-slate-200 rounded mb-2"></div>
-                <div className="w-16 h-8 bg-slate-200 rounded"></div>
-              </div>
-            </div>
+            <div key={i} className="bg-[#09111e]/80 h-28 rounded-none animate-pulse border border-white/15" />
           ))}
-        </div>
-        
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden h-[400px] p-5 animate-pulse">
-          <div className="w-full h-12 bg-slate-100 rounded-lg mb-6"></div>
-          <div className="w-full h-10 bg-slate-50 rounded-lg mb-4"></div>
-          <div className="w-full h-10 bg-slate-50 rounded-lg mb-4"></div>
-          <div className="w-full h-10 bg-slate-50 rounded-lg mb-4"></div>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="flex-1 p-8 overflow-y-auto bg-[#FAF9F6]">
-
+    <main className="flex-1 p-8 overflow-y-auto bg-transparent text-white">
       {/* Header & Class Selector */}
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 pb-6 border-b border-white/10">
         <div>
-          <h2 className="text-3xl font-semibold text-slate-900">Class Roster</h2>
-          <p className="text-slate-500 mt-1">Manage and monitor specific cohorts</p>
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="w-1.5 h-1.5 bg-blue-400 rounded-none" />
+            <span className="font-mono text-xs text-blue-400 tracking-wider uppercase font-semibold">
+              PASUM // COHORT MANAGEMENT
+            </span>
+          </div>
+          <h2 className="text-3xl font-bold tracking-tight text-white font-mono uppercase">
+            Class Roster
+          </h2>
+          <p className="text-sm text-slate-400 mt-1">
+            Manage and monitor specific cohorts and session verification
+          </p>
         </div>
 
         {/* Dropdown for selecting classes and Start Session button */}
@@ -295,26 +226,26 @@ export default function ClassesPage() {
             activeSessionId ? (
               <button
                 onClick={() => router.push(`/attendance/active?sessionId=${activeSessionId}&classId=${selectedClassId}`)}
-                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl font-semibold shadow-md shadow-emerald-200 hover:shadow-lg transition-all active:scale-95 cursor-pointer border-none font-sans animate-pulse"
+                className="flex items-center gap-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-400/50 px-4 py-2.5 rounded-none font-mono text-xs font-bold transition-all cursor-pointer animate-pulse"
               >
-                <QrCode size={18} />
-                <span>Ongoing Session</span>
+                <PixelIcon name="qrCode" size={16} />
+                <span>ONGOING SESSION</span>
               </button>
             ) : hasAnyActiveSession ? (
               <button
                 disabled
-                className="flex items-center gap-2 bg-slate-200 text-slate-400 px-5 py-3 rounded-xl font-semibold cursor-not-allowed border-none font-sans"
+                className="flex items-center gap-2 bg-white/5 border border-white/10 text-slate-500 px-4 py-2.5 rounded-none font-mono text-xs cursor-not-allowed"
               >
-                <QrCode size={18} />
-                <span>Another session is ongoing</span>
+                <PixelIcon name="qrCode" size={16} />
+                <span>SESSION ONGOING ELSEWHERE</span>
               </button>
             ) : (
               <button
                 onClick={handleStartSessionClick}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-semibold shadow-md shadow-blue-200 hover:shadow-lg transition-all active:scale-95 cursor-pointer border-none font-sans"
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white border border-blue-400/60 px-4 py-2.5 rounded-none font-mono text-xs font-bold shadow-lg shadow-blue-900/30 transition-all cursor-pointer"
               >
-                <QrCode size={18} />
-                <span>Start Session</span>
+                <PixelIcon name="qrCode" size={16} />
+                <span>START SESSION</span>
               </button>
             )
           )}
@@ -322,33 +253,37 @@ export default function ClassesPage() {
           <div className="relative">
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-3 bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-medium shadow-sm hover:bg-slate-50 transition-colors"
+              className="flex items-center gap-3 bg-[#09111e]/90 border border-white/20 text-white px-4 py-2.5 rounded-none font-mono text-xs shadow-lg hover:border-white/40 transition-colors"
             >
               <div className="flex flex-col text-left">
-                <span className="text-[10px] uppercase font-bold text-blue-600 tracking-wider leading-none mb-1">Current View</span>
-                <span className="leading-none">{selectedClassName || "Loading..."}</span>
+                <span className="text-[10px] uppercase font-bold text-blue-400 tracking-widest leading-none mb-1">
+                  CURRENT VIEW
+                </span>
+                <span className="leading-none text-white font-semibold">
+                  {selectedClassName || "Loading..."}
+                </span>
               </div>
-              <ChevronDown size={18} className="text-slate-400 ml-2" />
+              <span className="text-slate-400 text-xs font-mono ml-2">▼</span>
             </button>
 
             {/* Dropdown Menu */}
             {isDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-full min-w-[220px] bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
+              <div className="absolute right-0 mt-1 w-full min-w-[260px] bg-[#09111e] border border-white/20 rounded-none shadow-2xl z-50 overflow-hidden font-mono text-xs">
                 {classesList.map((cls) => (
                   <button
                     key={cls.id}
                     onClick={() => {
                       setSelectedClassId(cls.id);
                       setSelectedClassName(cls.name);
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       if ((cls as any).schedule) {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         setNextSessionTime((cls as any).schedule);
                       }
                       setIsDropdownOpen(false);
                       window.history.pushState(null, '', `/classes?classId=${cls.id}`);
                     }}
-                    className={`w-full text-left px-4 py-3 text-sm hover:bg-slate-50 transition-colors ${selectedClassId === cls.id ? 'bg-blue-50/50 text-blue-700 font-medium' : 'text-slate-700'}`}
+                    className={`w-full text-left px-4 py-3 hover:bg-white/10 transition-colors border-b border-white/10 last:border-b-0 ${
+                      selectedClassId === cls.id ? 'bg-blue-600/20 text-blue-300 font-semibold' : 'text-slate-300'
+                    }`}
                   >
                     {cls.name}
                   </button>
@@ -360,175 +295,213 @@ export default function ClassesPage() {
       </header>
 
       {/* Top Row: Mini-Bento Class Metrics (5 Columns, 1 Row) */}
-      <div className="grid grid-cols-5 gap-5 mb-8" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}>
-
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 mb-8">
         {/* Card 1: Enrolled Students */}
-        <div className="bg-white p-3 sm:p-3.5 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-3 min-w-0">
-          <div className="bg-blue-50 p-3.5 rounded-2xl text-blue-600 shrink-0">
-            <Users size={26} />
+        <div className="bg-[#09111e]/80 p-5 rounded-none border border-white/15 shadow-xl flex items-center gap-4 min-w-0 backdrop-blur-md">
+          <div className="p-3 bg-blue-500/10 border border-blue-400/20 text-blue-400 rounded-none shrink-0">
+            <PixelIcon name="profile" size={24} />
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-slate-500 truncate mb-1">Enrolled Students</p>
-            <p className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">{students.length}</p>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="font-mono text-[10px] text-blue-400 font-bold">01.</span>
+              <p className="text-xs font-mono text-slate-400 uppercase tracking-wider truncate">Enrolled</p>
+            </div>
+            <p className="text-2xl font-mono font-bold text-white leading-tight">{students.length}</p>
           </div>
         </div>
 
         {/* Card 2: Class Average */}
-        <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4 min-w-0">
-          <div className="bg-emerald-50 p-3.5 rounded-2xl text-emerald-600 shrink-0">
-            <CheckCircle2 size={26} />
+        <div className="bg-[#09111e]/80 p-5 rounded-none border border-white/15 shadow-xl flex items-center gap-4 min-w-0 backdrop-blur-md">
+          <div className="p-3 bg-emerald-500/10 border border-emerald-400/20 text-emerald-400 rounded-none shrink-0">
+            <PixelIcon name="checkCircle" size={24} />
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-slate-500 truncate mb-1">Class Average</p>
-            <p className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">{classAvg}{classAvg !== "-" ? "%" : ""}</p>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="font-mono text-[10px] text-emerald-400 font-bold">02.</span>
+              <p className="text-xs font-mono text-slate-400 uppercase tracking-wider truncate">Class Average</p>
+            </div>
+            <p className="text-2xl font-mono font-bold text-white leading-tight">
+              {classAvg}{classAvg !== "-" ? "%" : ""}
+            </p>
           </div>
         </div>
 
         {/* Card 3: Next Session */}
-        <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4 min-w-0">
-          <div className="bg-indigo-50 p-3.5 rounded-2xl text-indigo-600 shrink-0">
-            <Calendar size={26} />
+        <div className="bg-[#09111e]/80 p-5 rounded-none border border-white/15 shadow-xl flex items-center gap-4 min-w-0 backdrop-blur-md">
+          <div className="p-3 bg-purple-500/10 border border-purple-400/20 text-purple-400 rounded-none shrink-0">
+            <PixelIcon name="calendar" size={24} />
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-slate-500 truncate mb-1">Next Session</p>
-            <p className="text-2xl sm:text-lg font-bold text-slate-900 truncate leading-tight">{nextSessionTime}</p>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="font-mono text-[10px] text-purple-400 font-bold">03.</span>
+              <p className="text-xs font-mono text-slate-400 uppercase tracking-wider truncate">Next Session</p>
+            </div>
+            <p className="text-sm font-mono font-bold text-white truncate leading-tight">{nextSessionTime}</p>
           </div>
         </div>
 
         {/* Card 4: Assessments & Marks CTA Button */}
         <Link
           href={`/classes/assessments?classId=${selectedClassId}`}
-          className="bg-slate-900 p-5 sm:p-6 rounded-3xl shadow-md flex items-center gap-5 sm:gap-6 group hover:bg-slate-800 transition-all cursor-pointer min-w-0"
+          className="bg-[#09111e]/80 p-5 rounded-none border border-white/20 shadow-xl flex items-center gap-4 group hover:border-blue-400/50 hover:bg-white/5 transition-all cursor-pointer min-w-0 backdrop-blur-md"
         >
-          <div className="bg-white/10 p-3.5 rounded-2xl text-white group-hover:scale-110 group-hover:bg-blue-600 transition-all shrink-0">
-            <BookOpen size={26} />
+          <div className="p-3 bg-white/5 border border-white/15 text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-all shrink-0 rounded-none">
+            <PixelIcon name="book" size={24} />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Grading & Exams</p>
-            <p className="text-lg sm:text-xl font-bold text-white leading-tight truncate">Assessments</p>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="font-mono text-[10px] text-blue-400 font-bold">04.</span>
+              <p className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Grading</p>
+            </div>
+            <p className="text-sm font-mono font-bold text-white leading-tight truncate">Assessments →</p>
           </div>
         </Link>
 
         {/* Card 5: Intervention Board CTA (Disabled) */}
         <div
-          className="relative group/disabled bg-slate-900/50 border border-slate-800 p-5 sm:p-6 rounded-3xl shadow-sm flex items-center gap-5 sm:gap-6 cursor-not-allowed min-w-0"
+          className="relative group/disabled bg-[#09111e]/50 border border-white/10 p-5 rounded-none shadow-xl flex items-center gap-4 cursor-not-allowed min-w-0 backdrop-blur-md"
           title="Disabled Feature"
         >
-          <div className="bg-white/5 p-3.5 rounded-2xl text-slate-500 shrink-0">
-            <ArrowRight size={26} />
+          <div className="p-3 bg-white/5 border border-white/10 text-slate-500 shrink-0 rounded-none">
+            <PixelIcon name="warning" size={24} />
           </div>
-          <div className="min-w-0 opacity-50 grayscale">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Action Required</p>
-            <p className="text-lg sm:text-xl font-bold text-slate-400 leading-tight truncate">Intervention Board</p>
+          <div className="min-w-0 opacity-40 grayscale">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="font-mono text-[10px] text-slate-500 font-bold">05.</span>
+              <p className="text-[10px] font-mono uppercase tracking-wider text-slate-500">Board</p>
+            </div>
+            <p className="text-sm font-mono font-bold text-slate-400 leading-tight truncate">Interventions →</p>
           </div>
-          <div className="pointer-events-none absolute -top-3 right-6 hidden group-hover/disabled:flex items-center px-2.5 py-1 text-xs font-semibold text-white bg-slate-800 rounded-md shadow-lg whitespace-nowrap z-50">
+          <div className="pointer-events-none absolute -top-8 right-4 hidden group-hover/disabled:flex items-center px-2.5 py-1 text-xs font-mono font-semibold text-white bg-black/90 border border-white/20 rounded-none shadow-xl whitespace-nowrap z-50">
             Disabled Feature
           </div>
         </div>
       </div>
 
       {/* Roster Container */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-
+      <div className="bg-[#09111e]/80 border border-white/15 rounded-none shadow-2xl overflow-hidden backdrop-blur-md">
         {/* Table Toolbar */}
-        <div className="p-5 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-white">
+        <div className="p-4 border-b border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 bg-black/20">
           {/* Tabs for filtering students */}
-          <div className="flex gap-2 w-full md:w-auto">
+          <div className="flex gap-2 w-full md:w-auto font-mono text-xs">
             <button
               onClick={() => setActiveTab("all")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === "all" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+              className={`px-3.5 py-2 rounded-none transition-colors border ${
+                activeTab === "all"
+                  ? "bg-white/15 border-white/40 text-white font-bold"
+                  : "bg-transparent border-white/10 text-slate-400 hover:bg-white/5"
+              }`}
             >
-              All Students
+              ALL STUDENTS ({students.length})
             </button>
             <button
               onClick={() => setActiveTab("alerts")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === "alerts" ? "bg-red-50 text-red-700 border border-red-200" : "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-transparent"}`}
+              className={`px-3.5 py-2 rounded-none transition-colors flex items-center gap-2 border ${
+                activeTab === "alerts"
+                  ? "bg-rose-500/20 border-rose-400/50 text-rose-300 font-bold"
+                  : "bg-transparent border-white/10 text-slate-400 hover:bg-white/5"
+              }`}
             >
-              Alerts Only <span className={`px-1.5 py-0.5 rounded text-xs ${activeTab === "alerts" ? "bg-red-200 text-red-800" : "bg-red-100 text-red-700"}`}>{alertsCount}</span>
+              ALERTS ONLY
+              <span className={`px-1.5 py-0.5 rounded-none text-[10px] font-mono ${
+                activeTab === "alerts" ? "bg-rose-500/30 text-rose-200" : "bg-white/10 text-slate-400"
+              }`}>
+                {alertsCount}
+              </span>
             </button>
           </div>
 
-          <div className="flex gap-3 w-full md:w-auto">
-            {/* FIX 3: Search Input tied to searchQuery state */}
+          <div className="flex gap-3 w-full md:w-auto font-mono text-xs">
+            {/* Search Input tied to searchQuery state */}
             <div className="relative flex-1 md:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                <PixelIcon name="search" size={14} />
+              </span>
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search matric ID or name..."
-                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                placeholder="Search ID or name..."
+                className="w-full pl-9 pr-4 py-2 bg-black/30 border border-white/15 rounded-none text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-white/40 font-mono"
               />
             </div>
-            <button className="p-2 border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors">
-              <Filter size={18} />
-            </button>
           </div>
         </div>
 
         {/* Data Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse font-mono text-xs">
             <thead>
-              <tr className="bg-slate-50/50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100">
-                <th className="p-4 font-medium">Student</th>
-                <th className="p-4 font-medium">Risk Status</th>
-                <th className="p-4 font-medium">Attendance</th>
-                <th className="p-4 font-medium">Latest Score</th>
-                <th className="p-4 font-medium text-right">Actions</th>
+              <tr className="bg-white/5 text-slate-400 text-[10px] uppercase tracking-wider border-b border-white/10">
+                <th className="p-3.5 font-bold">Student</th>
+                <th className="p-3.5 font-bold">Risk Status</th>
+                <th className="p-3.5 font-bold">Attendance</th>
+                <th className="p-3.5 font-bold">Latest Score</th>
+                <th className="p-3.5 font-bold text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {/* NOW RENDERING paginatedStudents instead of filteredStudents */}
+            <tbody className="divide-y divide-white/10">
               {paginatedStudents.length > 0 ? (
                 paginatedStudents.map((student) => (
-                  <tr key={student.id} onClick={() => router.push(`/classes/${student.id}?classId=${selectedClassId}`)} className="hover:bg-slate-50 transition-colors group cursor-pointer">
-                    <td className="p-4">
+                  <tr
+                    key={student.id}
+                    onClick={() => router.push(`/classes/${student.id}?classId=${selectedClassId}`)}
+                    className="hover:bg-white/5 transition-colors group cursor-pointer"
+                  >
+                    <td className="p-3.5">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
+                        <div className="w-9 h-9 rounded-none bg-white/10 border border-white/20 text-white flex items-center justify-center font-bold text-xs">
                           {student.name.charAt(0)}
                         </div>
                         <div>
-                          <p className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">{student.name}</p>
-                          <p className="text-xs text-slate-500">{student.matricId}</p>
+                          <p className="font-bold text-white group-hover:text-blue-300 transition-colors">
+                            {student.name}
+                          </p>
+                          <p className="text-[10px] text-slate-400">{student.matricId}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="p-4">
+                    <td className="p-3.5">
                       {student.status === "critical" && (
-                        <span className="inline-flex items-center gap-1.5 bg-red-50 text-red-700 border border-red-200 px-2.5 py-1 rounded-md text-xs font-semibold">
-                          <AlertTriangle size={14} /> Critical
+                        <span className="inline-flex items-center gap-1.5 bg-rose-500/10 text-rose-300 border border-rose-400/30 px-2 py-0.5 rounded-none text-[10px] font-bold uppercase">
+                          <PixelIcon name="warning" size={12} /> CRITICAL
                         </span>
                       )}
                       {student.status === "at-risk" && (
-                        <span className="inline-flex items-center gap-1.5 bg-orange-50 text-orange-700 border border-orange-200 px-2.5 py-1 rounded-md text-xs font-semibold">
-                          <TrendingDown size={14} /> At Risk
+                        <span className="inline-flex items-center gap-1.5 bg-amber-500/10 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded-none text-[10px] font-bold uppercase">
+                          <PixelIcon name="warning" size={12} /> AT RISK
                         </span>
                       )}
                       {student.status === "good" && (
-                        <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-md text-xs font-semibold">
-                          <CheckCircle2 size={14} /> On Track
+                        <span className="inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-none text-[10px] font-bold uppercase">
+                          <PixelIcon name="check" size={12} /> ON TRACK
                         </span>
                       )}
                       {student.status === "no-data" && (
-                        <span className="inline-flex items-center gap-1.5 bg-slate-50 text-slate-500 border border-slate-200 px-2.5 py-1 rounded-md text-xs font-semibold">
-                          No Data
+                        <span className="inline-flex items-center gap-1.5 bg-white/5 text-slate-400 border border-white/10 px-2 py-0.5 rounded-none text-[10px] font-bold uppercase">
+                          NO DATA
                         </span>
                       )}
                     </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-2">
-                        <span className={`font-semibold ${typeof student.attendance === 'number' && student.attendance < 80 ? "text-red-600" : "text-slate-700"}`}>
-                          {student.attendance}{student.attendance !== "-" ? "%" : ""}
-                        </span>
-                      </div>
+                    <td className="p-3.5">
+                      <span className={`font-bold ${
+                        typeof student.attendance === 'number' && student.attendance < 80
+                          ? "text-rose-400"
+                          : "text-white"
+                      }`}>
+                        {student.attendance}{student.attendance !== "-" ? "%" : ""}
+                      </span>
                     </td>
-                    <td className="p-4">
-                      <span className={`font-semibold ${typeof student.latestScore === 'number' && student.latestScore < 50 ? "text-red-600" : "text-slate-700"}`}>
+                    <td className="p-3.5">
+                      <span className={`font-bold ${
+                        typeof student.latestScore === 'number' && student.latestScore < 50
+                          ? "text-rose-400"
+                          : "text-white"
+                      }`}>
                         {student.latestScore}{student.latestScore !== "-" ? "%" : ""}
                       </span>
                     </td>
-                    <td className="p-4 text-right">
+                    <td className="p-3.5 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <a 
                           href={student.email ? `mailto:${student.email}` : '#'}
@@ -537,27 +510,23 @@ export default function ClassesPage() {
                             if (!student.email) alert("No email address found for this student.");
                           }}
                           title="Send Email"
-                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-150 hover:scale-110 active:scale-95 cursor-pointer inline-flex items-center justify-center border-none bg-transparent"
+                          className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-none border border-transparent hover:border-white/20 transition-all inline-flex items-center justify-center cursor-pointer"
                         >
-                          <Mail size={16} />
+                          <PixelIcon name="mail" size={14} />
                         </a>
                         <div className="relative group/disabled inline-flex cursor-not-allowed" title="Disabled Feature">
-                          <span 
-                            className="p-2 text-slate-300 rounded-lg inline-flex items-center justify-center opacity-40 grayscale pointer-events-none"
-                          >
-                            <Calendar size={16} />
+                          <span className="p-1.5 text-slate-600 rounded-none inline-flex items-center justify-center opacity-40 grayscale pointer-events-none">
+                            <PixelIcon name="calendar" size={14} />
                           </span>
-                          <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover/disabled:flex items-center px-2 py-0.5 text-[10px] font-semibold text-white bg-slate-800 rounded shadow-md whitespace-nowrap z-50">
+                          <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover/disabled:flex items-center px-2 py-0.5 text-[10px] font-mono font-semibold text-white bg-black/90 border border-white/20 rounded-none shadow-md whitespace-nowrap z-50">
                             Disabled Feature
                           </div>
                         </div>
                         <div className="relative group/disabled inline-flex cursor-not-allowed" title="Disabled Feature">
-                          <span 
-                            className="p-2 text-slate-300 rounded-lg inline-flex items-center justify-center opacity-40 grayscale pointer-events-none"
-                          >
-                            <Award size={16} />
+                          <span className="p-1.5 text-slate-600 rounded-none inline-flex items-center justify-center opacity-40 grayscale pointer-events-none">
+                            <PixelIcon name="award" size={14} />
                           </span>
-                          <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover/disabled:flex items-center px-2 py-0.5 text-[10px] font-semibold text-white bg-slate-800 rounded shadow-md whitespace-nowrap z-50">
+                          <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover/disabled:flex items-center px-2 py-0.5 text-[10px] font-mono font-semibold text-white bg-black/90 border border-white/20 rounded-none shadow-md whitespace-nowrap z-50">
                             Disabled Feature
                           </div>
                         </div>
@@ -567,9 +536,9 @@ export default function ClassesPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="p-0">
+                  <td colSpan={5} className="p-8">
                     <EmptyState 
-                      icon={Users}
+                      icon="profile"
                       title={students.length === 0 ? "No Students Enrolled" : "No Matches Found"}
                       description={students.length === 0 ? "There are no students currently enrolled in this class." : "No students found matching your filters."}
                     />
@@ -582,24 +551,24 @@ export default function ClassesPage() {
 
         {/* Pagination Controls */}
         {filteredStudents.length > 0 && (
-          <div className="p-5 border-t border-slate-100 flex justify-between items-center bg-slate-50/50">
-            <span className="text-sm text-slate-500 font-medium">
-              Showing <span className="font-bold text-slate-900">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-bold text-slate-900">{Math.min(currentPage * itemsPerPage, filteredStudents.length)}</span> of <span className="font-bold text-slate-900">{filteredStudents.length}</span> students
+          <div className="p-4 border-t border-white/10 flex justify-between items-center bg-black/20 font-mono text-xs">
+            <span className="text-slate-400">
+              Showing <span className="font-bold text-white">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-bold text-white">{Math.min(currentPage * itemsPerPage, filteredStudents.length)}</span> of <span className="font-bold text-white">{filteredStudents.length}</span> students
             </span>
             <div className="flex gap-2">
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-white"
+                className="px-3.5 py-1.5 border border-white/20 rounded-none font-mono text-xs text-slate-300 hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-transparent"
               >
-                Previous
+                PREV
               </button>
               <button
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-white"
+                className="px-3.5 py-1.5 border border-white/20 rounded-none font-mono text-xs text-slate-300 hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-transparent"
               >
-                Next
+                NEXT
               </button>
             </div>
           </div>
@@ -608,29 +577,35 @@ export default function ClassesPage() {
 
       {/* Session Configuration Modal */}
       {showConfigModal && selectedClassId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+          <div className="bg-[#09111e] rounded-none shadow-2xl w-full max-w-2xl overflow-hidden border border-white/20 text-white">
             {/* Header */}
-            <div className="bg-slate-900 p-6 text-white relative">
+            <div className="p-6 border-b border-white/10 relative">
               <button
                 onClick={() => setShowConfigModal(false)}
-                className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors border-none cursor-pointer text-white"
+                className="absolute top-5 right-5 text-slate-400 hover:text-white p-2 border border-white/10 hover:border-white/30 rounded-none transition-colors cursor-pointer"
               >
-                <X size={20} />
+                ✕
               </button>
-              <span className="text-xs font-bold tracking-wider uppercase bg-blue-600 text-white px-3 py-1 rounded-full">
-                Session Setup
-              </span>
-              <h2 className="text-2xl font-bold mt-3">{selectedClassName}</h2>
-              <p className="text-slate-400 mt-1">Configure attendance tracking rules below.</p>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="w-1.5 h-1.5 bg-blue-400 rounded-none" />
+                <span className="font-mono text-xs text-blue-400 uppercase tracking-wider font-bold">
+                  SESSION SETUP // CONFIGURATION
+                </span>
+              </div>
+              <h2 className="text-xl font-bold font-mono uppercase">{selectedClassName}</h2>
+              <p className="text-xs text-slate-400 mt-1 font-mono">
+                Configure attendance verification parameters prior to activation.
+              </p>
             </div>
 
             {/* Modal Body */}
-            <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto">
-
+            <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto font-mono text-xs">
               {/* Choose Attendance Format */}
               <div>
-                <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Choose Attendance Format</h3>
+                <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">
+                  Verification Format
+                </h3>
                 <div className="grid grid-cols-2 gap-4">
                   {/* Option 1: In-Person */}
                   <div
@@ -639,24 +614,23 @@ export default function ClassesPage() {
                       setFaceIdRequired(true);
                       setLocationRequired(true);
                     }}
-                    className={`flex flex-col p-5 rounded-2xl border-2 cursor-pointer transition-all ${!onlineMode
-                      ? "border-blue-600 bg-blue-50/50"
-                      : "border-slate-200 hover:border-slate-300"
-                      }`}
+                    className={`flex flex-col p-4 rounded-none border cursor-pointer transition-all ${
+                      !onlineMode
+                        ? "border-blue-400 bg-blue-500/10 shadow-lg shadow-blue-900/20"
+                        : "border-white/10 hover:border-white/20 bg-black/20"
+                    }`}
                   >
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="p-2.5 rounded-xl bg-blue-100 text-blue-600">
-                        <Users size={22} />
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="p-2 bg-blue-500/10 border border-blue-400/30 text-blue-300 rounded-none">
+                        <PixelIcon name="profile" size={18} />
                       </div>
                       {!onlineMode && (
-                        <div className="bg-blue-600 text-white rounded-full p-1 flex items-center justify-center">
-                          <Check size={14} strokeWidth={3} />
-                        </div>
+                        <span className="text-blue-400 text-xs font-bold">● ACTIVE</span>
                       )}
                     </div>
-                    <span className="font-bold text-slate-900 text-lg">In-Person Class</span>
-                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                      Requires Face ID scanning and GPS location validation in class.
+                    <span className="font-bold text-white text-sm">IN-PERSON CLASS</span>
+                    <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                      Requires Face ID biometric matching and GPS geofence in lecture hall.
                     </p>
                   </div>
 
@@ -667,32 +641,31 @@ export default function ClassesPage() {
                       setFaceIdRequired(false);
                       setLocationRequired(false);
                     }}
-                    className={`flex flex-col p-5 rounded-2xl border-2 cursor-pointer transition-all ${onlineMode
-                      ? "border-blue-600 bg-blue-50/50"
-                      : "border-slate-200 hover:border-slate-300"
-                      }`}
+                    className={`flex flex-col p-4 rounded-none border cursor-pointer transition-all ${
+                      onlineMode
+                        ? "border-blue-400 bg-blue-500/10 shadow-lg shadow-blue-900/20"
+                        : "border-white/10 hover:border-white/20 bg-black/20"
+                    }`}
                   >
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="p-2.5 rounded-xl bg-indigo-100 text-indigo-600">
-                        <Laptop size={22} />
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="p-2 bg-purple-500/10 border border-purple-400/30 text-purple-300 rounded-none">
+                        <PixelIcon name="cases" size={18} />
                       </div>
                       {onlineMode && (
-                        <div className="bg-blue-600 text-white rounded-full p-1 flex items-center justify-center">
-                          <Check size={14} strokeWidth={3} />
-                        </div>
+                        <span className="text-blue-400 text-xs font-bold">● ACTIVE</span>
                       )}
                     </div>
-                    <span className="font-bold text-slate-900 text-lg">Online Class</span>
-                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                      Bypasses Face ID and GPS location geofencing checks for all students.
+                    <span className="font-bold text-white text-sm">ONLINE CLASS</span>
+                    <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                      Bypasses Face ID and GPS physical geofence verification rules.
                     </p>
                   </div>
                 </div>
               </div>
 
               {/* Session Timing / Replacement Option */}
-              <div className="border-t border-slate-100 pt-6">
-                <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">
+              <div className="border-t border-white/10 pt-5">
+                <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">
                   Session Timing
                 </h3>
                 <div className="grid grid-cols-2 gap-4 mb-4">
@@ -701,17 +674,18 @@ export default function ClassesPage() {
                       setIsReplacement(false);
                       setCustomDateTime("");
                     }}
-                    className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${!isReplacement
-                      ? "border-blue-600 bg-blue-50/50"
-                      : "border-slate-200 hover:border-slate-300"
-                      }`}
+                    className={`flex items-center gap-3 p-3.5 rounded-none border cursor-pointer transition-all ${
+                      !isReplacement
+                        ? "border-blue-400 bg-blue-500/10"
+                        : "border-white/10 hover:border-white/20 bg-black/20"
+                    }`}
                   >
-                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${!isReplacement ? 'border-blue-600' : 'border-slate-300'}`}>
-                      {!isReplacement && <div className="w-2.5 h-2.5 bg-blue-600 rounded-full" />}
-                    </div>
+                    <div className={`w-3.5 h-3.5 rounded-none border flex items-center justify-center ${
+                      !isReplacement ? 'border-blue-400 bg-blue-400' : 'border-white/30'
+                    }`} />
                     <div>
-                      <div className="font-bold text-slate-900 text-sm">Regular Class (Now)</div>
-                      <div className="text-xs text-slate-500">Start check-in immediately</div>
+                      <div className="font-bold text-white text-xs">REGULAR CLASS (NOW)</div>
+                      <div className="text-[10px] text-slate-400">Start check-in immediately</div>
                     </div>
                   </div>
 
@@ -723,96 +697,98 @@ export default function ClassesPage() {
                       const localISOTime = new Date(localNow.getTime() - offsetMs).toISOString().slice(0, 16);
                       setCustomDateTime(localISOTime);
                     }}
-                    className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${isReplacement
-                      ? "border-blue-600 bg-blue-50/50"
-                      : "border-slate-200 hover:border-slate-300"
-                      }`}
+                    className={`flex items-center gap-3 p-3.5 rounded-none border cursor-pointer transition-all ${
+                      isReplacement
+                        ? "border-blue-400 bg-blue-500/10"
+                        : "border-white/10 hover:border-white/20 bg-black/20"
+                    }`}
                   >
-                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isReplacement ? 'border-blue-600' : 'border-slate-300'}`}>
-                      {isReplacement && <div className="w-2.5 h-2.5 bg-blue-600 rounded-full" />}
-                    </div>
+                    <div className={`w-3.5 h-3.5 rounded-none border flex items-center justify-center ${
+                      isReplacement ? 'border-blue-400 bg-blue-400' : 'border-white/30'
+                    }`} />
                     <div>
-                      <div className="font-bold text-slate-900 text-sm">Replacement Class</div>
-                      <div className="text-xs text-slate-500">Use custom date/time</div>
+                      <div className="font-bold text-white text-xs">REPLACEMENT CLASS</div>
+                      <div className="text-[10px] text-slate-400">Specify timestamp</div>
                     </div>
                   </div>
                 </div>
 
                 {isReplacement && (
-                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 animate-in fade-in duration-200">
-                    <label className="block text-xs font-bold text-slate-600 uppercase mb-2">
+                  <div className="p-3.5 bg-black/30 rounded-none border border-white/15">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
                       Custom Date & Time
                     </label>
                     <input
                       type="datetime-local"
                       value={customDateTime}
                       onChange={(e) => setCustomDateTime(e.target.value)}
-                      className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-blue-600 transition-all font-sans"
+                      className="w-full bg-[#09111e] border border-white/20 rounded-none px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/40"
                     />
-                    <p className="text-[11px] text-slate-500 mt-2">
-                      The attendance records will be registered under this custom date/time.
-                    </p>
                   </div>
                 )}
               </div>
 
               {/* Granular Authentication Overrides */}
-              <div className="border-t border-slate-100 pt-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">
+              <div className="border-t border-white/10 pt-5">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                     Fine-tune Requirements
                   </h3>
                   {onlineMode && (
-                    <span className="text-[10.5px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                      Overridden for Online Mode
+                    <span className="text-[9px] font-bold text-amber-300 bg-amber-500/10 border border-amber-400/30 px-2 py-0.5 rounded-none uppercase">
+                      Overridden for Online
                     </span>
                   )}
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {/* Face ID Switch */}
-                  <div className={`flex items-center justify-between p-4 rounded-xl border ${onlineMode ? 'bg-slate-50 border-slate-150 opacity-60' : 'border-slate-200'}`}>
-                    <div className="flex gap-3 items-start">
-                      <ScanFace className={`mt-0.5 ${faceIdRequired ? 'text-blue-600' : 'text-slate-400'}`} size={20} />
+                  <div className={`flex items-center justify-between p-3 rounded-none border ${
+                    onlineMode ? 'bg-black/10 border-white/5 opacity-50' : 'border-white/10 bg-black/20'
+                  }`}>
+                    <div className="flex gap-3 items-center">
+                      <PixelIcon name="scan" size={18} className={faceIdRequired ? 'text-blue-400' : 'text-slate-500'} />
                       <div>
-                        <div className="font-bold text-slate-900 text-sm">Face ID verification</div>
-                        <div className="text-xs text-slate-500 mt-0.5">Students must match facial features against saved profiles</div>
+                        <div className="font-bold text-white text-xs">Face ID Biometric Verification</div>
+                        <div className="text-[10px] text-slate-400">Match against registered facial embeddings</div>
                       </div>
                     </div>
                     <button
                       type="button"
                       disabled={onlineMode}
                       onClick={() => setFaceIdRequired(!faceIdRequired)}
-                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${faceIdRequired ? "bg-blue-600" : "bg-slate-200"
-                        } ${onlineMode ? "cursor-not-allowed" : ""}`}
+                      className={`px-3 py-1 text-[10px] font-mono font-bold rounded-none border transition-colors ${
+                        faceIdRequired
+                          ? "bg-blue-600/30 border-blue-400 text-blue-300"
+                          : "bg-white/5 border-white/15 text-slate-500"
+                      }`}
                     >
-                      <span
-                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${faceIdRequired ? "translate-x-5" : "translate-x-0"
-                          }`}
-                      />
+                      {faceIdRequired ? "ENABLED" : "DISABLED"}
                     </button>
                   </div>
 
                   {/* Location Switch */}
-                  <div className={`flex items-center justify-between p-4 rounded-xl border ${onlineMode ? 'bg-slate-50 border-slate-150 opacity-60' : 'border-slate-200'}`}>
-                    <div className="flex gap-3 items-start">
-                      <MapPin className={`mt-0.5 ${locationRequired ? 'text-blue-600' : 'text-slate-400'}`} size={20} />
+                  <div className={`flex items-center justify-between p-3 rounded-none border ${
+                    onlineMode ? 'bg-black/10 border-white/5 opacity-50' : 'border-white/10 bg-black/20'
+                  }`}>
+                    <div className="flex gap-3 items-center">
+                      <PixelIcon name="pin" size={18} className={locationRequired ? 'text-blue-400' : 'text-slate-500'} />
                       <div>
-                        <div className="font-bold text-slate-900 text-sm">Location / GPS matching</div>
-                        <div className="text-xs text-slate-500 mt-0.5">Verify students are physically present in the lecture hall</div>
+                        <div className="font-bold text-white text-xs">GPS Geofence Matching</div>
+                        <div className="text-[10px] text-slate-400">Verify physical presence in lecture hall</div>
                       </div>
                     </div>
                     <button
                       type="button"
                       disabled={onlineMode}
                       onClick={() => setLocationRequired(!locationRequired)}
-                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${locationRequired ? "bg-blue-600" : "bg-slate-200"
-                        } ${onlineMode ? "cursor-not-allowed" : ""}`}
+                      className={`px-3 py-1 text-[10px] font-mono font-bold rounded-none border transition-colors ${
+                        locationRequired
+                          ? "bg-blue-600/30 border-blue-400 text-blue-300"
+                          : "bg-white/5 border-white/15 text-slate-500"
+                      }`}
                     >
-                      <span
-                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${locationRequired ? "translate-x-5" : "translate-x-0"
-                          }`}
-                      />
+                      {locationRequired ? "ENABLED" : "DISABLED"}
                     </button>
                   </div>
                 </div>
@@ -820,12 +796,12 @@ export default function ClassesPage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="bg-slate-50 p-6 flex justify-end gap-3 border-t border-slate-150">
+            <div className="p-4 flex justify-end gap-3 border-t border-white/10 bg-black/20 font-mono text-xs">
               <button
                 onClick={() => setShowConfigModal(false)}
-                className="bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 font-semibold px-5 py-3 rounded-xl transition-all cursor-pointer font-sans"
+                className="bg-transparent hover:bg-white/10 border border-white/20 text-slate-300 px-4 py-2.5 rounded-none transition-colors cursor-pointer"
               >
-                Cancel
+                CANCEL
               </button>
               <button
                 onClick={async () => {
@@ -852,8 +828,6 @@ export default function ClassesPage() {
                     }
 
                     const newSession = data.session;
-
-                    // Save active session settings in localStorage
                     const sessionSettings = {
                       sessionId: newSession.id,
                       classId: selectedClassId,
@@ -865,7 +839,6 @@ export default function ClassesPage() {
                     };
                     localStorage.setItem('activeSessionConfig', JSON.stringify(sessionSettings));
 
-                    // Redirect to Active Attendance page with config query params
                     router.push(`/attendance/active?sessionId=${newSession.id}&classId=${selectedClassId}&onlineMode=${newSession.online_mode}&faceIdRequired=${newSession.face_id_required}&locationRequired=${newSession.location_required}`);
                     setShowConfigModal(false);
                   } catch (err: any) {
@@ -873,9 +846,9 @@ export default function ClassesPage() {
                     alert("Error calling server: " + (err.detail || err.message || "Unknown error"));
                   }
                 }}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl shadow-md shadow-blue-200 hover:shadow-lg hover:shadow-blue-300 transition-all cursor-pointer border-none font-sans"
+                className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-5 py-2.5 rounded-none border border-blue-400 shadow-lg shadow-blue-900/30 transition-all cursor-pointer"
               >
-                Start Active Session
+                ACTIVATE SESSION
               </button>
             </div>
           </div>

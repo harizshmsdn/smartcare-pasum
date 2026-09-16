@@ -1,25 +1,12 @@
-// apps/web/app/classes/assessments/page.tsx
+// Class Assessments and Gradebook Matrix page in dottxt.ai sharp dark style
 "use client";
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  FileSpreadsheet,
-  Plus,
-  Save,
-  ChevronDown,
-  BookOpen,
-  Users,
-  CheckCircle2,
-  Award,
-  Sparkles,
-  Trash2,
-  AlertTriangle
-} from "lucide-react";
 import { createClient } from "../../../utils/supabase/client";
 import { api } from "../../../lib/api";
+import PixelIcon from "../../../components/PixelIcon";
 
 interface ClassOption {
   id: string;
@@ -66,7 +53,7 @@ export default function ClassAssessmentsPage() {
   const [assessmentToDelete, setAssessmentToDelete] = useState<AssessmentItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // 1. Fetch lecturer classes
+  // Fetch lecturer classes list
   useEffect(() => {
     const fetchClasses = async () => {
       try {
@@ -83,7 +70,6 @@ export default function ClassAssessmentsPage() {
           .eq('lecturer_id', user.id);
 
         if (classesData && classesData.length > 0) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const formatted: ClassOption[] = classesData.map((c: any) => ({
             id: c.id,
             name: `${c.subjects?.code} - ${c.subjects?.name} (${c.group_code})`
@@ -101,10 +87,9 @@ export default function ClassAssessmentsPage() {
       }
     };
     fetchClasses();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 2. Fetch class assessments and gradebook matrix
+  // Fetch class assessments and gradebook matrix
   const fetchClassAssessmentsData = async (classId: string) => {
     setIsLoading(true);
     try {
@@ -122,15 +107,12 @@ export default function ClassAssessmentsPage() {
     if (selectedClassId) {
       fetchClassAssessmentsData(selectedClassId);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClassId]);
 
   const backUrl = selectedClassId ? `/classes?classId=${selectedClassId}` : "/classes";
 
-  // Calculate metrics
   const totalWeightage = assessments.reduce((sum, a) => sum + (a.weightage || 0), 0);
 
-  // Calculate average class score %
   let overallAvgScore = 0;
   if (rosterScores.length > 0 && assessments.length > 0) {
     let totalScorePctSum = 0;
@@ -178,41 +160,50 @@ export default function ClassAssessmentsPage() {
   };
 
   return (
-    <main className="flex-1 p-8 h-screen flex flex-col bg-[#FAF9F6] overflow-y-auto">
-
+    <main className="flex-1 p-8 h-screen flex flex-col bg-transparent text-white overflow-y-auto">
       {/* Header & Navigation */}
-      <header className="shrink-0 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <header className="shrink-0 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-white/10">
         <div>
-          <div className="mb-4">
+          <div className="mb-3">
             <Link
               href={backUrl}
-              className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600 transition-colors"
+              className="inline-flex items-center gap-2 text-xs font-mono text-slate-400 hover:text-white transition-colors"
             >
-              <ArrowLeft size={16} /> Back to Class Roster
+              ← BACK TO CLASS ROSTER
             </Link>
           </div>
-          <h2 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
-            <FileSpreadsheet className="text-blue-600" size={32} />
-            Assessments & Gradebook Matrix
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="w-1.5 h-1.5 bg-blue-400 rounded-none" />
+            <span className="font-mono text-xs text-blue-400 uppercase tracking-wider font-semibold">
+              PASUM // GRADING & EXAMS
+            </span>
+          </div>
+          <h2 className="text-3xl font-bold font-mono tracking-tight uppercase flex items-center gap-3">
+            <PixelIcon name="book" size={28} className="text-blue-400" />
+            Assessments & Gradebook
           </h2>
-          <p className="text-slate-500 text-sm mt-1">Manage continuous assessments, major exams, and student scores</p>
+          <p className="text-slate-400 text-xs font-mono mt-1">
+            Manage continuous assessments, major exams, and student scores
+          </p>
         </div>
 
         {/* Class View Dropdown */}
         <div className="relative">
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center gap-3 bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-medium shadow-sm hover:bg-slate-50 transition-colors cursor-pointer"
+            className="flex items-center gap-3 bg-[#09111e]/90 border border-white/20 text-white px-4 py-2.5 rounded-none font-mono text-xs shadow-lg hover:border-white/40 transition-colors cursor-pointer"
           >
             <div className="flex flex-col text-left">
-              <span className="text-[10px] uppercase font-bold text-blue-600 tracking-wider leading-none mb-1">Target Class</span>
-              <span className="leading-none font-bold text-slate-900">{selectedClassName}</span>
+              <span className="text-[10px] uppercase font-bold text-blue-400 tracking-widest leading-none mb-1">
+                TARGET CLASS
+              </span>
+              <span className="leading-none font-bold text-white">{selectedClassName}</span>
             </div>
-            <ChevronDown size={18} className="text-slate-400 ml-2" />
+            <span className="text-slate-400 text-xs font-mono ml-2">▼</span>
           </button>
 
           {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-full min-w-[260px] bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
+            <div className="absolute right-0 mt-1 w-full min-w-[260px] bg-[#09111e] border border-white/20 rounded-none shadow-2xl z-50 overflow-hidden font-mono text-xs">
               {classesList.map((cls) => (
                 <button
                   key={cls.id}
@@ -221,8 +212,9 @@ export default function ClassAssessmentsPage() {
                     setSelectedClassName(cls.name);
                     setIsDropdownOpen(false);
                   }}
-                  className={`w-full text-left px-4 py-3 text-sm hover:bg-slate-50 transition-colors cursor-pointer ${selectedClassId === cls.id ? 'bg-blue-50/50 text-blue-700 font-bold' : 'text-slate-700'
-                    }`}
+                  className={`w-full text-left px-4 py-3 hover:bg-white/10 transition-colors border-b border-white/10 last:border-b-0 cursor-pointer ${
+                    selectedClassId === cls.id ? 'bg-blue-600/20 text-blue-300 font-bold' : 'text-slate-300'
+                  }`}
                 >
                   {cls.name}
                 </button>
@@ -233,154 +225,182 @@ export default function ClassAssessmentsPage() {
       </header>
 
       {/* Top Bento Metrics Row (4 Columns, 1 Row) */}
-      <div className="grid grid-cols-4 gap-5 mb-8 shrink-0" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
-        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="bg-blue-50 p-3.5 rounded-2xl text-blue-600 shrink-0">
-            <BookOpen size={24} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6 shrink-0">
+        <div className="bg-[#09111e]/80 p-5 rounded-none border border-white/15 shadow-xl flex items-center gap-4 backdrop-blur-md">
+          <div className="p-3 bg-blue-500/10 border border-blue-400/20 text-blue-400 rounded-none shrink-0">
+            <PixelIcon name="book" size={24} />
           </div>
           <div>
-            <p className="text-xs font-semibold text-slate-500 mb-0.5">Set Assessments</p>
-            <p className="text-2xl font-bold text-slate-900 leading-tight">{assessments.length}</p>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="font-mono text-[10px] text-blue-400 font-bold">01.</span>
+              <p className="text-xs font-mono text-slate-400 uppercase tracking-wider">Set Assessments</p>
+            </div>
+            <p className="text-2xl font-mono font-bold text-white leading-tight">{assessments.length}</p>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="bg-indigo-50 p-3.5 rounded-2xl text-indigo-600 shrink-0">
-            <Award size={24} />
+        <div className="bg-[#09111e]/80 p-5 rounded-none border border-white/15 shadow-xl flex items-center gap-4 backdrop-blur-md">
+          <div className="p-3 bg-indigo-500/10 border border-indigo-400/20 text-indigo-400 rounded-none shrink-0">
+            <PixelIcon name="award" size={24} />
           </div>
           <div>
-            <p className="text-xs font-semibold text-slate-500 mb-0.5">Total Weightage</p>
-            <p className="text-2xl font-bold text-slate-900 leading-tight">{totalWeightage}%</p>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="font-mono text-[10px] text-indigo-400 font-bold">02.</span>
+              <p className="text-xs font-mono text-slate-400 uppercase tracking-wider">Total Weightage</p>
+            </div>
+            <p className="text-2xl font-mono font-bold text-white leading-tight">{totalWeightage}%</p>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="bg-emerald-50 p-3.5 rounded-2xl text-emerald-600 shrink-0">
-            <Users size={24} />
+        <div className="bg-[#09111e]/80 p-5 rounded-none border border-white/15 shadow-xl flex items-center gap-4 backdrop-blur-md">
+          <div className="p-3 bg-emerald-500/10 border border-emerald-400/20 text-emerald-400 rounded-none shrink-0">
+            <PixelIcon name="profile" size={24} />
           </div>
           <div>
-            <p className="text-xs font-semibold text-slate-500 mb-0.5">Enrolled Roster</p>
-            <p className="text-2xl font-bold text-slate-900 leading-tight">{rosterScores.length}</p>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="font-mono text-[10px] text-emerald-400 font-bold">03.</span>
+              <p className="text-xs font-mono text-slate-400 uppercase tracking-wider">Enrolled Roster</p>
+            </div>
+            <p className="text-2xl font-mono font-bold text-white leading-tight">{rosterScores.length}</p>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="bg-amber-50 p-3.5 rounded-2xl text-amber-600 shrink-0">
-            <CheckCircle2 size={24} />
+        <div className="bg-[#09111e]/80 p-5 rounded-none border border-white/15 shadow-xl flex items-center gap-4 backdrop-blur-md">
+          <div className="p-3 bg-amber-500/10 border border-amber-400/20 text-amber-400 rounded-none shrink-0">
+            <PixelIcon name="checkCircle" size={24} />
           </div>
           <div>
-            <p className="text-xs font-semibold text-slate-500 mb-0.5">Class Exam Avg</p>
-            <p className="text-2xl font-bold text-slate-900 leading-tight">{overallAvgScore > 0 ? `${overallAvgScore}%` : 'N/A'}</p>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="font-mono text-[10px] text-amber-400 font-bold">04.</span>
+              <p className="text-xs font-mono text-slate-400 uppercase tracking-wider">Class Exam Avg</p>
+            </div>
+            <p className="text-2xl font-mono font-bold text-white leading-tight">
+              {overallAvgScore > 0 ? `${overallAvgScore}%` : 'N/A'}
+            </p>
           </div>
         </div>
       </div>
 
       {/* Main Content Container */}
-      <div className="flex-1 min-h-0 bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col overflow-hidden mb-4">
-
+      <div className="flex-1 min-h-0 bg-[#09111e]/80 rounded-none border border-white/15 shadow-2xl flex flex-col overflow-hidden mb-4 backdrop-blur-md">
         {/* Navigation Tabs */}
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 bg-white shrink-0">
+        <div className="flex items-center justify-between border-b border-white/10 px-6 py-4 bg-black/20 shrink-0 font-mono text-xs">
           <div className="flex gap-2">
             <button
               onClick={() => setActiveTab("matrix")}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer border-none flex items-center gap-2 ${activeTab === "matrix" ? "bg-slate-900 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100 bg-transparent"
-                }`}
+              className={`px-3.5 py-2 rounded-none transition-all cursor-pointer border flex items-center gap-2 ${
+                activeTab === "matrix"
+                  ? "bg-white/15 border-white/40 text-white font-bold"
+                  : "text-slate-400 border-white/10 hover:bg-white/5 bg-transparent"
+              }`}
             >
-              <span>Overall Marks Matrix</span>
-              <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-bold ${activeTab === "matrix" ? "bg-white text-slate-900" : "bg-slate-100 text-slate-600"
-                }`}>
+              <span>OVERALL MARKS MATRIX</span>
+              <span className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded-none text-[10px] font-bold ${
+                activeTab === "matrix" ? "bg-blue-400 text-black" : "bg-white/10 text-slate-400"
+              }`}>
                 {rosterScores.length}
               </span>
             </button>
             <button
               onClick={() => setActiveTab("list")}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer border-none flex items-center gap-2 ${activeTab === "list" ? "bg-slate-900 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100 bg-transparent"
-                }`}
+              className={`px-3.5 py-2 rounded-none transition-all cursor-pointer border flex items-center gap-2 ${
+                activeTab === "list"
+                  ? "bg-white/15 border-white/40 text-white font-bold"
+                  : "text-slate-400 border-white/10 hover:bg-white/5 bg-transparent"
+              }`}
             >
-              <span>Set Assessments</span>
-              <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-bold ${activeTab === "list" ? "bg-white text-slate-900" : "bg-slate-100 text-slate-600"
-                }`}>
+              <span>SET ASSESSMENTS</span>
+              <span className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded-none text-[10px] font-bold ${
+                activeTab === "list" ? "bg-blue-400 text-black" : "bg-white/10 text-slate-400"
+              }`}>
                 {assessments.length}
               </span>
             </button>
             <button
               onClick={() => setActiveTab("create")}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer border-none flex items-center gap-1.5 ${activeTab === "create" ? "bg-slate-900 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100 bg-transparent"
-                }`}
+              className={`px-3.5 py-2 rounded-none transition-all cursor-pointer border flex items-center gap-1.5 ${
+                activeTab === "create"
+                  ? "bg-white/15 border-white/40 text-white font-bold"
+                  : "text-slate-400 border-white/10 hover:bg-white/5 bg-transparent"
+              }`}
             >
-              <Plus size={16} /> New Assessment
+              <span>+ NEW ASSESSMENT</span>
             </button>
           </div>
 
-          <div className="text-xs font-medium text-slate-400 hidden sm:block">
-            Auto-saves directly to database
+          <div className="text-[10px] font-mono text-slate-400 hidden sm:block">
+            AUTO-SAVES DIRECTLY TO REPOSITORY
           </div>
         </div>
 
         {/* Tab Body */}
-        <div className="p-6 overflow-y-auto flex-1 bg-slate-50/40">
+        <div className="p-6 overflow-y-auto flex-1 bg-black/10 font-mono">
           {isLoading ? (
-            <div className="flex items-center justify-center h-full text-slate-400 font-medium py-16">Loading gradebook matrix...</div>
+            <div className="flex items-center justify-center h-full text-slate-400 text-xs font-mono py-16">
+              Loading gradebook matrix...
+            </div>
           ) : (
             <>
               {/* TAB 1: OVERALL MARKS MATRIX */}
               {activeTab === "matrix" && (
                 <div>
                   {assessments.length === 0 ? (
-                    <div className="text-center py-16 bg-white rounded-3xl border border-slate-200 shadow-sm max-w-lg mx-auto p-8">
-                      <BookOpen size={48} className="mx-auto text-slate-300 mb-3" />
-                      <h3 className="text-xl font-bold text-slate-800">No assessments set yet</h3>
-                      <p className="text-slate-500 text-sm mb-6 mt-1">Create your first quiz, lab report, midterm, or final exam for this class to start recording student marks.</p>
+                    <div className="text-center py-16 bg-[#09111e] rounded-none border border-white/15 shadow-xl max-w-md mx-auto p-8">
+                      <PixelIcon name="book" size={40} className="mx-auto text-slate-500 mb-3" />
+                      <h3 className="text-lg font-bold text-white uppercase">No assessments set yet</h3>
+                      <p className="text-slate-400 text-xs mb-6 mt-1">
+                        Create your first quiz, lab report, midterm, or final exam for this class to start recording marks.
+                      </p>
                       <button
                         onClick={() => setActiveTab("create")}
-                        className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all shadow-md shadow-blue-200 border-none cursor-pointer"
+                        className="px-5 py-2.5 bg-blue-600 text-white rounded-none font-bold text-xs hover:bg-blue-500 transition-all border border-blue-400 cursor-pointer"
                       >
-                        + Configure First Assessment
+                        + CONFIGURE FIRST ASSESSMENT
                       </button>
                     </div>
                   ) : (
-                    <div className="overflow-x-auto border border-slate-200 rounded-2xl shadow-sm bg-white">
-                      <table className="w-full text-left border-collapse">
+                    <div className="overflow-x-auto border border-white/10 bg-black/20">
+                      <table className="w-full text-left border-collapse font-mono text-xs">
                         <thead>
-                          <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-700 text-xs font-bold uppercase tracking-wider">
-                            <th className="p-4 sm:p-5">Student</th>
-                            <th className="p-4 sm:p-5">Matric ID</th>
+                          <tr className="bg-white/5 border-b border-white/10 text-slate-400 text-[10px] font-bold uppercase tracking-wider">
+                            <th className="p-3.5">Student</th>
+                            <th className="p-3.5">Matric ID</th>
                             {assessments.map((a) => (
-                              <th key={a.id} className="p-4 sm:p-5 text-center min-w-[160px]">
-                                <div className="font-bold text-slate-900 text-sm">{a.title}</div>
-                                <div className="text-[10px] text-slate-500 font-semibold mt-0.5">
-                                  Max: {a.total_marks} marks ({a.weightage}%)
+                              <th key={a.id} className="p-3.5 text-center min-w-[160px]">
+                                <div className="font-bold text-white text-xs">{a.title}</div>
+                                <div className="text-[9px] text-slate-400 mt-0.5">
+                                  MAX: {a.total_marks} ({a.weightage}%)
                                 </div>
                               </th>
                             ))}
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100 text-sm">
+                        <tbody className="divide-y divide-white/10 text-xs">
                           {rosterScores.map((student) => (
-                            <tr key={student.student_id} className="hover:bg-blue-50/20 transition-colors">
-                              <td className="p-4 sm:p-5 font-semibold text-slate-900">
+                            <tr key={student.student_id} className="hover:bg-white/5 transition-colors">
+                              <td className="p-3.5 font-bold text-white">
                                 <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm shrink-0">
+                                  <div className="w-8 h-8 rounded-none bg-white/10 border border-white/20 text-white flex items-center justify-center font-bold text-xs shrink-0">
                                     {student.student_name.charAt(0)}
                                   </div>
                                   <div>
-                                    <p className="font-bold text-slate-900 leading-none">{student.student_name}</p>
+                                    <p className="font-bold text-white leading-none">{student.student_name}</p>
                                     <Link
                                       href={`/classes/${student.student_id}?classId=${selectedClassId}`}
-                                      className="text-[11px] text-blue-600 hover:underline font-medium mt-1 inline-block"
+                                      className="text-[10px] text-blue-400 hover:underline mt-1 inline-block"
                                     >
-                                      View Profile →
+                                      VIEW PROFILE →
                                     </Link>
                                   </div>
                                 </div>
                               </td>
-                              <td className="p-4 sm:p-5 text-slate-500 font-mono text-xs font-medium">{student.matric_id}</td>
+                              <td className="p-3.5 text-slate-400 font-mono text-xs">{student.matric_id}</td>
                               {assessments.map((a) => {
                                 const key = `${student.student_id}_${a.id}`;
                                 const currentScore = editingScores[key] !== undefined ? editingScores[key] : (student.scores?.[a.id] ?? "");
 
                                 return (
-                                  <td key={a.id} className="p-4 text-center">
+                                  <td key={a.id} className="p-3.5 text-center">
                                     <div className="flex items-center justify-center gap-2">
                                       <input
                                         type="number"
@@ -392,7 +412,7 @@ export default function ClassAssessmentsPage() {
                                           setEditingScores(prev => ({ ...prev, [key]: val }));
                                         }}
                                         placeholder="-"
-                                        className="w-20 text-center bg-slate-50 hover:bg-white focus:bg-white border border-slate-300 rounded-xl py-2 px-3 font-extrabold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none text-base transition-all shadow-sm"
+                                        className="w-16 text-center bg-black/40 border border-white/20 rounded-none py-1.5 px-2 font-mono font-bold text-white focus:border-blue-400 focus:outline-none text-xs transition-all"
                                       />
                                       <button
                                         disabled={isSavingScore || currentScore === ""}
@@ -424,10 +444,10 @@ export default function ClassAssessmentsPage() {
                                             setIsSavingScore(false);
                                           }
                                         }}
-                                        className="p-2 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded-xl transition-all border-none cursor-pointer disabled:opacity-30 active:scale-95 shadow-sm"
+                                        className="p-1.5 bg-blue-600/20 hover:bg-blue-600 hover:text-white text-blue-300 border border-blue-400/30 rounded-none transition-all cursor-pointer disabled:opacity-30 active:scale-95"
                                         title="Save Mark"
                                       >
-                                        <Save size={18} />
+                                        <PixelIcon name="check" size={12} />
                                       </button>
                                     </div>
                                   </td>
@@ -446,39 +466,39 @@ export default function ClassAssessmentsPage() {
               {activeTab === "list" && (
                 <div className="space-y-4 max-w-4xl mx-auto">
                   {assessments.length === 0 ? (
-                    <p className="text-center text-slate-500 py-12">No assessments configured for this class.</p>
+                    <p className="text-center text-slate-400 py-12 text-xs">No assessments configured for this class.</p>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {assessments.map((a) => (
-                        <div key={a.id} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex justify-between items-center group hover:border-blue-200 transition-all">
+                        <div
+                          key={a.id}
+                          className="bg-[#09111e] p-5 rounded-none border border-white/15 shadow-xl flex justify-between items-center group hover:border-white/30 transition-all"
+                        >
                           <div>
                             <div className="flex items-center gap-2 mb-2">
-                              <h4 className="font-bold text-slate-900 text-lg">{a.title}</h4>
-                              <span className={`text-xs font-bold uppercase px-2.5 py-0.5 rounded-md ${a.type === 'Midterm' ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' :
-                                  a.type === 'Final' ? 'bg-sky-100 text-sky-700 border border-sky-200' :
-                                    'bg-slate-100 text-slate-700 border border-slate-200'
-                                }`}>
+                              <h4 className="font-bold text-white text-sm">{a.title}</h4>
+                              <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-none border border-white/20 bg-white/5 text-slate-300">
                                 {a.type}
                               </span>
                             </div>
-                            <p className="text-xs font-semibold text-slate-500 mb-1">Weightage: {a.weightage}% of final GPA</p>
-                            <div className="w-36 bg-slate-100 h-2 rounded-full overflow-hidden mt-2">
-                              <div className="bg-blue-600 h-full rounded-full" style={{ width: `${Math.min(100, a.weightage * 2.5)}%` }}></div>
+                            <p className="text-xs text-slate-400 mb-2">Weightage: {a.weightage}% of final GPA</p>
+                            <div className="w-36 bg-white/10 h-1.5 rounded-none overflow-hidden">
+                              <div className="bg-blue-500 h-full rounded-none" style={{ width: `${Math.min(100, a.weightage * 2.5)}%` }} />
                             </div>
                           </div>
                           <div className="flex items-center gap-3">
-                            <div className="text-right bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                              <span className="text-3xl font-extrabold text-slate-900">{a.total_marks}</span>
-                              <span className="text-xs text-slate-400 block font-semibold mt-0.5">Max Marks</span>
+                            <div className="text-right bg-black/30 p-3 rounded-none border border-white/10">
+                              <span className="text-2xl font-bold text-white block leading-none">{a.total_marks}</span>
+                              <span className="text-[9px] text-slate-400 block font-bold mt-1 uppercase">MAX</span>
                             </div>
                             <button
                               type="button"
                               onClick={() => setAssessmentToDelete(a)}
-                              className="p-3 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-2xl transition-all cursor-pointer border border-transparent hover:border-red-100 active:scale-95"
+                              className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-none border border-transparent hover:border-rose-400/30 transition-all cursor-pointer"
                               title="Delete assessment"
                               aria-label={`Delete ${a.title}`}
                             >
-                              <Trash2 size={18} />
+                              ✕
                             </button>
                           </div>
                         </div>
@@ -508,46 +528,49 @@ export default function ClassAssessmentsPage() {
                       alert("Failed to create assessment: " + (err.detail || err.message || "Error"));
                     }
                   }}
-                  className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm max-w-lg mx-auto space-y-6"
+                  className="bg-[#09111e] p-6 rounded-none border border-white/20 shadow-2xl max-w-md mx-auto space-y-5 text-xs font-mono"
                 >
-                  <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-                    <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl">
-                      <Sparkles size={24} />
+                  <div className="pb-3 border-b border-white/10">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="w-1.5 h-1.5 bg-blue-400 rounded-none" />
+                      <span className="text-[10px] text-blue-400 uppercase tracking-wider font-bold">
+                        ASSESSMENT CONFIGURATION
+                      </span>
                     </div>
-                    <div>
-                      <h4 className="font-bold text-slate-900 text-lg">Configure New Assessment</h4>
-                      <p className="text-xs text-slate-500">Set up quizzes, lab reports, or major exams</p>
-                    </div>
+                    <h4 className="font-bold text-white text-base">Configure New Assessment</h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5">Set up quizzes, lab reports, or major exams</p>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">Assessment Title</label>
+                    <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">
+                      Assessment Title
+                    </label>
                     <input
                       type="text"
                       required
                       placeholder="e.g. Quiz 2 / Lab Report 1 / Midterm Exam"
                       value={newTitle}
                       onChange={(e) => setNewTitle(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-all"
+                      className="w-full bg-black/40 border border-white/20 rounded-none px-3 py-2 text-xs font-mono text-white focus:border-blue-400 focus:outline-none"
                     />
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">Type</label>
+                      <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Type</label>
                       <select
                         value={newType}
                         onChange={(e) => setNewType(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-3 text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-all"
+                        className="w-full bg-black/40 border border-white/20 rounded-none px-2 py-2 text-xs font-mono text-white focus:border-blue-400 focus:outline-none"
                       >
-                        <option value="Continuous">Continuous</option>
-                        <option value="Midterm">Midterm</option>
-                        <option value="Final">Final</option>
+                        <option value="Continuous" className="bg-[#09111e]">Continuous</option>
+                        <option value="Midterm" className="bg-[#09111e]">Midterm</option>
+                        <option value="Final" className="bg-[#09111e]">Final</option>
                       </select>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">Weight (%)</label>
+                      <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Weight (%)</label>
                       <input
                         type="number"
                         required
@@ -555,71 +578,70 @@ export default function ClassAssessmentsPage() {
                         max="100"
                         value={newWeightage}
                         onChange={(e) => setNewWeightage(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-3 text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-all"
+                        className="w-full bg-black/40 border border-white/20 rounded-none px-2 py-2 text-xs font-mono text-white focus:border-blue-400 focus:outline-none"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">Max Marks</label>
+                      <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Max Marks</label>
                       <input
                         type="number"
                         required
                         min="1"
                         value={newTotalMarks}
                         onChange={(e) => setNewTotalMarks(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-3 text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-all"
+                        className="w-full bg-black/40 border border-white/20 rounded-none px-2 py-2 text-xs font-mono text-white focus:border-blue-400 focus:outline-none"
                       />
                     </div>
                   </div>
 
                   <button
                     type="submit"
-                    className="w-full mt-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-xl shadow-md shadow-blue-200 transition-all cursor-pointer border-none font-sans"
+                    className="w-full mt-3 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-none border border-blue-400 shadow-lg shadow-blue-900/30 transition-all cursor-pointer uppercase text-xs"
                   >
-                    Save Assessment
+                    SAVE ASSESSMENT
                   </button>
                 </form>
               )}
             </>
           )}
         </div>
-
       </div>
 
       {/* Confirmation modal for assessment deletion */}
       {assessmentToDelete && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
-            <div className="flex items-center gap-3.5 mb-4">
-              <div className="p-3 bg-red-50 text-red-600 rounded-2xl shrink-0">
-                <AlertTriangle size={24} />
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-[#09111e] rounded-none max-w-md w-full p-6 shadow-2xl border border-white/20 font-mono text-xs text-white">
+            <div className="flex items-center gap-3 mb-4 pb-3 border-b border-white/10">
+              <div className="p-2 bg-rose-500/10 border border-rose-400/30 text-rose-300 rounded-none shrink-0">
+                <PixelIcon name="warning" size={20} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-900">Remove Assessment</h3>
-                <p className="text-xs text-slate-500 font-medium">Permanent deletion</p>
+                <h3 className="text-sm font-bold text-white uppercase">Remove Assessment</h3>
+                <p className="text-[10px] text-slate-400">Permanent deletion</p>
               </div>
             </div>
 
-            <p className="text-sm text-slate-600 mb-6 leading-relaxed">
-              Are you sure you want to remove <span className="font-bold text-slate-900">{assessmentToDelete.title}</span>? All student marks recorded for this assessment will be permanently deleted from the database.
+            <p className="text-xs text-slate-300 mb-6 leading-relaxed">
+              Are you sure you want to remove <span className="font-bold text-white">{assessmentToDelete.title}</span>? All student marks recorded for this assessment will be permanently deleted from the database.
             </p>
 
-            <div className="flex items-center justify-end gap-3">
+            <div className="flex items-center justify-end gap-3 pt-2">
               <button
                 type="button"
                 disabled={isDeleting}
                 onClick={() => setAssessmentToDelete(null)}
-                className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer border-none bg-transparent disabled:opacity-50"
+                className="px-4 py-2 rounded-none text-xs text-slate-300 hover:bg-white/10 border border-white/20 transition-all cursor-pointer bg-transparent disabled:opacity-50"
               >
-                Cancel
+                CANCEL
               </button>
               <button
                 type="button"
                 disabled={isDeleting}
                 onClick={() => handleDeleteAssessment(assessmentToDelete.id)}
-                className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 shadow-sm shadow-red-200 transition-all cursor-pointer border-none flex items-center gap-2 disabled:opacity-50"
+                className="px-4 py-2 rounded-none text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 border border-rose-400 transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50"
               >
-                {isDeleting ? "Deleting..." : "Remove Assessment"}
+                {isDeleting ? "DELETING..." : "REMOVE ASSESSMENT"}
               </button>
             </div>
           </div>

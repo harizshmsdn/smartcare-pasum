@@ -1,8 +1,8 @@
 import React from "react";
-import { LucideIcon } from "lucide-react";
+import { PixelIcon } from "./PixelIcon";
 
 interface EmptyStateProps {
-  icon: LucideIcon;
+  icon?: any;
   title: string;
   description: string;
   action?: React.ReactNode;
@@ -10,16 +10,20 @@ interface EmptyStateProps {
 
 export default function EmptyState({ icon: Icon, title, description, action }: EmptyStateProps) {
   return (
-    <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center shadow-sm flex flex-col items-center justify-center py-20 w-full mx-auto">
-      <div className="bg-slate-50 p-5 rounded-full text-slate-400 mb-6 border border-slate-100 shadow-sm">
-        <Icon size={48} strokeWidth={1.5} />
+    <div className="border border-white/15 bg-[#09111e]/80 backdrop-blur-md rounded-none p-10 text-center shadow-2xl flex flex-col items-center justify-center py-16 w-full mx-auto text-white">
+      <div className="border border-white/10 bg-white/5 p-4 rounded-none text-white/50 mb-4">
+        {Icon ? (
+          typeof Icon === 'function' ? <Icon size={36} /> : Icon
+        ) : (
+          <PixelIcon name="classes" size={36} />
+        )}
       </div>
-      <h3 className="text-2xl font-bold text-slate-900">{title}</h3>
-      <p className="text-slate-500 mt-2 max-w-sm text-sm">
+      <h3 className="font-mono text-lg font-bold uppercase tracking-wider text-white">{title}</h3>
+      <p className="font-mono text-xs text-white/50 mt-1 max-w-md">
         {description}
       </p>
       {action && (
-        <div className="mt-8">
+        <div className="mt-6">
           {action}
         </div>
       )}

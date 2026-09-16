@@ -7,24 +7,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "../utils/supabase/client";
 import { lecturerService } from "../lib/services/lecturer";
 import { api } from "../lib/api";
-import BorderGlow from "../components/BorderGlow";
-import {
-  QrCode,
-  AlertTriangle,
-  TrendingDown,
-  ChevronLeft,
-  ChevronRight,
-  BookOpen,
-  MonitorPlay,
-  Beaker,
-  Clock,
-  X,
-  ScanFace,
-  MapPin,
-  Laptop,
-  Users,
-  Check
-} from "lucide-react";
+import { PixelIcon } from "../components/PixelIcon";
 import EmptyState from "../components/EmptyState";
 import useSWR from "swr";
 
@@ -54,17 +37,17 @@ interface AssignedClass {
   attendance: number | string;
 }
 
-//Helper function to dynamically map database strings to icons
-const getClassIcon = (type: string) => {
+// Helper function to map class type to PixelIcon name
+const getClassIconName = (type: string) => {
   switch (type.toLowerCase()) {
     case "lecture":
-      return MonitorPlay;
+      return "classes";
     case "tutorial":
-      return BookOpen;
+      return "book";
     case "lab":
-      return Beaker;
+      return "chart";
     default:
-      return BookOpen;
+      return "classes";
   }
 };
 
@@ -262,19 +245,13 @@ export default function HomePage() {
 
   if (isLoading) {
     return (
-      <main className="flex-1 overflow-y-auto bg-[#FAF9F6] flex flex-col p-8">
-        <div className="w-64 h-10 bg-slate-200 rounded-lg animate-pulse mb-2"></div>
-        <div className="w-48 h-5 bg-slate-200 rounded-lg animate-pulse mb-8"></div>
-        
-        <div className="w-full h-[450px] bg-slate-200 rounded-3xl animate-pulse mb-10"></div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+      <main className="flex-1 overflow-y-auto bg-transparent flex flex-col p-6 lg:p-8 text-white">
+        <div className="w-64 h-8 bg-white/10 rounded-none animate-pulse mb-2"></div>
+        <div className="w-48 h-4 bg-white/10 rounded-none animate-pulse mb-8"></div>
+        <div className="w-full h-[400px] border border-white/15 bg-white/5 rounded-none animate-pulse mb-8"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm animate-pulse h-48 flex flex-col justify-between">
-              <div className="w-12 h-12 bg-slate-200 rounded-xl"></div>
-              <div className="w-3/4 h-6 bg-slate-200 rounded-lg"></div>
-              <div className="w-full h-12 bg-slate-50 rounded-xl mt-4"></div>
-            </div>
+            <div key={i} className="border border-white/15 bg-white/5 p-5 rounded-none animate-pulse h-44"></div>
           ))}
         </div>
       </main>
@@ -282,202 +259,199 @@ export default function HomePage() {
   }
 
   return (
-    <main className="flex-1 overflow-y-auto bg-transparent flex flex-col">
-
-      {/* 3D CAROUSEL */}
-      <div className="relative w-full h-[55vh] min-h-[450px] flex items-center justify-center overflow-hidden bg-transparent rounded-b-[3rem] mb-10 pt-4">
+    <main className="flex-1 overflow-y-auto bg-transparent flex flex-col text-white">
+      {/* 3D CAROUSEL SECTION */}
+      <div className="relative w-full h-[55vh] min-h-[440px] flex items-center justify-center overflow-hidden bg-transparent mb-6 pt-4">
 
         {/* Header Overlay */}
-        <div className="absolute top-8 left-10 z-40">
-          <h2 className="text-3xl font-semibold text-slate-900">Welcome back, {lecturerName}</h2>
-          <p className="text-slate-500 mt-1">{currentDateFormatted}</p>
+        <div className="absolute top-6 left-8 lg:left-10 z-40">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-mono text-xs uppercase tracking-widest text-blue-400">PASUM // FACULTY HOME</span>
+          </div>
+          <h2 className="text-2xl lg:text-3xl font-bold tracking-tight text-white font-mono">Welcome back, {lecturerName}</h2>
+          <p className="font-mono text-xs text-white/60 mt-0.5">{currentDateFormatted}</p>
         </div>
 
         {scheduleToday.length > 1 && (
           <>
             <button
               onClick={prevSlide}
-              className="absolute left-10 z-40 bg-white/80 backdrop-blur border border-slate-200 p-3 rounded-full shadow-lg text-slate-700 hover:bg-white hover:scale-110 transition-all"
+              className="absolute left-6 lg:left-10 z-40 border border-white/20 bg-black/70 hover:bg-white/10 p-2.5 rounded-none shadow-xl text-white transition-colors cursor-pointer"
             >
-              <ChevronLeft size={24} />
+              <span className="font-mono text-sm">◀</span>
             </button>
 
             <button
               onClick={nextSlide}
-              className="absolute right-10 z-40 bg-white/80 backdrop-blur border border-slate-200 p-3 rounded-full shadow-lg text-slate-700 hover:bg-white hover:scale-110 transition-all"
+              className="absolute right-6 lg:right-10 z-40 border border-white/20 bg-black/70 hover:bg-white/10 p-2.5 rounded-none shadow-xl text-white transition-colors cursor-pointer"
             >
-              <ChevronRight size={24} />
+              <span className="font-mono text-sm">▶</span>
             </button>
           </>
         )}
 
         {/* 3D Track */}
-        <div className="relative w-full max-w-4xl h-[350px] flex items-center justify-center perspective-[1200px]">
+        <div className="relative w-full max-w-4xl h-[330px] flex items-center justify-center perspective-[1200px]">
           {scheduleToday.length === 0 ? (
-            <div className="relative z-30">
-              <EmptyState 
-                icon={BookOpen}
+            <div className="relative z-30 w-full px-6">
+              <EmptyState
+                icon={() => <PixelIcon name="classes" size={36} className="text-white/40" />}
                 title="No Classes Today"
                 description="You don't have any classes scheduled. Enjoy your day off!"
               />
             </div>
           ) : (
             scheduleToday.map((cls, index) => {
-            const offset = index - activeIndex;
-            const isCenter = offset === 0;
-            const isRight = offset > 0 || (activeIndex === scheduleToday.length - 1 && index === 0);
-            const isLeft = offset < 0 || (activeIndex === 0 && index === scheduleToday.length - 1);
+              const offset = index - activeIndex;
+              const isCenter = offset === 0;
+              const isRight = offset > 0 || (activeIndex === scheduleToday.length - 1 && index === 0);
+              const isLeft = offset < 0 || (activeIndex === 0 && index === scheduleToday.length - 1);
 
-            let transformClasses = "translate-x-full scale-50 opacity-0 z-0";
-            if (isCenter) {
-              transformClasses = "translate-x-0 scale-100 opacity-100 z-30 blur-none shadow-2xl";
-            } else if (isRight && Math.abs(offset) === 1 || (activeIndex === scheduleToday.length - 1 && index === 0)) {
-              transformClasses = "translate-x-[35%] scale-75 opacity-70 z-20 blur-[4px] shadow-lg cursor-pointer hover:blur-none";
-            } else if (isLeft && Math.abs(offset) === 1 || (activeIndex === 0 && index === scheduleToday.length - 1)) {
-              transformClasses = "-translate-x-[35%] scale-75 opacity-70 z-20 blur-[4px] shadow-lg cursor-pointer hover:blur-none";
-            }
+              let transformClasses = "translate-x-full scale-50 opacity-0 z-0";
+              if (isCenter) {
+                transformClasses = "translate-x-0 scale-100 opacity-100 z-30 blur-none shadow-2xl";
+              } else if ((isRight && Math.abs(offset) === 1) || (activeIndex === scheduleToday.length - 1 && index === 0)) {
+                transformClasses = "translate-x-[35%] scale-75 opacity-60 z-20 blur-[2px] shadow-lg cursor-pointer hover:opacity-90 hover:blur-none";
+              } else if ((isLeft && Math.abs(offset) === 1) || (activeIndex === 0 && index === scheduleToday.length - 1)) {
+                transformClasses = "-translate-x-[35%] scale-75 opacity-60 z-20 blur-[2px] shadow-lg cursor-pointer hover:opacity-90 hover:blur-none";
+              }
 
-            return (
-              <BorderGlow
-                key={cls.id}
-                onClick={() => !isCenter && setActiveIndex(index)}
-                backgroundColor="#ffffff"
-                borderRadius={24}
-                glowColor="220 90 60"
-                colors={['#3b82f6', '#8b5cf6', '#6366f1']}
-                animated={isCenter}
-                className={`absolute w-full max-w-2xl p-8 transition-all duration-700 ease-[cubic-bezier(0.25,0.8,0.25,1)] ${transformClasses}`}
-              >
-                <div className="relative z-10 flex flex-col justify-between h-full gap-6">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <span className={`text-xs font-bold tracking-wider uppercase px-3 py-1 rounded-full ${isCenter ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
-                        {cls.status} • {cls.time}
-                      </span>
-                      <h3 className="text-3xl font-bold text-slate-900 mt-4">{cls.title}</h3>
-                      <p className="text-slate-500 text-lg mt-1">{cls.group} • {cls.location}</p>
+              return (
+                <div
+                  key={cls.id}
+                  onClick={() => !isCenter && setActiveIndex(index)}
+                  className={`absolute w-full max-w-2xl p-6 lg:p-8 border border-white/20 bg-[#09111e]/90 backdrop-blur-md rounded-none transition-all duration-700 ease-[cubic-bezier(0.25,0.8,0.25,1)] ${transformClasses}`}
+                >
+                  <div className="relative z-10 flex flex-col justify-between h-full gap-6">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className={`font-mono text-[11px] uppercase tracking-wider px-2.5 py-1 border rounded-none ${
+                          isCenter
+                            ? 'border-blue-400/40 bg-blue-500/15 text-blue-300 font-bold'
+                            : 'border-white/10 bg-white/5 text-white/50'
+                        }`}>
+                          {cls.status} • {cls.time}
+                        </span>
+                        <h3 className="text-2xl lg:text-3xl font-bold font-mono text-white mt-3">{cls.title}</h3>
+                        <p className="font-mono text-sm text-white/60 mt-1">{cls.group} • {cls.location}</p>
+                      </div>
+
+                      {isCenter && (
+                        cls.activeSessionId ? (
+                          <button
+                            onClick={() => router.push(`/attendance/active?sessionId=${cls.activeSessionId}&classId=${cls.id}&onlineMode=${cls.activeOnlineMode}&faceIdRequired=${cls.activeFaceIdRequired}&locationRequired=${cls.activeLocationRequired}`)}
+                            className="flex flex-col items-center justify-center gap-1.5 border border-emerald-400 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 px-5 py-3 rounded-none font-mono text-xs uppercase tracking-wider transition-all cursor-pointer animate-pulse"
+                          >
+                            <PixelIcon name="qrCode" size={24} />
+                            <span>Ongoing Session</span>
+                          </button>
+                        ) : hasAnyActiveSession ? (
+                          <button
+                            disabled
+                            className="flex flex-col items-center justify-center gap-1.5 border border-white/10 bg-white/5 text-white/30 px-5 py-3 rounded-none font-mono text-xs uppercase tracking-wider cursor-not-allowed text-center"
+                          >
+                            <PixelIcon name="qrCode" size={24} />
+                            <span>Session In Progress</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleStartSessionClick(cls)}
+                            className="flex flex-col items-center justify-center gap-1.5 border border-blue-400 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 px-5 py-3 rounded-none font-mono text-xs uppercase tracking-wider transition-all cursor-pointer"
+                          >
+                            <PixelIcon name="qrCode" size={24} />
+                            <span>Start Session</span>
+                          </button>
+                        )
+                      )}
                     </div>
 
-                    {isCenter && (
-                      cls.activeSessionId ? (
-                        <button
-                          onClick={() => router.push(`/attendance/active?sessionId=${cls.activeSessionId}&classId=${cls.id}&onlineMode=${cls.activeOnlineMode}&faceIdRequired=${cls.activeFaceIdRequired}&locationRequired=${cls.activeLocationRequired}`)}
-                          className="flex flex-col items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-4 rounded-2xl font-semibold shadow-md shadow-emerald-200 transition-all active:scale-95 cursor-pointer border-none animate-pulse"
-                        >
-                          <QrCode size={28} />
-                          <span className="text-sm">Ongoing Session</span>
-                        </button>
-                      ) : hasAnyActiveSession ? (
-                        <button
-                          disabled
-                          className="flex flex-col items-center justify-center gap-2 bg-slate-200 text-slate-400 px-6 py-4 rounded-2xl font-semibold cursor-not-allowed border-none shadow-none text-center"
-                        >
-                          <QrCode size={28} />
-                          <span className="text-sm">Another session is ongoing</span>
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleStartSessionClick(cls)}
-                          className="flex flex-col items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-2xl font-semibold shadow-md shadow-blue-200 transition-all active:scale-95 cursor-pointer border-none"
-                        >
-                          <QrCode size={28} />
-                          <span className="text-sm">Start Session</span>
-                        </button>
-                      )
-                    )}
-                  </div>
-
-                  <div className={`grid grid-cols-3 gap-4 border-t border-slate-100 pt-6 transition-opacity duration-500 ${isCenter ? 'opacity-100' : 'opacity-40'}`}>
-                    <div className="bg-red-50 p-3 rounded-xl border border-red-100">
-                      <div className="flex items-center gap-1.5 text-red-700 text-xs font-bold uppercase mb-1">
-                        <AlertTriangle size={14} /> Critical
+                    <div className={`grid grid-cols-3 gap-3 border-t border-white/10 pt-4 transition-opacity duration-500 ${isCenter ? 'opacity-100' : 'opacity-40'}`}>
+                      <div className="border border-red-500/30 bg-red-500/10 p-3 rounded-none">
+                        <div className="flex items-center gap-1.5 text-red-300 font-mono text-[10px] font-bold uppercase mb-1">
+                          <PixelIcon name="warning" size={12} className="text-red-400" /> Critical
+                        </div>
+                        <div className="font-mono text-2xl font-black text-red-400">{cls.critical}</div>
                       </div>
-                      <div className="text-2xl font-black text-red-700">{cls.critical}</div>
-                    </div>
 
-                    <div className="bg-orange-50 p-3 rounded-xl border border-orange-100">
-                      <div className="flex items-center gap-1.5 text-orange-700 text-xs font-bold uppercase mb-1">
-                        <TrendingDown size={14} /> At-Risk
+                      <div className="border border-amber-500/30 bg-amber-500/10 p-3 rounded-none">
+                        <div className="flex items-center gap-1.5 text-amber-300 font-mono text-[10px] font-bold uppercase mb-1">
+                          <PixelIcon name="warning" size={12} className="text-amber-400" /> At-Risk
+                        </div>
+                        <div className="font-mono text-2xl font-black text-amber-400">{cls.atRisk}</div>
                       </div>
-                      <div className="text-2xl font-black text-orange-700">{cls.atRisk}</div>
-                    </div>
 
-                    <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-100">
-                      <div className="flex items-center gap-1.5 text-emerald-700 text-xs font-bold uppercase mb-1">
-                        Attendance
+                      <div className="border border-emerald-500/30 bg-emerald-500/10 p-3 rounded-none">
+                        <div className="flex items-center gap-1.5 text-emerald-300 font-mono text-[10px] font-bold uppercase mb-1">
+                          <PixelIcon name="check" size={12} className="text-emerald-400" /> Attendance
+                        </div>
+                        <div className="font-mono text-2xl font-black text-emerald-400">{cls.attendance}{cls.attendance !== "-" ? "%" : ""}</div>
                       </div>
-                      <div className="text-2xl font-black text-emerald-700">{cls.attendance}{cls.attendance !== "-" ? "%" : ""}</div>
                     </div>
                   </div>
                 </div>
-              </BorderGlow>
-            );
-          })
+              );
+            })
           )}
         </div>
       </div>
 
       {/* 2. BOTTOM HALF: ALL ASSIGNED CLASSES GRID */}
-      <div className="px-10 pb-10">
-        <div className="flex justify-between items-end mb-6">
+      <div className="px-6 lg:px-10 pb-10">
+        <div className="flex justify-between items-end mb-4 border-b border-white/10 pb-3">
           <div>
-            <h3 className="text-xl font-bold text-slate-900">All Assigned Classes</h3>
-            <p className="text-sm text-slate-500 mt-1">Semester 1 • Academic Year 2025/2026</p>
+            <div className="flex items-center gap-2 mb-0.5">
+              <span className="font-mono text-xs font-bold text-blue-400">02.</span>
+              <span className="font-mono text-xs uppercase tracking-wider text-white/90">ALL ASSIGNED CLASSES</span>
+            </div>
+            <p className="font-mono text-xs text-white/50">Semester 1 • Academic Year 2025/2026</p>
           </div>
         </div>
 
         {assignedClasses.length === 0 ? (
-          <EmptyState 
-            icon={BookOpen}
+          <EmptyState
+            icon={() => <PixelIcon name="classes" size={36} className="text-white/40" />}
             title="No Assigned Classes"
             description="You have no classes assigned for this semester. Please contact administration."
           />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {assignedClasses.map((item) => {
-              const Icon = getClassIcon(item.type);
+              const iconName = getClassIconName(item.type);
               return (
                 <Link
                   href={`/classes?classId=${item.id}`}
                   key={item.id}
-                  className="block group rounded-2xl"
+                  className="block group rounded-none"
                 >
-                  <BorderGlow
-                    backgroundColor="#ffffff"
-                    borderRadius={16}
-                    glowColor="220 90 60"
-                    colors={['#3b82f6', '#8b5cf6', '#6366f1']}
-                    className="p-5 shadow-sm transition-all duration-300"
-                  >
-                    <div className="flex justify-between items-start mb-4">
-                      <div className={`p-2.5 rounded-xl ${item.type === 'Lecture' ? 'bg-indigo-100 text-indigo-600' :
-                        item.type === 'Tutorial' ? 'bg-emerald-100 text-emerald-600' :
-                          'bg-amber-100 text-amber-600'
-                        }`}>
-                        <Icon size={20} />
+                  <div className="border border-white/15 bg-[#09111e]/80 hover:border-blue-400/50 backdrop-blur-md p-5 rounded-none shadow-lg transition-colors flex flex-col justify-between h-full">
+                    <div>
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="border border-white/15 bg-white/5 p-2 rounded-none text-blue-400">
+                          <PixelIcon name={iconName} size={18} />
+                        </div>
+                        <span className="border border-white/10 bg-white/5 font-mono text-[10px] text-white/60 font-bold uppercase tracking-wider px-2 py-0.5 rounded-none">
+                          {item.type}
+                        </span>
                       </div>
-                      <span className="bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md">
-                        {item.type}
-                      </span>
+
+                      <h4 className="font-mono font-bold text-white text-base leading-tight mb-2 group-hover:text-blue-300 transition-colors">
+                        {item.title}
+                      </h4>
                     </div>
 
-                    <h4 className="font-bold text-slate-900 text-lg leading-tight mb-2 group-hover:text-blue-600 transition-colors">
-                      {item.title}
-                    </h4>
-
-                    <div className="space-y-2 mt-4 pt-4 border-t border-slate-100">
-                      <div className="flex items-center gap-2 text-sm text-slate-600">
-                        <Clock size={16} className="text-slate-400" />
-                        <span className="font-medium">{item.time}</span>
+                    <div className="space-y-1.5 mt-4 pt-3 border-t border-white/10 font-mono text-xs">
+                      <div className="flex items-center gap-2 text-white/60">
+                        <PixelIcon name="clock" size={13} className="text-white/40" />
+                        <span>{item.time}</span>
                       </div>
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-slate-500">Overall Attendance</span>
-                        <span className={`font-bold ${typeof item.attendance === 'number' && item.attendance < 90 ? 'text-orange-600' : 'text-emerald-600'}`}>
+                      <div className="flex justify-between items-center pt-1">
+                        <span className="text-white/50">Attendance</span>
+                        <span className={`font-bold ${typeof item.attendance === 'number' && item.attendance < 90 ? 'text-amber-400' : 'text-emerald-400'}`}>
                           {item.attendance}{item.attendance !== "-" ? "%" : ""}
                         </span>
                       </div>
                     </div>
-                  </BorderGlow>
+                  </div>
                 </Link>
               );
             })}
@@ -487,28 +461,28 @@ export default function HomePage() {
 
       {/* Session Configuration Modal */}
       {showConfigModal && configuringClass && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-[#09111e] rounded-none shadow-2xl w-full max-w-xl overflow-hidden border border-white/20 text-white animate-in zoom-in-95 duration-200">
             {/* Header */}
-            <div className="bg-slate-900 p-6 text-white relative">
+            <div className="border-b border-white/15 p-5 relative">
               <button
                 onClick={() => setShowConfigModal(false)}
-                className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors border-none cursor-pointer"
+                className="absolute top-4 right-4 border border-white/15 bg-white/5 hover:bg-white/15 p-1.5 rounded-none transition-colors cursor-pointer text-white"
               >
-                <X size={20} />
+                ✕
               </button>
-              <span className="text-xs font-bold tracking-wider uppercase bg-blue-600 text-white px-3 py-1 rounded-full">
-                Session Setup
+              <span className="font-mono text-[10px] font-bold tracking-widest uppercase text-blue-400">
+                01 // SESSION SETUP
               </span>
-              <h2 className="text-2xl font-bold mt-3">{configuringClass.title}</h2>
-              <p className="text-slate-400 mt-1">{configuringClass.group} • {configuringClass.location} • {configuringClass.time}</p>
+              <h2 className="font-mono text-xl font-bold mt-1 text-white">{configuringClass.title}</h2>
+              <p className="font-mono text-xs text-white/60 mt-0.5">{configuringClass.group} • {configuringClass.location} • {configuringClass.time}</p>
             </div>
 
             {/* Modal Body */}
-            <div className="p-8 space-y-6">
+            <div className="p-6 space-y-5">
               <div>
-                <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Choose Attendance Format</h3>
-                <div className="grid grid-cols-2 gap-4">
+                <h3 className="font-mono text-xs uppercase tracking-wider text-white/60 mb-2">Choose Attendance Format</h3>
+                <div className="grid grid-cols-2 gap-3">
                   {/* Option 1: In-Person */}
                   <div
                     onClick={() => {
@@ -516,23 +490,24 @@ export default function HomePage() {
                       setFaceIdRequired(true);
                       setLocationRequired(true);
                     }}
-                    className={`flex flex-col p-5 rounded-2xl border-2 cursor-pointer transition-all ${!onlineMode
-                      ? "border-blue-600 bg-blue-50/50"
-                      : "border-slate-200 hover:border-slate-300"
-                      }`}
+                    className={`flex flex-col p-4 border rounded-none cursor-pointer transition-all ${
+                      !onlineMode
+                        ? "border-blue-400 bg-blue-500/15"
+                        : "border-white/15 bg-white/5 hover:border-white/30"
+                    }`}
                   >
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="p-2.5 rounded-xl bg-blue-100 text-blue-600">
-                        <Users size={22} />
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="border border-white/15 bg-white/5 p-2 rounded-none text-blue-400">
+                        <PixelIcon name="users" size={18} />
                       </div>
                       {!onlineMode && (
-                        <div className="bg-blue-600 text-white rounded-full p-1 flex items-center justify-center">
-                          <Check size={14} strokeWidth={3} />
-                        </div>
+                        <span className="font-mono text-[10px] text-blue-300 font-bold uppercase border border-blue-400/40 px-1.5 py-0.5">
+                          SELECTED
+                        </span>
                       )}
                     </div>
-                    <span className="font-bold text-slate-900 text-lg">In-Person Class</span>
-                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                    <span className="font-mono font-bold text-white text-sm">In-Person Class</span>
+                    <p className="font-mono text-[11px] text-white/50 mt-1 leading-relaxed">
                       Requires Face ID scanning and GPS location validation in class.
                     </p>
                   </div>
@@ -544,86 +519,91 @@ export default function HomePage() {
                       setFaceIdRequired(false);
                       setLocationRequired(false);
                     }}
-                    className={`flex flex-col p-5 rounded-2xl border-2 cursor-pointer transition-all ${onlineMode
-                      ? "border-blue-600 bg-blue-50/50"
-                      : "border-slate-200 hover:border-slate-300"
-                      }`}
+                    className={`flex flex-col p-4 border rounded-none cursor-pointer transition-all ${
+                      onlineMode
+                        ? "border-blue-400 bg-blue-500/15"
+                        : "border-white/15 bg-white/5 hover:border-white/30"
+                    }`}
                   >
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="p-2.5 rounded-xl bg-indigo-100 text-indigo-600">
-                        <Laptop size={22} />
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="border border-white/15 bg-white/5 p-2 rounded-none text-indigo-400">
+                        <PixelIcon name="classes" size={18} />
                       </div>
                       {onlineMode && (
-                        <div className="bg-blue-600 text-white rounded-full p-1 flex items-center justify-center">
-                          <Check size={14} strokeWidth={3} />
-                        </div>
+                        <span className="font-mono text-[10px] text-blue-300 font-bold uppercase border border-blue-400/40 px-1.5 py-0.5">
+                          SELECTED
+                        </span>
                       )}
                     </div>
-                    <span className="font-bold text-slate-900 text-lg">Online Class</span>
-                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                      Bypasses Face ID and GPS location geofencing checks for all students.
+                    <span className="font-mono font-bold text-white text-sm">Online Class</span>
+                    <p className="font-mono text-[11px] text-white/50 mt-1 leading-relaxed">
+                      Bypasses Face ID and GPS location geofencing checks.
                     </p>
                   </div>
                 </div>
               </div>
 
               {/* Granular Authentication Overrides */}
-              <div className="border-t border-slate-100 pt-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">
+              <div className="border-t border-white/10 pt-4">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="font-mono text-xs uppercase tracking-wider text-white/60">
                     Fine-tune Requirements
                   </h3>
                   {onlineMode && (
-                    <span className="text-[10.5px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                    <span className="font-mono text-[10px] font-bold text-amber-300 border border-amber-400/30 px-2 py-0.5 uppercase tracking-wider">
                       Overridden for Online Mode
                     </span>
                   )}
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-2.5">
                   {/* Face ID Switch */}
-                  <div className={`flex items-center justify-between p-4 rounded-xl border ${onlineMode ? 'bg-slate-50 border-slate-150 opacity-60' : 'border-slate-200'}`}>
-                    <div className="flex gap-3 items-start">
-                      <ScanFace className={`mt-0.5 ${faceIdRequired ? 'text-blue-600' : 'text-slate-400'}`} size={20} />
+                  <div className={`flex items-center justify-between p-3 border rounded-none ${
+                    onlineMode ? 'border-white/10 bg-white/5 opacity-50' : 'border-white/15 bg-white/5'
+                  }`}>
+                    <div className="flex gap-2.5 items-start">
+                      <PixelIcon name="profile" size={16} className={`mt-0.5 ${faceIdRequired ? 'text-blue-400' : 'text-white/40'}`} />
                       <div>
-                        <div className="font-bold text-slate-900 text-sm">Face ID verification</div>
-                        <div className="text-xs text-slate-500 mt-0.5">Students must match facial features against saved profiles</div>
+                        <div className="font-mono font-bold text-white text-xs">Face ID verification</div>
+                        <div className="font-mono text-[10px] text-white/50">Verify facial features against student profiles</div>
                       </div>
                     </div>
                     <button
                       type="button"
                       disabled={onlineMode}
                       onClick={() => setFaceIdRequired(!faceIdRequired)}
-                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${faceIdRequired ? "bg-blue-600" : "bg-slate-200"
-                        } ${onlineMode ? "cursor-not-allowed" : ""}`}
+                      className={`font-mono text-[10px] uppercase font-bold px-2.5 py-1 border transition-colors cursor-pointer rounded-none ${
+                        faceIdRequired
+                          ? "border-blue-400 bg-blue-500/30 text-blue-300"
+                          : "border-white/20 bg-black/40 text-white/50"
+                      } ${onlineMode ? "cursor-not-allowed" : ""}`}
                     >
-                      <span
-                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${faceIdRequired ? "translate-x-5" : "translate-x-0"
-                          }`}
-                      />
+                      {faceIdRequired ? "ENABLED" : "DISABLED"}
                     </button>
                   </div>
 
                   {/* Location Switch */}
-                  <div className={`flex items-center justify-between p-4 rounded-xl border ${onlineMode ? 'bg-slate-50 border-slate-150 opacity-60' : 'border-slate-200'}`}>
-                    <div className="flex gap-3 items-start">
-                      <MapPin className={`mt-0.5 ${locationRequired ? 'text-blue-600' : 'text-slate-400'}`} size={20} />
+                  <div className={`flex items-center justify-between p-3 border rounded-none ${
+                    onlineMode ? 'border-white/10 bg-white/5 opacity-50' : 'border-white/15 bg-white/5'
+                  }`}>
+                    <div className="flex gap-2.5 items-start">
+                      <PixelIcon name="pin" size={16} className={`mt-0.5 ${locationRequired ? 'text-blue-400' : 'text-white/40'}`} />
                       <div>
-                        <div className="font-bold text-slate-900 text-sm">Location / GPS matching</div>
-                        <div className="text-xs text-slate-500 mt-0.5">Verify students are physically present in the lecture hall</div>
+                        <div className="font-mono font-bold text-white text-xs">Location / GPS matching</div>
+                        <div className="font-mono text-[10px] text-white/50">Verify students are inside lecture hall radius</div>
                       </div>
                     </div>
                     <button
                       type="button"
                       disabled={onlineMode}
                       onClick={() => setLocationRequired(!locationRequired)}
-                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${locationRequired ? "bg-blue-600" : "bg-slate-200"
-                        } ${onlineMode ? "cursor-not-allowed" : ""}`}
+                      className={`font-mono text-[10px] uppercase font-bold px-2.5 py-1 border transition-colors cursor-pointer rounded-none ${
+                        locationRequired
+                          ? "border-blue-400 bg-blue-500/30 text-blue-300"
+                          : "border-white/20 bg-black/40 text-white/50"
+                      } ${onlineMode ? "cursor-not-allowed" : ""}`}
                     >
-                      <span
-                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${locationRequired ? "translate-x-5" : "translate-x-0"
-                          }`}
-                      />
+                      {locationRequired ? "ENABLED" : "DISABLED"}
                     </button>
                   </div>
                 </div>
@@ -631,10 +611,10 @@ export default function HomePage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="bg-slate-50 p-6 flex justify-end gap-3 border-t border-slate-150">
+            <div className="border-t border-white/15 p-4 flex justify-end gap-2 bg-black/40">
               <button
                 onClick={() => setShowConfigModal(false)}
-                className="bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 font-semibold px-5 py-3 rounded-xl transition-all cursor-pointer font-sans"
+                className="border border-white/20 bg-white/5 hover:bg-white/10 text-white font-mono text-xs uppercase px-4 py-2 rounded-none transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -679,7 +659,7 @@ export default function HomePage() {
                     alert("Error calling server: " + (err.detail || err.message || "Unknown error"));
                   }
                 }}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl shadow-md shadow-blue-200 hover:shadow-lg hover:shadow-blue-300 transition-all cursor-pointer border-none font-sans"
+                className="border border-blue-400 bg-blue-600 hover:bg-blue-500 text-white font-mono text-xs uppercase font-bold px-5 py-2 rounded-none shadow-lg transition-colors cursor-pointer"
               >
                 Start Active Session
               </button>

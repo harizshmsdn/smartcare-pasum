@@ -2,19 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Mail,
-  Phone,
-  BookOpen,
-  Award,
-  GraduationCap,
-  Edit2,
-  Save,
-  X,
-  ShieldAlert,
-  Building,
-  KeyRound
-} from "lucide-react";
+import { PixelIcon } from "../../../components/PixelIcon";
 import Link from "next/link";
 import { createClient } from "../../../utils/supabase/client";
 import { studentService } from "../../../lib/services/student";
@@ -113,21 +101,9 @@ export default function StudentProfilePage() {
 
   if (isLoading || !profile) {
     return (
-      <main className="flex-1 p-8 overflow-y-auto bg-[#FAF9F6]">
-        <header className="mb-8">
-          <div className="w-48 h-8 bg-slate-200 rounded animate-pulse mb-2"></div>
-          <div className="w-64 h-4 bg-slate-200 rounded animate-pulse"></div>
-        </header>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="space-y-6">
-            <div className="bg-slate-200 h-96 rounded-2xl animate-pulse"></div>
-          </div>
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-slate-200 h-32 rounded-2xl animate-pulse"></div>
-            <div className="bg-slate-200 h-64 rounded-2xl animate-pulse"></div>
-          </div>
-        </div>
-      </main>
+      <div className="flex-1 flex items-center justify-center bg-transparent text-white/70 font-mono text-sm">
+        <span className="animate-pulse">Loading student profile...</span>
+      </div>
     );
   }
 
@@ -135,87 +111,96 @@ export default function StudentProfilePage() {
     ? profile.full_name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
     : "STU";
 
-  // Enrolled science stream fallback
   const scienceStream = profile.affiliation || "Physical Science Stream";
 
   return (
-    <main className="flex-1 p-8 overflow-y-auto bg-[#FAF9F6]">
+    <main className="flex-1 p-6 lg:p-8 overflow-y-auto bg-transparent text-white">
       {/* Header */}
-      <header className="mb-8">
-        <h2 className="text-3xl font-semibold text-slate-900">My Profile</h2>
-        <p className="text-slate-500 mt-1">Manage your student details and view academic courses</p>
+      <header className="mb-6 flex justify-between items-end border-b border-white/10 pb-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-mono text-xs uppercase tracking-widest text-blue-400">PASUM // STUDENT PROFILE</span>
+          </div>
+          <h2 className="text-2xl lg:text-3xl font-bold tracking-tight text-white font-mono">My Profile</h2>
+          <p className="font-mono text-xs text-white/60 mt-0.5">Manage your student details and view enrolled academic courses</p>
+        </div>
+        <div className="flex items-center gap-2 border border-white/15 bg-white/5 text-blue-300 px-3.5 py-1.5 font-mono text-xs tracking-wider uppercase rounded-none">
+          <PixelIcon name="graduation" size={16} />
+          PASUM STUDENT
+        </div>
       </header>
 
       {/* Grid wrapper */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Summary Info Card */}
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center relative overflow-hidden flex flex-col items-center">
-            <div className="w-24 h-24 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white mb-4 font-bold text-3xl shadow-md shrink-0">
+        <div className="space-y-4">
+          <div className="border border-white/15 bg-[#09111e]/80 backdrop-blur-md p-6 rounded-none shadow-xl text-center relative flex flex-col items-center">
+            <div className="w-20 h-20 border border-white/20 bg-blue-500/15 text-blue-300 rounded-none flex items-center justify-center mb-4 font-mono font-bold text-2xl shadow-inner shrink-0">
               {initials}
             </div>
 
-            <h3 className="text-xl font-bold text-slate-900">{profile.full_name}</h3>
-            <p className="text-sm font-semibold text-blue-600 mt-0.5">Undergraduate Student</p>
-            <p className="text-xs text-slate-400 mt-1">Matric ID: {profile.institutional_id}</p>
+            <h3 className="font-mono text-lg font-bold text-white">{profile.full_name}</h3>
+            <p className="font-mono text-xs text-blue-300 mt-0.5">Undergraduate Student</p>
+            <p className="font-mono text-[11px] text-white/50 mt-0.5">Matric ID: {profile.institutional_id}</p>
 
-            <div className="border-t border-slate-100 mt-6 pt-6 w-full space-y-3 text-left text-sm text-slate-650 relative">
-              <div className="absolute -top-3 right-0 bg-white">
+            <div className="border-t border-white/10 mt-5 pt-5 w-full space-y-3 text-left text-xs font-mono relative">
+              <div className="absolute -top-3 right-0">
                 {!isEditing ? (
                   <button 
                     onClick={() => setIsEditing(true)}
-                    className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+                    className="border border-white/15 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white p-1 rounded-none transition-colors cursor-pointer text-[10px] uppercase font-mono px-2"
                     title="Edit Contact Info"
                   >
-                    <Edit2 size={16} />
+                    Edit
                   </button>
                 ) : (
                   <div className="flex items-center gap-1">
                     <button 
                       onClick={() => setIsEditing(false)}
-                      className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                      className="border border-white/15 bg-white/5 hover:bg-red-500/20 text-red-300 p-1 rounded-none transition-colors cursor-pointer text-[10px] font-mono px-2"
                     >
-                      <X size={16} />
+                      Cancel
                     </button>
                     <button 
                       onClick={handleSave}
                       disabled={isSaving}
-                      className="p-1.5 text-slate-400 hover:text-emerald-600 rounded-lg hover:bg-emerald-50 transition-colors disabled:opacity-50"
+                      className="border border-emerald-400/40 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 p-1 rounded-none transition-colors cursor-pointer text-[10px] font-mono px-2 disabled:opacity-50"
                     >
-                      <Save size={16} />
+                      Save
                     </button>
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-3">
-                <Mail size={16} className="text-slate-400 shrink-0" />
+
+              <div className="flex items-center gap-2.5 text-white/70">
+                <PixelIcon name="mail" size={14} className="text-white/40 shrink-0" />
                 <span className="truncate">{profile.email}</span>
               </div>
               
               {isEditing ? (
-                <div className="space-y-3 pt-2">
+                <div className="space-y-2 pt-2">
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500">Phone Number</label>
-                    <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
-                      <Phone size={14} className="text-slate-400 shrink-0" />
+                    <label className="text-[10px] uppercase text-white/60">Phone Number</label>
+                    <div className="flex items-center gap-2 border border-white/20 bg-black/40 px-3 py-1.5 rounded-none">
+                      <PixelIcon name="phone" size={12} className="text-white/40 shrink-0" />
                       <input 
                         type="text"
                         value={editPhone}
                         onChange={(e) => setEditPhone(e.target.value)}
-                        className="bg-transparent border-none text-sm w-full focus:outline-none text-slate-700"
+                        className="bg-transparent border-none text-xs w-full focus:outline-none text-white font-mono"
                         placeholder="+60 12-345 6789"
                       />
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500">Emergency Contact</label>
-                    <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
-                      <ShieldAlert size={14} className="text-slate-400 shrink-0" />
+                    <label className="text-[10px] uppercase text-white/60">Emergency Contact</label>
+                    <div className="flex items-center gap-2 border border-white/20 bg-black/40 px-3 py-1.5 rounded-none">
+                      <PixelIcon name="warning" size={12} className="text-white/40 shrink-0" />
                       <input 
                         type="text"
                         value={editEmergency}
                         onChange={(e) => setEditEmergency(e.target.value)}
-                        className="bg-transparent border-none text-sm w-full focus:outline-none text-slate-700"
+                        className="bg-transparent border-none text-xs w-full focus:outline-none text-white font-mono"
                         placeholder="e.g. +60 19-876 5432 (Mother)"
                       />
                     </div>
@@ -224,33 +209,33 @@ export default function StudentProfilePage() {
               ) : (
                 <>
                   {profile.phone_number && (
-                    <div className="flex items-center gap-3">
-                      <Phone size={16} className="text-slate-400 shrink-0" />
+                    <div className="flex items-center gap-2.5 text-white/70">
+                      <PixelIcon name="phone" size={14} className="text-white/40 shrink-0" />
                       <span>{profile.phone_number}</span>
                     </div>
                   )}
-                  <div className="flex items-center gap-3">
-                    <Building size={16} className="text-slate-400 shrink-0" />
+                  <div className="flex items-center gap-2.5 text-white/70">
+                    <PixelIcon name="building" size={14} className="text-white/40 shrink-0" />
                     <span className="truncate">{scienceStream}</span>
                   </div>
                   {profile.emergency_contact && (
-                    <div className="flex items-center gap-3">
-                      <ShieldAlert size={16} className="text-red-400 shrink-0" />
-                      <span className="text-slate-700">{profile.emergency_contact}</span>
+                    <div className="flex items-center gap-2.5 text-amber-300">
+                      <PixelIcon name="warning" size={14} className="text-amber-400 shrink-0" />
+                      <span>{profile.emergency_contact}</span>
                     </div>
                   )}
                 </>
               )}
             </div>
 
-            {/* Merit Claims Redirect button below details (Disabled) */}
-            <div className="w-full border-t border-slate-100 mt-6 pt-6">
+            {/* Merit Claims Redirect button (Disabled) */}
+            <div className="w-full border-t border-white/10 mt-5 pt-4">
               <div className="relative group/disabled w-full cursor-not-allowed" title="Disabled Feature">
-                <div className="w-full flex items-center justify-center gap-2 bg-slate-100 border border-slate-200 text-slate-400 font-semibold py-3 px-4 rounded-xl text-sm pointer-events-none grayscale select-none">
-                  <Award size={18} />
-                  Merit Requests & Claims
+                <div className="w-full flex items-center justify-center gap-2 border border-white/10 bg-white/5 text-white/40 font-mono py-2.5 px-3 text-xs uppercase tracking-wider pointer-events-none select-none rounded-none">
+                  <PixelIcon name="award" size={14} />
+                  Merit Claims [ DISABLED ]
                 </div>
-                <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover/disabled:flex items-center px-2.5 py-1 text-xs font-semibold text-white bg-slate-800 rounded-md shadow-lg whitespace-nowrap z-50">
+                <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover/disabled:flex items-center px-2 py-1 font-mono text-[11px] text-white bg-black border border-white/20 whitespace-nowrap z-50">
                   Disabled Feature
                 </div>
               </div>
@@ -261,51 +246,59 @@ export default function StudentProfilePage() {
           <button
             type="button"
             onClick={() => setIsPasswordModalOpen(true)}
-            className="w-full flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 font-semibold py-3 px-4 rounded-2xl border border-slate-200 shadow-sm transition-all hover:border-slate-300 active:scale-[0.99]"
+            className="w-full flex items-center justify-center gap-2 border border-white/20 bg-white/5 hover:bg-white/10 text-white font-mono text-xs uppercase font-bold py-3 px-4 rounded-none shadow-lg transition-colors cursor-pointer"
           >
-            <KeyRound size={18} className="text-blue-600" />
+            <PixelIcon name="key" size={16} className="text-blue-400" />
             <span>Change Password</span>
           </button>
         </div>
 
         {/* Right Column: Science Stream & Courses */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4">
           {/* Science Stream Card */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <h4 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <GraduationCap size={18} className="text-slate-400" /> Enrolled Science Stream
-            </h4>
-            <p className="text-sm font-bold text-slate-700 leading-relaxed bg-slate-50/50 p-4 rounded-xl border border-slate-100">
+          <div className="border border-white/15 bg-[#09111e]/80 backdrop-blur-md p-5 rounded-none shadow-xl">
+            <div className="border-b border-white/10 pb-3 mb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-xs font-bold text-blue-400">01.</span>
+                <span className="font-mono text-xs uppercase tracking-wider text-white/90">ENROLLED SCIENCE STREAM</span>
+              </div>
+              <PixelIcon name="graduation" size={16} className="text-blue-400" />
+            </div>
+            <p className="font-mono text-xs text-white/80 leading-relaxed border border-white/10 bg-black/40 p-3.5 rounded-none">
               {scienceStream}
             </p>
           </div>
 
           {/* Enrolled Courses */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <h4 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <BookOpen size={18} className="text-slate-400" /> Enrolled Course Load (Current Semester)
-            </h4>
+          <div className="border border-white/15 bg-[#09111e]/80 backdrop-blur-md p-5 rounded-none shadow-xl">
+            <div className="border-b border-white/10 pb-3 mb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-xs font-bold text-blue-400">02.</span>
+                <span className="font-mono text-xs uppercase tracking-wider text-white/90">ENROLLED COURSE LOAD (CURRENT SEMESTER)</span>
+              </div>
+              <PixelIcon name="classes" size={16} className="text-blue-400" />
+            </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               {enrolledCourses.length > 0 ? (
                 enrolledCourses.map((course, idx) => (
                   <div
                     key={idx}
-                    className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:border-blue-200 transition-colors gap-2"
+                    className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3.5 border border-white/10 bg-white/5 hover:border-blue-400/40 rounded-none transition-colors gap-2"
                   >
                     <div>
-                      <span className="text-xs font-mono font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded">
+                      <span className="font-mono text-[10px] font-bold border border-blue-400/40 bg-blue-500/15 text-blue-300 px-2 py-0.5 rounded-none">
                         {course.code}
                       </span>
-                      <h5 className="font-semibold text-slate-900 mt-1.5">{course.name}</h5>
+                      <h5 className="font-mono font-bold text-white text-sm mt-1.5">{course.name}</h5>
                     </div>
-                    <span className="text-xs font-medium bg-slate-200 text-slate-700 px-2.5 py-1 rounded-md">
+                    <span className="font-mono text-[11px] border border-white/20 bg-white/5 text-white/70 px-2.5 py-1 rounded-none">
                       {course.group}
                     </span>
                   </div>
                 ))
               ) : (
-                <p className="text-slate-500 text-sm py-4 text-center">No enrolled courses found.</p>
+                <p className="font-mono text-xs text-white/40 py-6 text-center">No enrolled courses found.</p>
               )}
             </div>
           </div>

@@ -3,15 +3,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import BorderGlow from "../../../components/BorderGlow";
-import {
-  TrendingUp,
-  Award,
-  BookOpen,
-  GraduationCap,
-  ChevronRight,
-  CheckCircle2
-} from "lucide-react";
+import { PixelIcon } from "../../../components/PixelIcon";
 import {
   ResponsiveContainer,
   LineChart,
@@ -153,50 +145,52 @@ export default function StudentDashboardPage() {
   }, [supabase]);
 
   if (isLoading) {
-    return <div className="flex-1 flex items-center justify-center bg-slate-50 min-h-screen">Loading student dashboard...</div>;
+    return (
+      <div className="flex-1 flex items-center justify-center bg-transparent text-white/70 font-mono text-sm">
+        <span className="animate-pulse">Loading student dashboard...</span>
+      </div>
+    );
   }
 
   return (
-    <main className="flex-1 h-screen flex flex-col p-8 bg-[#FAF9F6] overflow-hidden">
+    <main className="flex-1 h-screen flex flex-col p-6 lg:p-8 bg-transparent overflow-hidden text-white">
       {/* Header */}
       <header className="shrink-0 mb-6 flex justify-between items-end">
         <div>
-          <h2 className="text-3xl font-semibold text-slate-900 font-sans">Academic Overview</h2>
-          <p className="text-slate-500 mt-1">Track your progress, accumulated merits, and exam performance</p>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-mono text-xs uppercase tracking-widest text-blue-400">PASUM // STUDENT</span>
+          </div>
+          <h2 className="text-2xl lg:text-3xl font-bold tracking-tight text-white font-mono">Academic Overview</h2>
+          <p className="text-xs lg:text-sm text-white/60 font-mono mt-0.5">Track your progress, accumulated merits, and exam performance</p>
         </div>
-        <div className="flex items-center gap-2 bg-transparent text-blue-700 px-4 py-2 rounded-xl font-semibold text-sm">
-          <GraduationCap size={18} />
-          Semester 1, Year 2025/2026
+        <div className="flex items-center gap-2 border border-white/15 bg-white/5 text-blue-300 px-3.5 py-1.5 font-mono text-xs tracking-wider uppercase rounded-none">
+          <PixelIcon name="graduation" size={16} />
+          Semester 1 • 2025/2026
         </div>
       </header>
 
-      {/* Bento Grid */}
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-3 grid-rows-2 gap-6 min-h-0 pb-2">
+      {/* Bento Grid (04 Products Style) */}
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-3 grid-rows-2 gap-4 lg:gap-5 min-h-0 pb-2">
         {/* Trajectory line chart */}
-        <BorderGlow
-          backgroundColor="#ffffff"
-          borderRadius={24}
-          glowColor="220 90 60"
-          colors={['#3b82f6', '#8b5cf6', '#6366f1']}
-          className="md:col-span-2 p-6 shadow-sm flex flex-col min-h-0 relative"
-        >
-          <div className="shrink-0 mb-4 flex justify-between items-center">
-            <div>
-              <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2">
-                <TrendingUp className="text-blue-600" size={20} />
-                Attendance vs. Assessment Trajectory
-              </h3>
+        <div className="md:col-span-2 border border-white/15 bg-[#09111e]/80 backdrop-blur-md rounded-none shadow-xl flex flex-col min-h-0 relative">
+          <div className="shrink-0 border-b border-white/10 px-4 py-3 flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs font-bold text-blue-400">01.</span>
+              <span className="font-mono text-xs uppercase tracking-wider text-white/90">ATTENDANCE VS. ASSESSMENT TRAJECTORY</span>
             </div>
 
             {/* Subject Tabs */}
             {subjectsList.length > 0 && (
-              <div className="flex bg-slate-100 p-1 rounded-lg">
+              <div className="flex items-center gap-1 border border-white/10 p-0.5 bg-black/40">
                 {subjectsList.map((code) => (
                   <button
                     key={code}
                     onClick={() => setActiveSubject(code)}
-                    className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${activeSubject === code ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                      }`}
+                    className={`px-2.5 py-1 font-mono text-[11px] uppercase transition-colors rounded-none ${
+                      activeSubject === code
+                        ? "bg-white text-black font-bold"
+                        : "text-white/60 hover:text-white hover:bg-white/10"
+                    }`}
                   >
                     {code}
                   </button>
@@ -205,7 +199,7 @@ export default function StudentDashboardPage() {
             )}
           </div>
 
-          <div className="flex-1 min-h-0 w-full overflow-x-auto overflow-y-hidden">
+          <div className="flex-1 min-h-0 w-full overflow-x-auto overflow-y-hidden p-4">
             {activeSubject && subjectTimelines[activeSubject] && subjectTimelines[activeSubject].length > 0 ? (
               <div
                 style={{
@@ -216,87 +210,86 @@ export default function StudentDashboardPage() {
               >
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={subjectTimelines[activeSubject]} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                    <XAxis dataKey="week" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} />
-                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                    <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
-                    <Line connectNulls type="monotone" dataKey="attendance" name="My Attendance %" stroke="#1e3a8a" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                    <Line connectNulls type="monotone" dataKey="assessment" name="My Assessment %" stroke="#ef4444" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.08)" vertical={false} />
+                    <XAxis dataKey="week" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={{ stroke: 'rgba(255,255,255,0.1)' }} />
+                    <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={{ stroke: 'rgba(255,255,255,0.1)' }} domain={[0, 100]} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#09111e',
+                        borderColor: 'rgba(255, 255, 255, 0.2)',
+                        borderRadius: 0,
+                        color: '#fff',
+                        fontFamily: 'monospace',
+                        fontSize: '11px'
+                      }}
+                    />
+                    <Legend verticalAlign="top" height={32} iconType="rect" wrapperStyle={{ fontSize: '11px', fontFamily: 'monospace' }} />
+                    <Line connectNulls type="monotone" dataKey="attendance" name="My Attendance %" stroke="#60a5fa" strokeWidth={2} dot={{ r: 3, fill: '#60a5fa' }} activeDot={{ r: 5 }} />
+                    <Line connectNulls type="monotone" dataKey="assessment" name="My Assessment %" stroke="#f87171" strokeWidth={2} dot={{ r: 3, fill: '#f87171' }} activeDot={{ r: 5 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-slate-400">
-                <TrendingUp size={36} className="text-slate-300 mb-2" />
-                <p className="text-sm font-medium text-slate-600">No Trajectory Data Available</p>
-                <p className="text-xs text-slate-400 mt-0.5 text-center">Trends will populate once attendance and assessment records are logged.</p>
+              <div className="h-full flex flex-col items-center justify-center text-white/40">
+                <PixelIcon name="trendingUp" size={36} className="text-white/20 mb-2" />
+                <p className="font-mono text-xs uppercase tracking-wider text-white/70">No Trajectory Data Available</p>
+                <p className="font-mono text-[11px] text-white/40 mt-1 text-center">Trends will populate once attendance and assessment records are logged.</p>
               </div>
             )}
           </div>
-        </BorderGlow>
+        </div>
 
         {/* Total Merits Card */}
-        <BorderGlow
-          backgroundColor="#0f172a"
-          borderRadius={24}
-          glowColor="38 92 50" // amber glow
-          colors={['#f59e0b', '#d97706', '#fbbf24']}
-          className="p-8 shadow-sm flex flex-col relative overflow-hidden"
-        >
-          <div className="absolute -right-10 -top-10 w-40 h-40 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="border border-white/15 bg-[#09111e]/80 backdrop-blur-md rounded-none shadow-xl p-5 flex flex-col justify-between relative overflow-hidden">
+          <div className="shrink-0 border-b border-white/10 pb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs font-bold text-amber-400">02.</span>
+              <span className="font-mono text-xs uppercase tracking-wider text-white/90">ACCUMULATED MERITS</span>
+            </div>
+            <PixelIcon name="award" size={18} className="text-amber-400" />
+          </div>
 
-          <h3 className="font-bold text-white text-xl flex items-center gap-2 mb-3 z-10 shrink-0">
-            <Award className="text-amber-400" size={24} />
-            Accumulated Merits
-          </h3>
-
-          <div className="flex-1 flex flex-col justify-center items-center z-10 py-2">
-            <div className="bg-slate-850 border border-slate-700/50 p-8 rounded-2xl w-full text-center flex flex-col justify-center items-center">
-              <span className="text-slate-300 text-sm font-bold uppercase tracking-wider">Total Merit Score</span>
-              <span className="font-black text-white mt-4 leading-none" style={{ fontSize: "4rem" }}>{totalMerits}</span>
-              <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-6 font-semibold">
-                <CheckCircle2 size={14} className="text-emerald-500" /> Points Verified & Active
+          <div className="flex-1 flex flex-col justify-center items-center py-4">
+            <div className="border border-white/15 bg-black/40 p-6 w-full text-center flex flex-col justify-center items-center">
+              <span className="font-mono text-xs uppercase tracking-widest text-white/60">Total Merit Score</span>
+              <span className="font-mono font-black text-white mt-3 leading-none text-6xl">{totalMerits}</span>
+              <div className="flex items-center gap-2 font-mono text-[11px] text-emerald-400 mt-4 uppercase">
+                <PixelIcon name="check" size={14} className="text-emerald-400" />
+                Points Verified & Active
               </div>
             </div>
           </div>
 
           <div className="relative group/disabled w-full cursor-not-allowed" title="Disabled Feature">
-            <div className="w-full bg-white/5 text-white/40 py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 pointer-events-none grayscale select-none">
-              Claim Merit Points <ChevronRight size={16} />
+            <div className="w-full border border-white/10 bg-white/5 text-white/40 py-2.5 font-mono text-xs uppercase tracking-wider flex items-center justify-center gap-2 pointer-events-none select-none rounded-none">
+              Claim Merit Points [ DISABLED ]
             </div>
-            <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover/disabled:flex items-center px-2.5 py-1 text-xs font-semibold text-white bg-slate-800 rounded-md shadow-lg whitespace-nowrap z-50">
+            <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover/disabled:flex items-center px-2.5 py-1 font-mono text-[11px] text-white bg-black border border-white/20 whitespace-nowrap z-50">
               Disabled Feature
             </div>
           </div>
-        </BorderGlow>
+        </div>
 
-        {/* CA Performance Chart (Selectable by Class) */}
-        <BorderGlow
-          backgroundColor="#ffffff"
-          borderRadius={24}
-          glowColor="220 90 60"
-          colors={['#3b82f6', '#8b5cf6', '#6366f1']}
-          className="p-6 shadow-sm flex flex-col min-h-0"
-        >
-          <div className="shrink-0 mb-4 flex justify-between items-center">
-            <div>
-              <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                <BookOpen className="text-blue-500" size={18} />
-                Continuous Assessment
-              </h3>
-              <p className="text-[11px] text-slate-500">Marks achieved by assessment</p>
+        {/* CA Performance Chart */}
+        <div className="border border-white/15 bg-[#09111e]/80 backdrop-blur-md rounded-none shadow-xl flex flex-col min-h-0">
+          <div className="shrink-0 border-b border-white/10 px-4 py-3 flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs font-bold text-blue-400">03.</span>
+              <span className="font-mono text-xs uppercase tracking-wider text-white/90">CONTINUOUS ASSESSMENT</span>
             </div>
 
             {/* Subject Tabs */}
             {subjectsList.length > 0 && (
-              <div className="flex bg-slate-100 p-0.5 rounded-lg">
+              <div className="flex items-center gap-1 border border-white/10 p-0.5 bg-black/40">
                 {subjectsList.map((code) => (
                   <button
                     key={code}
                     onClick={() => setCaActiveSubject(code)}
-                    className={`px-2.5 py-1 text-[10px] font-semibold rounded-md transition-colors ${caActiveSubject === code ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                      }`}
+                    className={`px-2 py-0.5 font-mono text-[10px] uppercase transition-colors rounded-none ${
+                      caActiveSubject === code
+                        ? "bg-white text-black font-bold"
+                        : "text-white/60 hover:text-white"
+                    }`}
                   >
                     {code}
                   </button>
@@ -305,7 +298,7 @@ export default function StudentDashboardPage() {
             )}
           </div>
 
-          <div className="flex-1 min-h-0 w-full overflow-x-auto overflow-y-hidden">
+          <div className="flex-1 min-h-0 w-full overflow-x-auto overflow-y-hidden p-4">
             {caActiveSubject && caPerformanceData[caActiveSubject] && caPerformanceData[caActiveSubject].length > 0 ? (
               <div
                 style={{
@@ -316,89 +309,87 @@ export default function StudentDashboardPage() {
               >
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={caPerformanceData[caActiveSubject]} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                    <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} domain={[0, 100]} />
-                    <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                    <Bar dataKey="score" name="Score %" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.08)" vertical={false} />
+                    <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={{ stroke: 'rgba(255,255,255,0.1)' }} />
+                    <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={{ stroke: 'rgba(255,255,255,0.1)' }} domain={[0, 100]} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#09111e',
+                        borderColor: 'rgba(255, 255, 255, 0.2)',
+                        borderRadius: 0,
+                        color: '#fff',
+                        fontFamily: 'monospace',
+                        fontSize: '11px'
+                      }}
+                    />
+                    <Bar dataKey="score" name="Score %" fill="#38bdf8" radius={0} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-slate-400">
-                <BookOpen size={36} className="text-slate-300 mb-2" />
-                <p className="text-sm font-medium text-slate-600">No Assessment Records</p>
-                <p className="text-xs text-slate-400 mt-0.5 text-center">Continuous assessment marks will appear here once recorded.</p>
+              <div className="h-full flex flex-col items-center justify-center text-white/40">
+                <PixelIcon name="book" size={32} className="text-white/20 mb-2" />
+                <p className="font-mono text-xs uppercase tracking-wider text-white/70">No Assessment Records</p>
+                <p className="font-mono text-[11px] text-white/40 mt-1 text-center">Marks will appear once recorded.</p>
               </div>
             )}
           </div>
-        </BorderGlow>
+        </div>
 
         {/* Best Performing Subjects Progress bars */}
-        <BorderGlow
-          backgroundColor="#ffffff"
-          borderRadius={24}
-          glowColor="142 70 45"
-          colors={['#10b981', '#059669', '#34d399']}
-          className="p-6 shadow-sm flex flex-col min-h-0"
-        >
-          <div className="shrink-0 mb-4">
-            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-              <GraduationCap className="text-emerald-500" size={18} />
-              Best Performing Subjects
-            </h3>
-            <p className="text-[11px] text-slate-500">Your top enrolled subjects ranked by assessment averages</p>
+        <div className="border border-white/15 bg-[#09111e]/80 backdrop-blur-md rounded-none shadow-xl flex flex-col min-h-0">
+          <div className="shrink-0 border-b border-white/10 px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs font-bold text-emerald-400">04.</span>
+              <span className="font-mono text-xs uppercase tracking-wider text-white/90">BEST PERFORMING SUBJECTS</span>
+            </div>
+            <PixelIcon name="graduation" size={16} className="text-emerald-400" />
           </div>
 
-          <div className="flex-1 min-h-0 w-full overflow-y-auto space-y-4 pr-1">
+          <div className="flex-1 min-h-0 w-full overflow-y-auto space-y-3.5 p-4">
             {rankedSubjects && rankedSubjects.length > 0 ? (
               rankedSubjects.map((item, idx) => (
-                <div key={idx} className="space-y-1.5">
-                  <div className="flex justify-between items-center text-sm font-semibold">
-                    <span className="text-slate-800">{item.subject}</span>
+                <div key={idx} className="space-y-1.5 border border-white/10 bg-white/5 p-2.5">
+                  <div className="flex justify-between items-center text-xs font-mono">
+                    <span className="text-white font-bold tracking-wider">{item.subject}</span>
                     <div className="flex items-center gap-2">
-                      <span className="text-slate-500 font-mono text-xs bg-slate-100 px-2 py-0.5 rounded-md font-bold">{item.grade}</span>
-                      <span className="text-emerald-600">{item.score}%</span>
+                      <span className="text-white/60 font-mono text-[10px] border border-white/20 px-1.5 py-0.5">
+                        {item.grade}
+                      </span>
+                      <span className="text-emerald-400 font-bold">{item.score}%</span>
                     </div>
                   </div>
-                  <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="w-full h-1.5 bg-black/40 rounded-none overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all duration-500 ${item.score >= 90 ? 'bg-emerald-500' :
-                        item.score >= 80 ? 'bg-blue-500' :
-                          'bg-orange-500'
-                        }`}
+                      className={`h-full rounded-none transition-all duration-500 ${
+                        item.score >= 90 ? 'bg-emerald-400' : item.score >= 80 ? 'bg-blue-400' : 'bg-amber-400'
+                      }`}
                       style={{ width: `${item.score}%` }}
-                    ></div>
+                    />
                   </div>
                 </div>
               ))
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-slate-400">
-                <GraduationCap size={36} className="text-slate-300 mb-2" />
-                <p className="text-sm font-medium text-slate-600">No Ranked Subjects Yet</p>
-                <p className="text-xs text-slate-400 mt-0.5 text-center">Rankings will be calculated once assessment scores are released.</p>
+              <div className="h-full flex flex-col items-center justify-center text-white/40">
+                <PixelIcon name="graduation" size={32} className="text-white/20 mb-2" />
+                <p className="font-mono text-xs uppercase tracking-wider text-white/70">No Ranked Subjects</p>
+                <p className="font-mono text-[11px] text-white/40 mt-1 text-center">Rankings calculate after score release.</p>
               </div>
             )}
           </div>
-        </BorderGlow>
+        </div>
 
         {/* Mid-term vs Finals Matrix Chart */}
-        <BorderGlow
-          backgroundColor="#ffffff"
-          borderRadius={24}
-          glowColor="199 89 48"
-          colors={['#38bdf8', '#0ea5e9', '#7dd3fc']}
-          className="p-6 shadow-sm flex flex-col min-h-0"
-        >
-          <div className="shrink-0 mb-4">
-            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-              <BookOpen className="text-sky-500" size={18} />
-              Major Exams Matrix
-            </h3>
-            <p className="text-[11px] text-slate-500">Mid-term actuals vs. Final predictions</p>
+        <div className="border border-white/15 bg-[#09111e]/80 backdrop-blur-md rounded-none shadow-xl flex flex-col min-h-0">
+          <div className="shrink-0 border-b border-white/10 px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs font-bold text-sky-400">05.</span>
+              <span className="font-mono text-xs uppercase tracking-wider text-white/90">MAJOR EXAMS MATRIX</span>
+            </div>
+            <PixelIcon name="book" size={16} className="text-sky-400" />
           </div>
 
-          <div className="flex-1 min-h-0 w-full overflow-x-auto overflow-y-hidden">
+          <div className="flex-1 min-h-0 w-full overflow-x-auto overflow-y-hidden p-4">
             {examPerformance && examPerformance.length > 0 ? (
               <div
                 style={{
@@ -409,24 +400,33 @@ export default function StudentDashboardPage() {
               >
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={examPerformance} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                    <XAxis dataKey="subject" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} domain={[0, 100]} />
-                    <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                    <Bar dataKey="midterm" name="Mid-Term" fill="#94a3b8" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="finals" name="Finals" fill="#38bdf8" radius={[4, 4, 0, 0]} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.08)" vertical={false} />
+                    <XAxis dataKey="subject" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={{ stroke: 'rgba(255,255,255,0.1)' }} />
+                    <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={{ stroke: 'rgba(255,255,255,0.1)' }} domain={[0, 100]} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#09111e',
+                        borderColor: 'rgba(255, 255, 255, 0.2)',
+                        borderRadius: 0,
+                        color: '#fff',
+                        fontFamily: 'monospace',
+                        fontSize: '11px'
+                      }}
+                    />
+                    <Bar dataKey="midterm" name="Mid-Term" fill="#64748b" radius={0} />
+                    <Bar dataKey="finals" name="Finals" fill="#38bdf8" radius={0} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-slate-400">
-                <BookOpen size={36} className="text-slate-300 mb-2" />
-                <p className="text-sm font-medium text-slate-600">No Major Exam Data</p>
-                <p className="text-xs text-slate-400 mt-0.5 text-center">Mid-term and Final examination marks have not been released.</p>
+              <div className="h-full flex flex-col items-center justify-center text-white/40">
+                <PixelIcon name="chart" size={32} className="text-white/20 mb-2" />
+                <p className="font-mono text-xs uppercase tracking-wider text-white/70">No Major Exam Data</p>
+                <p className="font-mono text-[11px] text-white/40 mt-1 text-center">Mid-term and Finals marks not yet logged.</p>
               </div>
             )}
           </div>
-        </BorderGlow>
+        </div>
       </div>
     </main>
   );

@@ -53,16 +53,16 @@ export default async function RootLayout({
   } = await supabase.auth.getUser();
 
   return (
-    <html lang="en" className={cn("font-sans", geist.variable)}>
+    <html lang="en" className={cn("dark font-sans", geist.variable)}>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} flex h-screen text-slate-800 font-sans overflow-hidden relative`}
+        className={`${geistSans.variable} ${geistMono.variable} flex h-screen bg-[#101a2c] text-slate-100 font-sans overflow-hidden relative`}
       >
         <AuthProvider>
           {/* Animated Background */}
           <div className="absolute inset-0 -z-50 w-full h-full pointer-events-none">
             <Grainient
-              color1="#efe5d3"
-              color2="#ddcfe7"
+              color1="#101a2c"
+              color2="#223018"
               color3="#c8d4ff"
               timeSpeed={0.8}
               colorBalance={-0.27}

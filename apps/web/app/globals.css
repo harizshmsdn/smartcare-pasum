@@ -135,3 +135,19 @@
 .bg-\[\#FAF9F6\] {
   background-color: transparent !important;
 }
+
+/* dottxt.ai pixel & wireframe utilities */
+.pixel-crisp {
+  shape-rendering: crispEdges;
+  image-rendering: pixelated;
+}
+
+.dottxt-box {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background-color: rgba(11, 20, 36, 0.82);
+  backdrop-filter: blur(12px);
+}
+
+.dottxt-box:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+}
