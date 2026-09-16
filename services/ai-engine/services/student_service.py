@@ -28,6 +28,7 @@ def get_student_dashboard_analytics(user: dict = Depends(get_current_user), db =
                     c.day_of_week,
                     c.start_time,
                     c.end_time,
+                    c.location,
                     s.code as subject_code,
                     s.name as subject_name,
                     p.full_name as lecturer_name
@@ -47,12 +48,12 @@ def get_student_dashboard_analytics(user: dict = Depends(get_current_user), db =
             class_attendance = [
                 {
                     "subject": r["subject_code"],
-                    "attendance": round(float(r["current_attendance_rate"])) if r["current_attendance_rate"] is not None else 85
+                    "attendance": round(float(r["current_attendance_rate"])) if r["current_attendance_rate"] is not None else 0
                 }
                 for r in enrollments
             ]
 
-            # 3. Timelines & CA Performance Data per subject
+            # 3. Timelines & CA Performance Data per subject (real data only)
             subject_timelines = {}
             ca_performance_data = {}
             exam_performance = []
@@ -61,7 +62,29 @@ def get_student_dashboard_analytics(user: dict = Depends(get_current_user), db =
             for r in enrollments:
                 class_id = r["class_id"]
                 code = r["subject_code"]
-                att_rate = float(r["current_attendance_rate"]) if r["current_attendance_rate"] is not None else 85.0
+                att_rate = float(r["current_attendance_rate"]) if r["current_attendance_rate"] is not None else 0.0
+
+                # Fetch real attendance sessions for student
+                cur.execute(
+                    """
+                    SELECT 
+                        s.id,
+                        s.opened_at,
+                        CASE 
+                            WHEN LOWER(r.status::text) = 'present' THEN 100
+                            WHEN LOWER(r.status::text) = 'late' THEN 50
+                            WHEN LOWER(r.status::text) = 'excused' THEN 100
+                            WHEN r.status IS NOT NULL THEN 0
+                            ELSE NULL
+                        END as att_rate
+                    FROM public.attendance_sessions s
+                    LEFT JOIN public.attendance_records r ON r.session_id = s.id AND r.student_id = %s
+                    WHERE s.class_id = %s
+                    ORDER BY s.opened_at ASC;
+                    """,
+                    (student_id, class_id)
+                )
+                session_rows = cur.fetchall() or []
 
                 # Fetch student assessment scores for this class
                 cur.execute(
@@ -73,7 +96,7 @@ def get_student_dashboard_analytics(user: dict = Depends(get_current_user), db =
                         ss.score_achieved,
                         ROUND((ss.score_achieved / NULLIF(a.total_marks, 0)) * 100) as score_pct
                     FROM public.assessments a
-                    LEFT JOIN public.student_scores ss ON ss.assessment_id = a.id AND ss.student_id = %s
+                    JOIN public.student_scores ss ON ss.assessment_id = a.id AND ss.student_id = %s
                     WHERE a.class_id = %s
                     ORDER BY a.created_at ASC;
                     """,
@@ -88,69 +111,64 @@ def get_student_dashboard_analytics(user: dict = Depends(get_current_user), db =
                 score_cnt = 0
 
                 for row in assess_rows:
-                    pct = float(row["score_pct"]) if row["score_pct"] is not None else (75.0 if att_rate >= 80 else 55.0)
-                    ca_list.append({
-                        "name": row["title"],
-                        "score": round(pct, 1)
-                    })
-                    score_sum += pct
-                    score_cnt += 1
+                    if row["score_pct"] is not None:
+                        pct = float(row["score_pct"])
+                        ca_list.append({
+                            "name": row["title"],
+                            "score": round(pct, 1)
+                        })
+                        score_sum += pct
+                        score_cnt += 1
 
-                    if row["type"] == "Midterm":
-                        midterm_pct = pct
-                    elif row["type"] == "Final":
-                        finals_pct = pct
+                        if row.get("type") == "Midterm":
+                            midterm_pct = pct
+                        elif row.get("type") == "Final":
+                            finals_pct = pct
 
-                if not ca_list:
-                    ca_list = [
-                        {"name": "Quiz 1", "score": round(60.0 if att_rate < 80 else 85.0, 1)},
-                        {"name": "Quiz 2", "score": round(55.0 if att_rate < 80 else 90.0, 1)},
-                        {"name": "Midterm", "score": round(58.0 if att_rate < 80 else 82.0, 1)},
-                        {"name": "Assignment", "score": round(70.0 if att_rate < 80 else 88.0, 1)}
-                    ]
-
-                ca_avg = (score_sum / score_cnt) if score_cnt > 0 else (65.0 if att_rate < 80 else 85.0)
                 ca_performance_data[code] = ca_list
 
-                # 7-week trajectory curve
-                class_hash = sum(ord(char) for char in str(class_id))
-                weeks = ["W1", "W2", "W3", "W4", "W5", "W6", "W7"]
+                # Build real trajectory curve
                 timeline = []
-                att_offsets = [10, 8, 5, 2, 0, -2, 0]
-                assess_offsets = [5, 4, 2, 0, -3, -1, 0]
+                total_points = max(len(session_rows), len(assess_rows))
+                for idx in range(total_points):
+                    week_label = f"W{idx + 1}"
+                    att_val = int(session_rows[idx]["att_rate"]) if idx < len(session_rows) and session_rows[idx]["att_rate"] is not None else None
+                    assess_val = int(assess_rows[idx]["score_pct"]) if idx < len(assess_rows) and assess_rows[idx]["score_pct"] is not None else None
 
-                for idx, week_label in enumerate(weeks):
-                    w_att = max(60, min(100, round(att_rate + att_offsets[idx] + ((class_hash + idx) % 5 - 2))))
-                    w_assess = max(50, min(100, round(ca_avg + assess_offsets[idx] + ((class_hash + idx * 3) % 7 - 3))))
-                    timeline.append({
-                        "week": week_label,
-                        "attendance": w_att,
-                        "assessment": w_assess
-                    })
+                    if att_val is not None or assess_val is not None:
+                        timeline.append({
+                            "week": week_label,
+                            "attendance": att_val,
+                            "assessment": assess_val
+                        })
 
                 subject_timelines[code] = timeline
 
-                m_score = round(midterm_pct if midterm_pct is not None else (58 if att_rate < 80 else 82))
-                f_score = round(finals_pct if finals_pct is not None else (m_score + 4))
-                exam_performance.append({
-                    "subject": code,
-                    "midterm": m_score,
-                    "finals": f_score
-                })
+                if midterm_pct is not None or finals_pct is not None:
+                    exam_performance.append({
+                        "subject": code,
+                        "midterm": round(midterm_pct) if midterm_pct is not None else 0,
+                        "finals": round(finals_pct) if finals_pct is not None else 0
+                    })
 
-                weighted_score = round((att_rate * 0.6) + (ca_avg * 0.4), 1)
-                grade = "A" if weighted_score >= 85 else ("B" if weighted_score >= 75 else ("C" if weighted_score >= 65 else "D"))
-                ranked_subjects.append({
-                    "subject": code,
-                    "score": weighted_score,
-                    "grade": grade
-                })
+                if score_cnt > 0:
+                    ca_avg = score_sum / score_cnt
+                    if r["current_attendance_rate"] is not None and float(r["current_attendance_rate"]) > 0:
+                        weighted_score = round((float(r["current_attendance_rate"]) * 0.6) + (ca_avg * 0.4), 1)
+                    else:
+                        weighted_score = round(ca_avg, 1)
+                    grade = "A" if weighted_score >= 85 else ("B" if weighted_score >= 75 else ("C" if weighted_score >= 65 else "D"))
+                    ranked_subjects.append({
+                        "subject": code,
+                        "score": weighted_score,
+                        "grade": grade
+                    })
 
             ranked_subjects.sort(key=lambda x: x["score"], reverse=True)
 
             assigned_classes = []
             for r in enrollments:
-                att_rate = float(r["current_attendance_rate"]) if r["current_attendance_rate"] is not None else 85.0
+                att_rate = float(r["current_attendance_rate"]) if r["current_attendance_rate"] is not None else 0.0
                 risk_status = "Critical" if att_rate < 80 else ("Watch" if att_rate < 90 else "Good")
                 
                 # We reuse the ca_performance_data for the latest score
@@ -159,19 +177,35 @@ def get_student_dashboard_analytics(user: dict = Depends(get_current_user), db =
                 if ca_list:
                     latest_score = ca_list[-1]["score"]
                 
+                def fmt_time_str(t_str):
+                    if not t_str: return ""
+                    parts = str(t_str).split(":")
+                    hr = int(parts[0])
+                    mn = parts[1]
+                    ampm = "PM" if hr >= 12 else "AM"
+                    d_hr = 12 if hr % 12 == 0 else hr % 12
+                    return f"{d_hr}:{mn} {ampm}"
+
+                t_range = f"{fmt_time_str(r.get('start_time'))} - {fmt_time_str(r.get('end_time'))}" if r.get("start_time") else "10:00 AM - 12:00 PM"
+
                 assigned_classes.append({
-                    "id": r["class_id"],
+                    "id": str(r["class_id"]),
+                    "title": r["subject_name"],
                     "name": r["subject_name"],
+                    "group": r["group_code"],
                     "code": r["group_code"],
-                    "lecturer": r["lecturer_name"] or "Unknown",
+                    "subject": r["subject_code"],
+                    "lecturer": r.get("lecturer_name") or "Unknown",
+                    "location": r.get("location") or "PASUM Campus",
                     "status": "Enrolled",
+                    "time": t_range,
                     "attendance": att_rate,
                     "latestScore": latest_score,
                     "riskStatus": risk_status,
-                    "type": r["type"] or "Lecture",
-                    "dayOfWeek": r["day_of_week"] or "Monday",
-                    "startTime": str(r["start_time"]) if r["start_time"] else "10:00:00",
-                    "endTime": str(r["end_time"]) if r["end_time"] else "12:00:00"
+                    "type": r.get("type") or "Lecture",
+                    "dayOfWeek": r.get("day_of_week") or "Monday",
+                    "startTime": str(r["start_time"]) if r.get("start_time") else "10:00:00",
+                    "endTime": str(r["end_time"]) if r.get("end_time") else "12:00:00"
                 })
 
             return {
@@ -217,7 +251,7 @@ def get_student_class_details(class_id: str, user: dict = Depends(get_current_us
                     p.office_location as lecturer_office, p.affiliation as lecturer_affiliation
                 FROM public.classes c
                 JOIN public.subjects s ON c.subject_id = s.id
-                JOIN public.profiles p ON c.lecturer_id = p.id
+                LEFT JOIN public.profiles p ON c.lecturer_id = p.id
                 WHERE c.id = %s LIMIT 1;
                 """,
                 (class_id,)
@@ -244,8 +278,8 @@ def get_student_class_details(class_id: str, user: dict = Depends(get_current_us
                 d_hr = 12 if hr % 12 == 0 else hr % 12
                 return f"{d_hr}:{mn} {ampm}"
 
-            time_range = f"{fmt_time(class_row['start_time'])} - {fmt_time(class_row['end_time'])}" if class_row["start_time"] else "10:00 AM - 12:00 PM"
-            schedule_text = f"{class_row['day_of_week'] or 'Wednesday'} • {time_range}"
+            time_range = f"{fmt_time(class_row.get('start_time'))} - {fmt_time(class_row.get('end_time'))}" if class_row.get("start_time") else "10:00 AM - 12:00 PM"
+            schedule_text = f"{class_row.get('day_of_week') or 'Wednesday'} • {time_range}"
 
             cur.execute(
                 """
@@ -269,17 +303,17 @@ def get_student_class_details(class_id: str, user: dict = Depends(get_current_us
 
             attendance_log = []
             for s in sess_rows:
-                dt_str = s["opened_at"].strftime("%d %B %Y") if s["opened_at"] else "N/A"
+                dt_str = s["opened_at"].strftime("%d %B %Y") if s.get("opened_at") else "N/A"
                 methods = []
-                if s["face_verified"]: methods.append("Face ID")
-                if s["location_verified"]: methods.append("GPS")
-                if s["manual_override"]: methods.append("Manual Override")
+                if s.get("face_verified"): methods.append("Face ID")
+                if s.get("location_verified"): methods.append("GPS")
+                if s.get("manual_override"): methods.append("Manual Override")
 
                 attendance_log.append({
                     "id": str(s["session_id"]),
                     "date": dt_str,
-                    "pin": s["session_pin"] or "PIN-OK",
-                    "status": s["status"] or "Absent",
+                    "pin": s.get("session_pin") or "PIN-OK",
+                    "status": s.get("status") or "Absent",
                     "verifiedMethods": methods
                 })
 
@@ -305,17 +339,18 @@ def get_student_class_details(class_id: str, user: dict = Depends(get_current_us
             score_sum = 0
             cnt = 0
             for a in assess_rows:
-                score_val = float(a["score_achieved"])
+                score_val = float(a.get("score_achieved") or 0)
+                tot_marks = int(a["total_marks"]) if a.get("total_marks") is not None else 100
                 assessments.append({
                     "id": str(a["id"]),
-                    "title": a["title"],
-                    "type": a["type"],
-                    "weightage": float(a["weightage"]),
+                    "title": a.get("title") or "Assessment",
+                    "type": a.get("type") or "Continuous",
+                    "weightage": float(a.get("weightage") or 0),
                     "score": score_val,
-                    "totalMarks": int(a["total_marks"])
+                    "totalMarks": tot_marks
                 })
-                if a["total_marks"] > 0:
-                    pct = (score_val / float(a["total_marks"])) * 100
+                if tot_marks > 0:
+                    pct = (score_val / float(tot_marks)) * 100
                     score_sum += pct
                     cnt += 1
 
@@ -323,12 +358,12 @@ def get_student_class_details(class_id: str, user: dict = Depends(get_current_us
             performance_numeric = round((att_rate * 0.6) + (ca_avg * 0.4))
 
             lecturer_info = {
-                "full_name": class_row["lecturer_name"],
-                "email": class_row["lecturer_email"],
-                "phone_number": class_row["lecturer_phone"],
-                "office_location": class_row["lecturer_office"],
-                "affiliation": class_row["lecturer_affiliation"]
-            }
+                "full_name": class_row.get("lecturer_name"),
+                "email": class_row.get("lecturer_email") or "N/A",
+                "phone_number": class_row.get("lecturer_phone") or "N/A",
+                "office_location": class_row.get("lecturer_office") or "Lecturer Suite, PASUM",
+                "affiliation": class_row.get("lecturer_affiliation") or "Centre for Foundation Studies"
+            } if class_row.get("lecturer_name") else None
 
             return {
                 "lecturerInfo": lecturer_info,

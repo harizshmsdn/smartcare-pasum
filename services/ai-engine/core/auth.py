@@ -65,15 +65,7 @@ def check_user_auth(cur, user_id: str, required_role: Optional[str] = None) -> d
     # Verifies user profile exists and optionally validates role
     cur.execute(
         """
-        SELECT 
-            id, 
-            role, 
-            full_name, 
-            email, 
-            institutional_id, 
-            phone_number, 
-            emergency_contact, 
-            COALESCE(total_merit_score, 0) as total_merit_score 
+        SELECT *
         FROM public.profiles 
         WHERE id = %s LIMIT 1;
         """,

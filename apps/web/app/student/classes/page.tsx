@@ -65,19 +65,63 @@ export default function StudentClassesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Fetch classes list (reuses dashboard data cache)
-  const { data: dashboardData, isLoading: isLoadingClasses } = useSWR('studentDashboard', async () => {
-    return await studentService.getDashboard();
-  });
+  // Fetch classes list with fallback
+  const fetchDashboard = async () => {
+    try {
+      return await studentService.getDashboard();
+    } catch (err) {
+      console.warn("FastAPI student dashboard error, falling back to direct Supabase:", err);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      const { data: enrollments } = await supabase
+        .from('enrollments')
+        .select(`
+          class_id,
+          current_attendance_rate,
+          classes (
+            group_code,
+            type,
+            day_of_week,
+            start_time,
+            end_time,
+            location,
+            subjects (code, name),
+            profiles:lecturer_id (full_name)
+          )
+        `)
+        .eq('student_id', user.id);
+
+      const assignedClasses = (enrollments || []).map((e: any) => {
+        const subName = e.classes?.subjects?.name || "Unknown Class";
+        const grp = e.classes?.group_code || "Group A";
+        return {
+          id: e.class_id,
+          title: subName,
+          name: subName,
+          group: grp,
+          code: grp
+        };
+      });
+
+      return { assigned_classes: assignedClasses };
+    }
+  };
+
+  const { data: dashboardData, isLoading: isLoadingClasses } = useSWR('studentDashboard', fetchDashboard);
+
   useEffect(() => {
     if (!dashboardData) return;
     const assigned = dashboardData.assigned_classes || [];
 
     if (assigned.length > 0) {
-      const formatted = assigned.map((c: any) => ({
-        id: c.id,
-        name: `${c.title} (${c.group})`
-      }));
+      const formatted = assigned.map((c: any) => {
+        const title = c.title || c.name || "Class";
+        const group = c.group || c.code || "";
+        return {
+          id: c.id,
+          name: group ? `${title} (${group})` : title
+        };
+      });
       setClassesList(formatted);
 
       const urlParams = new URLSearchParams(window.location.search);
@@ -91,12 +135,129 @@ export default function StudentClassesPage() {
     }
   }, [dashboardData]);
 
-  // Load detailed information for selected class using SWR
+  // Load detailed information for selected class with fallback
+  const fetchClassDetails = async (classId: string) => {
+    try {
+      return await studentService.getClassDetails(classId);
+    } catch (err) {
+      console.warn("FastAPI getClassDetails error, falling back to direct Supabase:", err);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      const { data: classData } = await supabase
+        .from('classes')
+        .select(`
+          id, group_code, type, semester, day_of_week, start_time, end_time, location,
+          subjects (code, name),
+          profiles:lecturer_id (full_name, email, phone_number, office_location, affiliation)
+        `)
+        .eq('id', classId)
+        .single();
+
+      const { data: enrollData } = await supabase
+        .from('enrollments')
+        .select('current_attendance_rate')
+        .eq('class_id', classId)
+        .eq('student_id', user.id)
+        .maybeSingle();
+
+      const attRate = enrollData?.current_attendance_rate ? Number(enrollData.current_attendance_rate) : 100;
+
+      const fmtTime = (tStr: string | null) => {
+        if (!tStr) return "";
+        const parts = tStr.split(":");
+        const hr = parseInt(parts[0] || "0", 10);
+        const ampm = hr >= 12 ? "PM" : "AM";
+        const dHr = hr % 12 === 0 ? 12 : hr % 12;
+        return `${dHr}:${parts[1] || "00"} ${ampm}`;
+      };
+
+      const timeRange = classData?.start_time
+        ? `${fmtTime(classData.start_time)} - ${fmtTime(classData.end_time)}`
+        : "10:00 AM - 12:00 PM";
+      const scheduleText = `${classData?.day_of_week || "Wednesday"} • ${timeRange}`;
+
+      const { data: sessions } = await supabase
+        .from('attendance_sessions')
+        .select(`
+          id, opened_at, session_pin,
+          attendance_records (status, timestamp, face_verified, location_verified, manual_override, student_id)
+        `)
+        .eq('class_id', classId)
+        .order('opened_at', { ascending: false });
+
+      const attendanceLog = (sessions || []).map((s: any) => {
+        const record = (s.attendance_records || []).find((r: any) => r.student_id === user.id);
+        const dateStr = s.opened_at ? new Date(s.opened_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : "N/A";
+        const methods: string[] = [];
+        if (record?.face_verified) methods.push("Face ID");
+        if (record?.location_verified) methods.push("GPS");
+        if (record?.manual_override) methods.push("Manual Override");
+
+        return {
+          id: s.id,
+          date: dateStr,
+          pin: s.session_pin || "PIN-OK",
+          status: record?.status || "Absent",
+          verifiedMethods: methods
+        };
+      });
+
+      const { data: assessList } = await supabase
+        .from('assessments')
+        .select(`
+          id, title, type, weightage, total_marks,
+          student_scores (score_achieved, student_id)
+        `)
+        .eq('class_id', classId)
+        .order('created_at', { ascending: true });
+
+      let scoreSum = 0;
+      let scoreCnt = 0;
+      const assessments = (assessList || []).map((a: any) => {
+        const userScore = (a.student_scores || []).find((sc: any) => sc.student_id === user.id);
+        const scoreAchieved = userScore ? Number(userScore.score_achieved) : 0;
+        const totalMarks = Number(a.total_marks) || 100;
+        if (totalMarks > 0) {
+          scoreSum += (scoreAchieved / totalMarks) * 100;
+          scoreCnt++;
+        }
+        return {
+          id: a.id,
+          title: a.title,
+          type: a.type,
+          weightage: Number(a.weightage) || 0,
+          score: scoreAchieved,
+          totalMarks: totalMarks
+        };
+      });
+
+      const caAvg = scoreCnt > 0 ? (scoreSum / scoreCnt) : 85;
+      const performanceNumeric = Math.round((attRate * 0.6) + (caAvg * 0.4));
+
+      const lecturerProfile = classData?.profiles as any;
+      const lecturerInfo = lecturerProfile ? {
+        full_name: lecturerProfile.full_name,
+        email: lecturerProfile.email || "N/A",
+        phone_number: lecturerProfile.phone_number || "N/A",
+        office_location: lecturerProfile.office_location || "Lecturer Suite, PASUM",
+        affiliation: lecturerProfile.affiliation || "Centre for Foundation Studies"
+      } : null;
+
+      return {
+        lecturerInfo,
+        classScheduleText: scheduleText,
+        attendanceRate: attRate,
+        performanceNumeric,
+        attendanceLog,
+        assessments
+      };
+    }
+  };
+
   const { data: classDetails, isLoading: isLoadingDetails, mutate: mutateDetails } = useSWR(
     selectedClassId ? `studentClassDetails_${selectedClassId}` : null,
-    async () => {
-      return await studentService.getClassDetails(selectedClassId);
-    }
+    () => fetchClassDetails(selectedClassId)
   );
 
   useEffect(() => {

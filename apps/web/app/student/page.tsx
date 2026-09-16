@@ -90,26 +90,38 @@ export default function StudentHomePage() {
             day_of_week,
             start_time,
             end_time,
+            location,
             subjects (code, name),
             profiles:lecturer_id (full_name)
           )
         `)
         .eq('student_id', user.id);
 
-      const assignedClasses = (enrollments || []).map((e: any) => ({
-        id: e.class_id,
-        name: e.classes?.subjects?.name || "Unknown Class",
-        code: e.classes?.group_code || "Group A",
-        subject: e.classes?.subjects?.code || "SUBJ",
-        lecturer: e.classes?.profiles?.full_name || "Unknown",
-        attendance: e.current_attendance_rate ? Number(e.current_attendance_rate) : 85,
-        latestScore: 0,
-        riskStatus: "Good",
-        type: e.classes?.type || "Lecture",
-        dayOfWeek: e.classes?.day_of_week || "Monday",
-        startTime: e.classes?.start_time || "10:00:00",
-        endTime: e.classes?.end_time || "12:00:00"
-      }));
+      const assignedClasses = (enrollments || []).map((e: any) => {
+        const cls = e.classes;
+        const subName = cls?.subjects?.name || "Unknown Class";
+        const grp = cls?.group_code || "Group A";
+        const sTime = cls?.start_time ? cls.start_time.slice(0, 5) : "10:00";
+        const eTime = cls?.end_time ? cls.end_time.slice(0, 5) : "12:00";
+        return {
+          id: e.class_id,
+          name: subName,
+          title: subName,
+          code: grp,
+          group: grp,
+          subject: cls?.subjects?.code || "SUBJ",
+          location: cls?.location || "Lecture Hall",
+          lecturer: cls?.profiles?.full_name || "Unknown",
+          attendance: e.current_attendance_rate ? Number(e.current_attendance_rate) : 85,
+          latestScore: 0,
+          riskStatus: "Good",
+          type: cls?.type || "Lecture",
+          time: `${sTime} - ${eTime}`,
+          dayOfWeek: cls?.day_of_week || "Monday",
+          startTime: cls?.start_time || "10:00:00",
+          endTime: cls?.end_time || "12:00:00"
+        };
+      });
 
       return {
         profile,
@@ -131,7 +143,30 @@ export default function StudentHomePage() {
       setStudentName(dashboardData.profile.full_name);
     }
 
-    const processedClasses: any[] = dashboardData.assigned_classes || [];
+    const processedClasses: any[] = (dashboardData.assigned_classes || []).map((c: any) => {
+      const title = c.title || c.name || "Unknown Class";
+      const group = c.group || c.code || "Group A";
+      const sTime = c.startTime ? c.startTime.slice(0, 5) : "10:00";
+      const eTime = c.endTime ? c.endTime.slice(0, 5) : "12:00";
+      return {
+        ...c,
+        id: c.id,
+        title,
+        name: title,
+        group,
+        code: group,
+        location: c.location || "PASUM Campus",
+        time: c.time || `${sTime} - ${eTime}`,
+        status: c.status || "Enrolled",
+        attendance: c.attendance !== undefined ? Number(c.attendance) : 85,
+        latestScore: c.latestScore !== undefined ? Number(c.latestScore) : 0,
+        riskStatus: c.riskStatus || "Good",
+        type: c.type || "Lecture",
+        dayOfWeek: c.dayOfWeek || "Monday",
+        startTime: c.startTime || "10:00:00",
+        endTime: c.endTime || "12:00:00"
+      };
+    });
 
     const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     const todayDayOfWeek = days[new Date().getDay()];

@@ -133,50 +133,14 @@ export default function StudentDashboardPage() {
 
           enrollments.forEach((e: any) => {
             const code = e.classes?.subjects?.code || "Class";
-            const currentRate = Math.round(Number(e.current_attendance_rate || 85));
-
-            timelines[code] = [
-              { week: "W1", attendance: 100, assessment: 80 },
-              { week: "W2", attendance: 100, assessment: 82 },
-              { week: "W3", attendance: 98, assessment: 85 },
-              { week: "W4", attendance: Math.min(100, currentRate + 10), assessment: 83 },
-              { week: "W5", attendance: Math.min(100, currentRate + 8), assessment: 80 },
-              { week: "W6", attendance: Math.min(100, currentRate + 4), assessment: 84 },
-              { week: "W7", attendance: currentRate, assessment: currentRate < 80 ? 55 : 88 },
-            ];
-
-            caData[code] = [
-              { name: "Quiz 1", score: currentRate < 80 ? 60 : 85 },
-              { name: "Quiz 2", score: currentRate < 80 ? 55 : 90 },
-              { name: "Midterm", score: currentRate < 80 ? 58 : 82 },
-              { name: "Assignment", score: currentRate < 80 ? 70 : 88 },
-            ];
+            timelines[code] = [];
+            caData[code] = [];
           });
 
           setSubjectTimelines(timelines);
           setCaPerformanceData(caData);
-
-          const exams = enrollments.map((e: any) => {
-            const code = e.classes?.subjects?.code || "Class";
-            const attendance = Math.round(Number(e.current_attendance_rate || 85));
-            const midterm = attendance < 80 ? 58 : attendance < 90 ? 72 : 82;
-            return {
-              subject: code,
-              midterm,
-              finals: midterm + 4
-            };
-          });
-          setExamPerformance(exams);
-
-          const ranked = attendanceList.map((item) => {
-            const rawScore = item.attendance < 80 ? 62 : item.attendance < 90 ? 84 : 91;
-            return {
-              subject: item.subject,
-              score: rawScore,
-              grade: rawScore >= 90 ? "A" : rawScore >= 80 ? "B" : "C+"
-            };
-          }).sort((a, b) => b.score - a.score);
-          setRankedSubjects(ranked);
+          setExamPerformance([]);
+          setRankedSubjects([]);
         }
       } catch (err) {
         console.error("Error loading student dashboard analytics:", err);
@@ -241,21 +205,33 @@ export default function StudentDashboardPage() {
             )}
           </div>
 
-          <div className="flex-1 min-h-0 w-full">
-            {activeSubject && subjectTimelines[activeSubject] ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={subjectTimelines[activeSubject]} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                  <XAxis dataKey="week" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                  <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
-                  <Line type="monotone" dataKey="attendance" name="My Attendance %" stroke="#1e3a8a" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                  <Line type="monotone" dataKey="assessment" name="My Assessment %" stroke="#ef4444" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                </LineChart>
-              </ResponsiveContainer>
+          <div className="flex-1 min-h-0 w-full overflow-x-auto overflow-y-hidden">
+            {activeSubject && subjectTimelines[activeSubject] && subjectTimelines[activeSubject].length > 0 ? (
+              <div
+                style={{
+                  width: subjectTimelines[activeSubject].length > 7 ? `${subjectTimelines[activeSubject].length * 85}px` : "100%",
+                  minWidth: "100%",
+                  height: "100%"
+                }}
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={subjectTimelines[activeSubject]} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                    <XAxis dataKey="week" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} />
+                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                    <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
+                    <Line connectNulls type="monotone" dataKey="attendance" name="My Attendance %" stroke="#1e3a8a" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                    <Line connectNulls type="monotone" dataKey="assessment" name="My Assessment %" stroke="#ef4444" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             ) : (
-              <div className="flex items-center justify-center h-full text-slate-400">No trajectory data available.</div>
+              <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                <TrendingUp size={36} className="text-slate-300 mb-2" />
+                <p className="text-sm font-medium text-slate-600">No Trajectory Data Available</p>
+                <p className="text-xs text-slate-400 mt-0.5 text-center">Trends will populate once attendance and assessment records are logged.</p>
+              </div>
             )}
           </div>
         </BorderGlow>
@@ -329,19 +305,31 @@ export default function StudentDashboardPage() {
             )}
           </div>
 
-          <div className="flex-1 min-h-0 w-full">
-            {caActiveSubject && caPerformanceData[caActiveSubject] ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={caPerformanceData[caActiveSubject]} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                  <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} domain={[0, 100]} />
-                  <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                  <Bar dataKey="score" name="Score %" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+          <div className="flex-1 min-h-0 w-full overflow-x-auto overflow-y-hidden">
+            {caActiveSubject && caPerformanceData[caActiveSubject] && caPerformanceData[caActiveSubject].length > 0 ? (
+              <div
+                style={{
+                  width: caPerformanceData[caActiveSubject].length > 4 ? `${caPerformanceData[caActiveSubject].length * 80}px` : "100%",
+                  minWidth: "100%",
+                  height: "100%"
+                }}
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={caPerformanceData[caActiveSubject]} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                    <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} domain={[0, 100]} />
+                    <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                    <Bar dataKey="score" name="Score %" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             ) : (
-              <div className="flex items-center justify-center h-full text-slate-400">No data.</div>
+              <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                <BookOpen size={36} className="text-slate-300 mb-2" />
+                <p className="text-sm font-medium text-slate-600">No Assessment Records</p>
+                <p className="text-xs text-slate-400 mt-0.5 text-center">Continuous assessment marks will appear here once recorded.</p>
+              </div>
             )}
           </div>
         </BorderGlow>
@@ -363,26 +351,34 @@ export default function StudentDashboardPage() {
           </div>
 
           <div className="flex-1 min-h-0 w-full overflow-y-auto space-y-4 pr-1">
-            {rankedSubjects.map((item, idx) => (
-              <div key={idx} className="space-y-1.5">
-                <div className="flex justify-between items-center text-sm font-semibold">
-                  <span className="text-slate-800">{item.subject}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-500 font-mono text-xs bg-slate-100 px-2 py-0.5 rounded-md font-bold">{item.grade}</span>
-                    <span className="text-emerald-600">{item.score}%</span>
+            {rankedSubjects && rankedSubjects.length > 0 ? (
+              rankedSubjects.map((item, idx) => (
+                <div key={idx} className="space-y-1.5">
+                  <div className="flex justify-between items-center text-sm font-semibold">
+                    <span className="text-slate-800">{item.subject}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-500 font-mono text-xs bg-slate-100 px-2 py-0.5 rounded-md font-bold">{item.grade}</span>
+                      <span className="text-emerald-600">{item.score}%</span>
+                    </div>
+                  </div>
+                  <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${item.score >= 90 ? 'bg-emerald-500' :
+                        item.score >= 80 ? 'bg-blue-500' :
+                          'bg-orange-500'
+                        }`}
+                      style={{ width: `${item.score}%` }}
+                    ></div>
                   </div>
                 </div>
-                <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${item.score >= 90 ? 'bg-emerald-500' :
-                      item.score >= 80 ? 'bg-blue-500' :
-                        'bg-orange-500'
-                      }`}
-                    style={{ width: `${item.score}%` }}
-                  ></div>
-                </div>
+              ))
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                <GraduationCap size={36} className="text-slate-300 mb-2" />
+                <p className="text-sm font-medium text-slate-600">No Ranked Subjects Yet</p>
+                <p className="text-xs text-slate-400 mt-0.5 text-center">Rankings will be calculated once assessment scores are released.</p>
               </div>
-            ))}
+            )}
           </div>
         </BorderGlow>
 
@@ -402,17 +398,33 @@ export default function StudentDashboardPage() {
             <p className="text-[11px] text-slate-500">Mid-term actuals vs. Final predictions</p>
           </div>
 
-          <div className="flex-1 min-h-0 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={examPerformance} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                <XAxis dataKey="subject" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} domain={[0, 100]} />
-                <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                <Bar dataKey="midterm" name="Mid-Term" fill="#94a3b8" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="finals" name="Finals" fill="#38bdf8" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="flex-1 min-h-0 w-full overflow-x-auto overflow-y-hidden">
+            {examPerformance && examPerformance.length > 0 ? (
+              <div
+                style={{
+                  width: examPerformance.length > 3 ? `${examPerformance.length * 90}px` : "100%",
+                  minWidth: "100%",
+                  height: "100%"
+                }}
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={examPerformance} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                    <XAxis dataKey="subject" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} domain={[0, 100]} />
+                    <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                    <Bar dataKey="midterm" name="Mid-Term" fill="#94a3b8" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="finals" name="Finals" fill="#38bdf8" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                <BookOpen size={36} className="text-slate-300 mb-2" />
+                <p className="text-sm font-medium text-slate-600">No Major Exam Data</p>
+                <p className="text-xs text-slate-400 mt-0.5 text-center">Mid-term and Final examination marks have not been released.</p>
+              </div>
+            )}
           </div>
         </BorderGlow>
       </div>
