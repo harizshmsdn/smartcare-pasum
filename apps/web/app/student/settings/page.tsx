@@ -25,16 +25,25 @@ export default function StudentSettingsPage() {
           setStudentId(user.id);
         }
 
-        const data = await studentService.getSettings();
-        
-        if (data.settings) {
-          setLanguage(data.settings.language || "en");
-          setNotificationsEnabled(data.settings.notifications_enabled !== false);
-        }
-
-        if (data.profile) {
-          setFaceRegistered(!!data.profile.face_hash);
-          setDeviceRegistered(!!data.profile.device_id);
+        try {
+          const data = await studentService.getSettings();
+          if (data.settings) {
+            setLanguage(data.settings.language || "en");
+            setNotificationsEnabled(data.settings.notifications_enabled !== false);
+          }
+          if (data.profile) {
+            setFaceRegistered(!!data.profile.face_hash);
+            setDeviceRegistered(!!data.profile.device_id);
+          }
+        } catch (apiErr) {
+          console.warn("API settings fetch error, falling back to Supabase profile:", apiErr);
+          if (user) {
+            const { data: prof } = await supabase.from('profiles').select('face_hash, device_id').eq('id', user.id).single();
+            if (prof) {
+              setFaceRegistered(!!prof.face_hash);
+              setDeviceRegistered(!!prof.device_id);
+            }
+          }
         }
       } catch (err) {
         console.error("Error loading student settings:", err);
@@ -47,10 +56,15 @@ export default function StudentSettingsPage() {
 
   const handleSave = async () => {
     try {
-      await studentService.updateSettings({
-        language,
-        notifications_enabled: notificationsEnabled
-      });
+      try {
+        await studentService.updateSettings({
+          language,
+          notifications_enabled: notificationsEnabled
+        });
+      } catch (err) {
+        console.warn("API updateSettings error, saving to local state fallback:", err);
+        localStorage.setItem("student_settings", JSON.stringify({ language, notifications_enabled: notificationsEnabled }));
+      }
 
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);

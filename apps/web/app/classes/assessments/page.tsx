@@ -93,9 +93,64 @@ export default function ClassAssessmentsPage() {
   const fetchClassAssessmentsData = async (classId: string) => {
     setIsLoading(true);
     try {
-      const data = await api.get(`/api/classes/${classId}/assessments`);
-      setAssessments(data.assessments || []);
-      setRosterScores(data.roster || []);
+      try {
+        const data = await api.get(`/api/classes/${classId}/assessments`);
+        setAssessments(data.assessments || []);
+        setRosterScores(data.roster || []);
+        setIsLoading(false);
+        return;
+      } catch (apiErr) {
+        console.warn("FastAPI assessments error, falling back to direct Supabase query:", apiErr);
+      }
+
+      // Direct Supabase query fallback for assessments & roster
+      const [
+        { data: dbAssessments },
+        { data: dbEnrollments }
+      ] = await Promise.all([
+        supabase.from('assessments').select('*').eq('class_id', classId).order('created_at', { ascending: true }),
+        supabase.from('enrollments').select('id, student_id, current_attendance_rate, profiles:student_id (id, full_name, email, institutional_id)').eq('class_id', classId)
+      ]);
+
+      const formattedAssessments: AssessmentItem[] = (dbAssessments || []).map((a: any) => ({
+        id: a.id,
+        title: a.title,
+        type: a.type || 'Continuous',
+        weightage: Number(a.weightage || 10),
+        total_marks: Number(a.total_marks || 100),
+        created_at: a.created_at || new Date().toISOString()
+      }));
+      setAssessments(formattedAssessments);
+
+      const assessmentIds = formattedAssessments.map((a: any) => a.id);
+      let studentScoresMap: Record<string, Record<string, number>> = {};
+
+      if (assessmentIds.length > 0) {
+        const { data: scores } = await supabase
+          .from('student_scores')
+          .select('student_id, assessment_id, score_achieved')
+          .in('assessment_id', assessmentIds);
+
+        (scores || []).forEach((s: any) => {
+          if (!studentScoresMap[s.student_id]) studentScoresMap[s.student_id] = {};
+          const studentEntry = studentScoresMap[s.student_id];
+          if (studentEntry) {
+            studentEntry[s.assessment_id] = Number(s.score_achieved);
+          }
+        });
+      }
+
+      const formattedRoster: StudentRosterScore[] = (dbEnrollments || []).map((e: any) => {
+        const prof = e.profiles;
+        const studentId = prof?.id || e.student_id;
+        return {
+          student_id: studentId,
+          student_name: prof?.full_name || 'Student',
+          matric_id: prof?.institutional_id || 'ID',
+          scores: studentScoresMap[studentId] || {}
+        };
+      });
+      setRosterScores(formattedRoster);
     } catch (err: any) {
       console.error("Failed to fetch class assessments:", err);
     } finally {

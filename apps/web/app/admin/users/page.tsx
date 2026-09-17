@@ -18,12 +18,14 @@ import {
 import { adminService, UserProfile } from "../../../lib/services/admin";
 import EmptyState from "../../../components/EmptyState";
 import useSWR from "swr";
+import { createClient } from "../../../utils/supabase/client";
 
 /**
  * Admin User Management Page.
  * Handles student and faculty directory management, creation, updates, and deletion.
  */
 export default function AdminUsersPage() {
+  const supabase = createClient();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserProfile[]>([]);
   const [activeTab, setActiveTab] = useState<"student" | "lecturer">("student");
@@ -50,12 +52,27 @@ export default function AdminUsersPage() {
   const itemsPerPage = 12;
 
   /**
-   * Fetches user accounts using SWR.
+   * Fetches user accounts using SWR with direct Supabase fallback.
    */
-  const { data: usersData, isLoading: isSwrLoading, mutate } = useSWR('adminUsersList', async () => {
-    const data = await adminService.getUsers();
-    return data.users || [];
+  const { data: usersData, error: swrUsersError, isLoading: isSwrLoading, mutate } = useSWR('adminUsersList', async () => {
+    try {
+      const data = await adminService.getUsers();
+      return data.users || [];
+    } catch (apiErr) {
+      console.warn("FastAPI getUsers error, falling back to direct Supabase query:", apiErr);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('full_name', { ascending: true });
+      return profiles || [];
+    }
   });
+
+  useEffect(() => {
+    if (swrUsersError) {
+      setIsLoading(false);
+    }
+  }, [swrUsersError]);
 
   useEffect(() => {
     if (usersData) {

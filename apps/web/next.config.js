@@ -33,7 +33,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com data:",
               "img-src 'self' data: blob: https:",
-              "connect-src 'self' http://localhost:8000 http://127.0.0.1:8000 https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com",
+              "connect-src 'self' https: wss: http://localhost:8000 http://127.0.0.1:8000 https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com",
               "frame-src 'self' https://challenges.cloudflare.com",
               "object-src 'none'",
               "base-uri 'self'",

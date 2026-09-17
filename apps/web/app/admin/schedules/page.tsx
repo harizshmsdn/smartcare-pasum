@@ -67,29 +67,75 @@ export default function AdminSchedulesPage() {
       // 1. Fetch enrollments
       try {
         const d = await api.get("/api/admin/enrollments");
-        setEnrollments(d.enrollments);
+        if (d?.enrollments) setEnrollments(d.enrollments);
       } catch (e) {
-        console.error(e);
+        console.warn("FastAPI admin enrollments error, querying Supabase directly:", e);
+        const { data: dbEnrollments } = await supabase
+          .from('enrollments')
+          .select(`
+            id,
+            class_id,
+            student_id,
+            created_at,
+            classes (
+              id,
+              group_code,
+              subjects (code, name)
+            ),
+            profiles:student_id (
+              full_name,
+              institutional_id
+            )
+          `)
+          .order('created_at', { ascending: false });
+        if (dbEnrollments) setEnrollments(dbEnrollments as any);
       }
 
       // 2. Fetch classes
       try {
         const d = await api.get("/api/admin/classes");
-        setClasses(d.classes);
-        if (d.classes.length > 0 && !selectedClassId) {
-          setSelectedClassId(d.classes[0].id);
+        if (d?.classes) {
+          setClasses(d.classes);
+          if (d.classes.length > 0 && !selectedClassId) {
+            setSelectedClassId(d.classes[0].id);
+          }
         }
       } catch (e) {
-        console.error(e);
+        console.warn("FastAPI admin classes error, querying Supabase directly:", e);
+        const { data: dbClasses } = await supabase
+          .from('classes')
+          .select(`
+            id,
+            group_code,
+            type,
+            day_of_week,
+            start_time,
+            end_time,
+            location,
+            subjects (code, name)
+          `)
+          .order('group_code', { ascending: true });
+        if (dbClasses) {
+          setClasses(dbClasses as any);
+          if (dbClasses.length > 0 && dbClasses[0] && !selectedClassId) {
+            setSelectedClassId(dbClasses[0].id);
+          }
+        }
       }
 
       // 3. Fetch students
       try {
         const d = await api.get("/api/admin/users");
-        const studs = d.users.filter((u: any) => u.role === "student");
+        const studs = (d?.users || []).filter((u: any) => u.role === "student");
         setStudents(studs);
       } catch (e) {
-        console.error(e);
+        console.warn("FastAPI admin users error, querying Supabase directly:", e);
+        const { data: dbStudents } = await supabase
+          .from('profiles')
+          .select('id, full_name, institutional_id, email, affiliation')
+          .eq('role', 'student')
+          .order('full_name', { ascending: true });
+        if (dbStudents) setStudents(dbStudents as any);
       }
 
     } catch (err) {

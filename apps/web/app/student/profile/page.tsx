@@ -55,11 +55,27 @@ export default function StudentProfilePage() {
 
       if (assignedClasses.length > 0) {
         const formatted = assignedClasses.map((c: any) => ({
-          code: c.subject || "PHY101",
+          code: c.subject || c.title || "PHY101",
           name: c.name || c.title || "Unknown Class",
           group: c.code || c.group || "Group A"
         }));
         setEnrolledCourses(formatted);
+      } else {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: enrollments } = await supabase
+            .from('enrollments')
+            .select('classes(group_code, subjects(code, name))')
+            .eq('student_id', user.id);
+
+          if (enrollments) {
+            setEnrolledCourses(enrollments.map((e: any) => ({
+              code: e.classes?.subjects?.code || "SUBJ",
+              name: e.classes?.subjects?.name || "Course",
+              group: e.classes?.group_code || "Group A"
+            })));
+          }
+        }
       }
     } catch (err) {
       console.error("Error fetching student profile:", err);

@@ -43,9 +43,49 @@ export default function AlertsPage() {
           timestamp: a.timestamp || "Recently",
           isRead: Boolean(a.isRead !== undefined ? a.isRead : a.is_read)
         })));
+        return;
       }
     } catch (err) {
-      console.error("Failed to fetch alerts:", err);
+      console.warn("API alert fetch error, falling back to direct Supabase:", err);
+    }
+
+    // Direct Supabase query fallback
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: alertRows } = await supabase
+          .from('alerts')
+          .select('id, type, priority, message, is_read, created_at, student_id, profiles:student_id (id, institutional_id, full_name), classes:class_id (subjects:subject_id (name))')
+          .or(`lecturer_id.eq.${user.id},student_id.eq.${user.id}`)
+          .order('created_at', { ascending: false })
+          .limit(100);
+
+        if (alertRows) {
+          const nowMs = Date.now();
+          setAlerts(alertRows.map((a: any) => {
+            const createdMs = a.created_at ? new Date(a.created_at).getTime() : nowMs;
+            const diffMin = Math.max(0, Math.floor((nowMs - createdMs) / 60000));
+            const diffHr = Math.floor(diffMin / 60);
+            const diffDay = Math.floor(diffHr / 24);
+            const timestamp = diffMin < 1 ? "Just now" : diffMin < 60 ? `${diffMin}m ago` : diffHr < 24 ? `${diffHr}h ago` : `${diffDay}d ago`;
+
+            return {
+              id: String(a.id),
+              studentName: a.profiles?.full_name || "Student",
+              matricId: a.profiles?.institutional_id || "",
+              studentUuid: a.profiles?.id || a.student_id || "",
+              course: a.classes?.subjects?.name || "General",
+              type: a.type || "system",
+              priority: a.priority || "medium",
+              message: a.message || "",
+              timestamp,
+              isRead: Boolean(a.is_read)
+            };
+          }));
+        }
+      }
+    } catch (fallbackErr) {
+      console.error("Direct Supabase alert fetch error:", fallbackErr);
     } finally {
       setIsLoading(false);
     }
@@ -60,19 +100,22 @@ export default function AlertsPage() {
   const markAsRead = async (id: string) => {
     try {
       await alertService.markRead(id);
-      setAlerts(prev => prev.map(a => a.id === id ? { ...a, isRead: true } : a));
-    } catch (err) {
-      console.error("Failed to mark alert as read:", err);
+    } catch {
+      await supabase.from('alerts').update({ is_read: true }).eq('id', id);
     }
+    setAlerts(prev => prev.map(a => a.id === id ? { ...a, isRead: true } : a));
   };
 
   const markAllAsRead = async () => {
     try {
       await alertService.markAllRead();
-      setAlerts(prev => prev.map(a => ({ ...a, isRead: true })));
-    } catch (err) {
-      console.error("Failed to mark all alerts as read:", err);
+    } catch {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('alerts').update({ is_read: true }).or(`lecturer_id.eq.${user.id},student_id.eq.${user.id}`);
+      }
     }
+    setAlerts(prev => prev.map(a => ({ ...a, isRead: true })));
   };
 
   const filteredAlerts = alerts.filter(a => {

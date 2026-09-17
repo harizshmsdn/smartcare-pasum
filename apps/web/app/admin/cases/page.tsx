@@ -67,18 +67,78 @@ export default function AdminCasesPage() {
 
   const fetchData = async () => {
     setIsLoading(true);
-    try {
+    let intSuccess = false;
+    let claimsSuccess = false;
 
-      // 1. Fetch interventions
-      const intData = await adminService.getInterventions();
-      if (intData?.interventions) {
-        setInterventions(intData.interventions);
+    try {
+      // 1. Try FastAPI interventions
+      try {
+        const intData = await adminService.getInterventions();
+        if (intData?.interventions) {
+          setInterventions(intData.interventions);
+          intSuccess = true;
+        }
+      } catch (err) {
+        console.warn("API interventions fetch error, falling back to direct Supabase:", err);
       }
 
-      // 2. Fetch merit claims
-      const claimsData = await adminService.getMeritClaims();
-      if (claimsData?.claims) {
-        setClaims(claimsData.claims);
+      // 2. Try FastAPI merit claims
+      try {
+        const claimsData = await adminService.getMeritClaims();
+        if (claimsData?.claims) {
+          setClaims(claimsData.claims);
+          claimsSuccess = true;
+        }
+      } catch (err) {
+        console.warn("API claims fetch error, falling back to direct Supabase:", err);
+      }
+
+      // 3. Fallback to direct Supabase if needed
+      if (!intSuccess) {
+        const { data: directInts } = await supabase
+          .from('interventions')
+          .select('id, issue_description, status, priority, created_at, updated_at, student_id, profiles:student_id (full_name, institutional_id), classes:class_id (group_code, subjects:subject_id (code), profiles:lecturer_id (full_name))')
+          .order('created_at', { ascending: false });
+
+        if (directInts) {
+          setInterventions(directInts.map((i: any) => ({
+            intervention_id: i.id,
+            issue_description: i.issue_description,
+            status: i.status,
+            priority: i.priority,
+            created_at: i.created_at,
+            updated_at: i.updated_at || i.created_at,
+            student_name: i.profiles?.full_name || "Student",
+            student_id: i.student_id,
+            student_inst_id: i.profiles?.institutional_id || "",
+            lecturer_name: i.classes?.profiles?.full_name || "Lecturer",
+            subject_code: i.classes?.subjects?.code || "Subject",
+            group_code: i.classes?.group_code || "Group A"
+          })));
+        }
+      }
+
+      if (!claimsSuccess) {
+        const { data: directClaims } = await supabase
+          .from('merit_claims')
+          .select('id, title, category, status, awarded_points, submitted_at, proof_file_url, description, student_id, profiles:student_id (full_name, institutional_id)')
+          .order('submitted_at', { ascending: false });
+
+        if (directClaims) {
+          setClaims(directClaims.map((c: any) => ({
+            claim_id: c.id,
+            title: c.title,
+            category: c.category || "General",
+            status: c.status,
+            awarded_points: Number(c.awarded_points || 0),
+            submitted_at: c.submitted_at,
+            proof_file_url: c.proof_file_url || "",
+            description: c.description || "",
+            student_name: c.profiles?.full_name || "Student",
+            student_id: c.student_id,
+            student_inst_id: c.profiles?.institutional_id || ""
+          })));
+        }
       }
     } catch (err) {
       console.error("Error fetching cases data:", err);
@@ -104,11 +164,20 @@ export default function AdminCasesPage() {
     if (!selectedIntervention) return;
 
     try {
-      await adminService.updateIntervention(selectedIntervention.intervention_id, {
-        status: intStatus,
-        priority: intPriority,
-        issue_description: intDescription
-      });
+      try {
+        await adminService.updateIntervention(selectedIntervention.intervention_id, {
+          status: intStatus,
+          priority: intPriority,
+          issue_description: intDescription
+        });
+      } catch {
+        await supabase.from('interventions').update({
+          status: intStatus,
+          priority: intPriority,
+          issue_description: intDescription,
+          updated_at: new Date().toISOString()
+        }).eq('id', selectedIntervention.intervention_id);
+      }
       setShowEditIntervention(false);
       fetchData();
     } catch (err: any) {
@@ -127,10 +196,17 @@ export default function AdminCasesPage() {
     if (!selectedClaim) return;
 
     try {
-      await adminService.updateMeritClaim(selectedClaim.claim_id, {
-        status,
-        awarded_points: status === "approved" ? claimPoints : 0
-      });
+      try {
+        await adminService.updateMeritClaim(selectedClaim.claim_id, {
+          status,
+          awarded_points: status === "approved" ? claimPoints : 0
+        });
+      } catch {
+        await supabase.from('merit_claims').update({
+          status,
+          awarded_points: status === "approved" ? claimPoints : 0
+        }).eq('id', selectedClaim.claim_id);
+      }
       setShowReviewClaim(false);
       fetchData();
     } catch (err: any) {

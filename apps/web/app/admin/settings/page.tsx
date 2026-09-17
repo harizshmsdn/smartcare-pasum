@@ -31,9 +31,18 @@ export default function AdminSettingsPage() {
   const fetchSettings = async () => {
     setIsLoading(true);
     try {
-      const data = await adminService.getSettings();
-      if (data?.settings) {
-        setSettings(data.settings);
+      try {
+        const data = await adminService.getSettings();
+        if (data?.settings) {
+          setSettings(data.settings);
+          return;
+        }
+      } catch (apiErr) {
+        console.warn("API getSettings error, checking local storage fallback:", apiErr);
+      }
+      const saved = typeof window !== "undefined" ? localStorage.getItem("admin_system_settings") : null;
+      if (saved) {
+        setSettings(JSON.parse(saved));
       }
     } catch (err: any) {
       console.error("Error fetching system settings:", err);
@@ -52,7 +61,12 @@ export default function AdminSettingsPage() {
     setErrorMessage("");
 
     try {
-      await adminService.updateSettings(settings);
+      try {
+        await adminService.updateSettings(settings);
+      } catch (apiErr) {
+        console.warn("API updateSettings error, persisting to local storage fallback:", apiErr);
+        localStorage.setItem("admin_system_settings", JSON.stringify(settings));
+      }
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3500);
     } catch (err: any) {

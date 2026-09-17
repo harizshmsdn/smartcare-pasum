@@ -64,11 +64,52 @@ export default function ClassesPage() {
     setShowConfigModal(true);
   };
 
-  // Fetch classes taught by this lecturer using SWR
-  const { data: classesDataRaw, isLoading: isSwrLoadingClasses } = useSWR('lecturerClassesList', async () => {
-    const response = await lecturerService.getClasses();
-    return response.classes || [];
+  // Fetch classes taught by this lecturer using SWR with Supabase fallback
+  const { data: classesDataRaw, error: swrClassesError, isLoading: isSwrLoadingClasses } = useSWR('lecturerClassesList', async () => {
+    try {
+      const response = await lecturerService.getClasses();
+      return response.classes || [];
+    } catch (apiErr) {
+      console.warn("FastAPI getClasses error, falling back to direct Supabase query:", apiErr);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      const { data: dbClasses } = await supabase
+        .from('classes')
+        .select(`
+          id,
+          group_code,
+          type,
+          day_of_week,
+          start_time,
+          end_time,
+          location,
+          subjects (
+            code,
+            name
+          ),
+          sessions (
+            id,
+            status,
+            opened_at
+          )
+        `)
+        .eq('lecturer_id', user.id);
+
+      return (dbClasses || []).map((c: any) => {
+        const activeSession = (c.sessions || []).find((s: any) => s.status === 'open');
+        return {
+          ...c,
+          active_session: activeSession || null
+        };
+      });
+    }
   });
+
+  useEffect(() => {
+    if (swrClassesError) {
+      setIsLoadingClasses(false);
+    }
+  }, [swrClassesError]);
 
   useEffect(() => {
     if (!classesDataRaw) return;
@@ -107,12 +148,36 @@ export default function ClassesPage() {
     setIsLoadingClasses(false);
   }, [classesDataRaw]);
 
-  // Fetch student roster for selected class using SWR
+  // Fetch student roster for selected class using SWR with Supabase fallback
   const { data: rosterEnrollments, mutate: mutateRoster } = useSWR(
     selectedClassId ? `roster_${selectedClassId}` : null,
     async () => {
-      const response = await lecturerService.getClassRoster(selectedClassId);
-      return response.enrollments || [];
+      try {
+        const response = await lecturerService.getClassRoster(selectedClassId);
+        return response.enrollments || [];
+      } catch (apiErr) {
+        console.warn("FastAPI getClassRoster error, falling back to direct Supabase query:", apiErr);
+        const { data: enrollments } = await supabase
+          .from('enrollments')
+          .select(`
+            id,
+            class_id,
+            student_id,
+            current_attendance_rate,
+            profiles:student_id (
+              id,
+              full_name,
+              email,
+              institutional_id
+            )
+          `)
+          .eq('class_id', selectedClassId);
+
+        return (enrollments || []).map((e: any) => ({
+          ...e,
+          latest_score: "-"
+        }));
+      }
     }
   );
 
@@ -783,24 +848,62 @@ export default function ClassesPage() {
                       ? new Date(customDateTime).toISOString()
                       : new Date().toISOString();
 
-                    const data = await api.post("/api/sessions/start", {
-                      class_id: selectedClassId,
-                      opened_at: openedAtTimestamp,
-                      online_mode: onlineMode,
-                      face_id_required: faceIdRequired,
-                      location_required: !onlineMode && locationRequired,
-                      geo_lat: 3.115,
-                      geo_lng: 101.655,
-                      geo_radius_meters: 50
-                    });
+                    let newSession: any = null;
+                    try {
+                      const data = await api.post("/api/sessions/start", {
+                        class_id: selectedClassId,
+                        opened_at: openedAtTimestamp,
+                        online_mode: onlineMode,
+                        face_id_required: faceIdRequired,
+                        location_required: !onlineMode && locationRequired,
+                        geo_lat: 3.115,
+                        geo_lng: 101.655,
+                        geo_radius_meters: 50
+                      });
 
-                    if (data.status === "active_exists") {
-                      router.push(`/attendance/active?sessionId=${data.session.id}&classId=${selectedClassId}`);
-                      setShowConfigModal(false);
-                      return;
+                      if (data.status === "active_exists") {
+                        router.push(`/attendance/active?sessionId=${data.session.id}&classId=${selectedClassId}`);
+                        setShowConfigModal(false);
+                        return;
+                      }
+                      newSession = data.session;
+                    } catch (apiErr) {
+                      console.warn("FastAPI start session error, falling back to direct Supabase:", apiErr);
+                      const { data: existingSession } = await supabase
+                        .from('sessions')
+                        .select('*')
+                        .eq('class_id', selectedClassId)
+                        .eq('status', 'open')
+                        .maybeSingle();
+
+                      if (existingSession) {
+                        newSession = existingSession;
+                      } else {
+                        const randomPin = Math.floor(100000 + Math.random() * 900000).toString();
+                        const { data: created, error: insertErr } = await supabase
+                          .from('sessions')
+                          .insert({
+                            class_id: selectedClassId,
+                            opened_at: openedAtTimestamp,
+                            status: 'open',
+                            online_mode: onlineMode,
+                            face_id_required: faceIdRequired,
+                            location_required: !onlineMode && locationRequired,
+                            geo_lat: 3.115,
+                            geo_lng: 101.655,
+                            geo_radius_meters: 50,
+                            session_pin: randomPin
+                          })
+                          .select()
+                          .single();
+
+                        if (insertErr) throw insertErr;
+                        newSession = created;
+                      }
                     }
 
-                    const newSession = data.session;
+                    if (!newSession) throw new Error("Could not initialize session");
+
                     const sessionSettings = {
                       sessionId: newSession.id,
                       classId: selectedClassId,
@@ -815,8 +918,8 @@ export default function ClassesPage() {
                     router.push(`/attendance/active?sessionId=${newSession.id}&classId=${selectedClassId}&onlineMode=${newSession.online_mode}&faceIdRequired=${newSession.face_id_required}&locationRequired=${newSession.location_required}`);
                     setShowConfigModal(false);
                   } catch (err: any) {
-                    console.error("FastAPI error starting session:", err);
-                    alert("Error calling server: " + (err.detail || err.message || "Unknown error"));
+                    console.error("Error activating session:", err);
+                    alert("Error activating session: " + (err.detail || err.message || "Unknown error"));
                   }
                 }}
                 className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-2.5 rounded-none border border-emerald-400 shadow-lg shadow-emerald-900/30 transition-all cursor-pointer"

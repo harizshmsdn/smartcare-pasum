@@ -84,26 +84,61 @@ export default function AdminClassesPage() {
       // 1. Fetch classes
       try {
         const d = await api.get("/api/admin/classes");
-        setClasses(d.classes);
+        if (d?.classes) setClasses(d.classes);
       } catch (e) {
-        console.error(e);
+        console.warn("FastAPI admin classes error, querying Supabase directly:", e);
+        const { data: dbClasses } = await supabase
+          .from('classes')
+          .select(`
+            id,
+            subject_id,
+            lecturer_id,
+            group_code,
+            type,
+            semester,
+            day_of_week,
+            start_time,
+            end_time,
+            location,
+            subjects:subject_id (
+              code,
+              name
+            ),
+            profiles:lecturer_id (
+              full_name,
+              email
+            )
+          `)
+          .order('group_code', { ascending: true });
+        if (dbClasses) setClasses(dbClasses as any);
       }
 
       // 2. Fetch subjects
       try {
         const d = await api.get("/api/admin/subjects");
-        setSubjects(d.subjects);
+        if (d?.subjects) setSubjects(d.subjects);
       } catch (e) {
-        console.error(e);
+        console.warn("FastAPI admin subjects error, querying Supabase directly:", e);
+        const { data: dbSubjects } = await supabase
+          .from('subjects')
+          .select('*')
+          .order('code', { ascending: true });
+        if (dbSubjects) setSubjects(dbSubjects);
       }
 
       // 3. Fetch lecturers (via admin users list endpoint)
       try {
         const d = await api.get("/api/admin/users");
-        const lects = d.users.filter((u: any) => u.role === "lecturer" || u.role === "admin");
+        const lects = (d?.users || []).filter((u: any) => u.role === "lecturer" || u.role === "admin");
         setLecturers(lects);
       } catch (e) {
-        console.error(e);
+        console.warn("FastAPI admin users error, querying Supabase directly:", e);
+        const { data: dbLecturers } = await supabase
+          .from('profiles')
+          .select('id, full_name, email, role')
+          .in('role', ['lecturer', 'admin'])
+          .order('full_name', { ascending: true });
+        if (dbLecturers) setLecturers(dbLecturers as any);
       }
     } catch (err) {
       console.error("Error fetching data:", err);

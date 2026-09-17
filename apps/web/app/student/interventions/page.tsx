@@ -18,7 +18,7 @@ export default function StudentInterventionsPage() {
     setIsLoading(true);
     try {
       const data = await studentService.getInterventions();
-      const formatted = (data.interventions || []).map((i: any) => ({
+      const formatted = (data?.interventions || []).map((i: any) => ({
         id: i.id,
         issue_description: i.issue_description,
         status: i.status,
@@ -37,8 +37,45 @@ export default function StudentInterventionsPage() {
         }
       }));
       setInterventions(formatted);
+      return;
     } catch (err) {
-      console.error("Error fetching interventions for student:", err);
+      console.warn("API student interventions error, falling back to Supabase:", err);
+    }
+
+    // Direct Supabase query fallback
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: rows } = await supabase
+          .from('interventions')
+          .select('id, issue_description, status, priority, created_at, classes:class_id (group_code, subjects:subject_id (code, name), profiles:lecturer_id (full_name, email))')
+          .eq('student_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (rows) {
+          const formatted = rows.map((i: any) => ({
+            id: i.id,
+            issue_description: i.issue_description,
+            status: i.status,
+            priority: i.priority,
+            created_at: i.created_at,
+            lecturer: {
+              full_name: i.classes?.profiles?.full_name || "Lecturer",
+              email: i.classes?.profiles?.email || ""
+            },
+            classes: {
+              group_code: i.classes?.group_code || "Group A",
+              subjects: {
+                code: i.classes?.subjects?.code || "Subject",
+                name: i.classes?.subjects?.name || "Course"
+              }
+            }
+          }));
+          setInterventions(formatted);
+        }
+      }
+    } catch (fallbackErr) {
+      console.error("Direct Supabase student interventions error:", fallbackErr);
     } finally {
       setIsLoading(false);
     }

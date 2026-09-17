@@ -41,6 +41,11 @@ export async function apiClient<T = any>(
   const { body, params, headers = {}, skipAuth = false, ...customConfig } = options;
 
   const baseUrl = getApiBaseUrl();
+  // In HTTPS browser environments, skip insecure localhost to allow instant Supabase fallback
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:' && baseUrl.startsWith('http://')) {
+    throw new ApiError('FastAPI backend unreachable over HTTP on HTTPS origin', 503);
+  }
+
   let url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
 
   // Append query parameters if provided
@@ -88,7 +93,11 @@ export async function apiClient<T = any>(
   let response: Response | null = null;
   const maxRetries = 2;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    response = await fetch(url, config);
+    try {
+      response = await fetch(url, config);
+    } catch (netErr: any) {
+      throw new ApiError(`Network error connecting to API: ${netErr.message || 'Failed to fetch'}`, 503);
+    }
     if (response.status === 429 && attempt < maxRetries) {
       const retryAfterHeader = response.headers.get('retry-after');
       const waitMs = retryAfterHeader ? Math.min(Number(retryAfterHeader) * 1000, 4000) : 1000 * Math.pow(2, attempt);

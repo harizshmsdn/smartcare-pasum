@@ -75,17 +75,66 @@ function InterventionsBoardContent() {
   const loadInterventions = async () => {
     setIsLoading(true);
     try {
-      const response = await lecturerService.getInterventions();
-      const data = response.interventions || [];
-      
-      setInterventions(data);
-      
-      const uniqueClasses = Array.from(new Set(data.map((item: any) => {
-        const classNode = item.subject;
-        return classNode ? `${classNode.code}` : "";
-      }).filter(Boolean))) as string[];
-      
-      setClassesList(["All Classes", ...uniqueClasses]);
+      try {
+        const response = await lecturerService.getInterventions();
+        const data = response.interventions || [];
+        setInterventions(data);
+        const uniqueClasses = Array.from(new Set(data.map((item: any) => {
+          const classNode = item.subject;
+          return classNode ? `${classNode.code}` : "";
+        }).filter(Boolean))) as string[];
+        setClassesList(["All Classes", ...uniqueClasses]);
+        setIsLoading(false);
+        return;
+      } catch (apiErr) {
+        console.warn("FastAPI interventions error, falling back to direct Supabase query:", apiErr);
+      }
+
+      // Direct Supabase query fallback
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: items } = await supabase
+        .from('interventions')
+        .select(`
+          id,
+          issue_description,
+          status,
+          priority,
+          created_at,
+          student_id,
+          classes:class_id (
+            id,
+            group_code,
+            subjects (code, name)
+          ),
+          profiles:student_id (
+            id,
+            full_name,
+            email,
+            institutional_id
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (items) {
+        const mapped = items.map((i: any) => ({
+          id: i.id,
+          issue_description: i.issue_description,
+          status: i.status,
+          priority: i.priority,
+          created_at: i.created_at,
+          student: i.profiles,
+          subject: i.classes?.subjects,
+          classes: i.classes
+        }));
+        setInterventions(mapped);
+        const uniqueClasses = Array.from(new Set(mapped.map((item: any) => {
+          const classNode = item.subject;
+          return classNode ? `${classNode.code}` : "";
+        }).filter(Boolean))) as string[];
+        setClassesList(["All Classes", ...uniqueClasses]);
+      }
     } catch (err) {
       console.error("Failed to fetch interventions", err);
     } finally {
@@ -96,15 +145,39 @@ function InterventionsBoardContent() {
   // Fetch all classes taught by this lecturer
   const fetchLecturerClasses = async () => {
     try {
-      const response = await lecturerService.getClasses();
-      const data = response.classes || [];
-      const formatted: ClassOption[] = data.map((c: any) => ({
-        id: c.id,
-        code: c.subjects?.code || "GEN",
-        name: c.subjects?.name || "General",
-        group_code: c.group_code
-      }));
-      setLecturerClasses(formatted);
+      try {
+        const response = await lecturerService.getClasses();
+        const data = response.classes || [];
+        const formatted: ClassOption[] = data.map((c: any) => ({
+          id: c.id,
+          code: c.subjects?.code || "GEN",
+          name: c.subjects?.name || "General",
+          group_code: c.group_code
+        }));
+        setLecturerClasses(formatted);
+        return;
+      } catch (apiErr) {
+        console.warn("FastAPI getClasses error, falling back to direct Supabase query:", apiErr);
+      }
+
+      // Direct Supabase query fallback
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: dbClasses } = await supabase
+        .from('classes')
+        .select('id, group_code, subjects (code, name)')
+        .eq('lecturer_id', user.id);
+
+      if (dbClasses) {
+        const formatted: ClassOption[] = dbClasses.map((c: any) => ({
+          id: c.id,
+          code: c.subjects?.code || "GEN",
+          name: c.subjects?.name || "General",
+          group_code: c.group_code
+        }));
+        setLecturerClasses(formatted);
+      }
     } catch (err) {
       console.error("Failed to fetch classes", err);
     }
