@@ -87,16 +87,16 @@ export default function ClassesPage() {
             code,
             name
           ),
-          sessions (
+          attendance_sessions (
             id,
-            status,
+            closed_at,
             opened_at
           )
         `)
         .eq('lecturer_id', user.id);
 
       return (dbClasses || []).map((c: any) => {
-        const activeSession = (c.sessions || []).find((s: any) => s.status === 'open');
+        const activeSession = (c.attendance_sessions || []).find((s: any) => !s.closed_at);
         return {
           ...c,
           active_session: activeSession || null
@@ -870,10 +870,10 @@ export default function ClassesPage() {
                     } catch (apiErr) {
                       console.warn("FastAPI start session error, falling back to direct Supabase:", apiErr);
                       const { data: existingSession } = await supabase
-                        .from('sessions')
+                        .from('attendance_sessions')
                         .select('*')
                         .eq('class_id', selectedClassId)
-                        .eq('status', 'open')
+                        .is('closed_at', null)
                         .maybeSingle();
 
                       if (existingSession) {
@@ -881,11 +881,10 @@ export default function ClassesPage() {
                       } else {
                         const randomPin = Math.floor(100000 + Math.random() * 900000).toString();
                         const { data: created, error: insertErr } = await supabase
-                          .from('sessions')
+                          .from('attendance_sessions')
                           .insert({
                             class_id: selectedClassId,
                             opened_at: openedAtTimestamp,
-                            status: 'open',
                             online_mode: onlineMode,
                             face_id_required: faceIdRequired,
                             location_required: !onlineMode && locationRequired,

@@ -89,7 +89,7 @@ export default function StudentDashboardPage() {
           .eq('id', user.id)
           .single();
         if (profile) {
-          setTotalMerits(0);
+          setTotalMerits(Number(profile.total_merit_score || 0));
         }
 
         // 2. Fetch Enrollments & Attendance

@@ -59,22 +59,8 @@ export default function DashboardPage() {
   const [absenteeismCount, setAbsenteeismCount] = useState(0);
   const [assessmentDropCount, setAssessmentDropCount] = useState(0);
 
-  const [meritRawScores, setMeritRawScores] = useState<ChartItem[]>([
-    { range: "0-100", students: 0 },
-    { range: "101-200", students: 0 },
-    { range: "201-300", students: 0 },
-    { range: "301-400", students: 0 },
-    { range: "401-500", students: 0 },
-  ]);
-
-  const [meritCGPA, setMeritCGPA] = useState<ChartItem[]>([
-    { range: "< 2.0", students: 0 },
-    { range: "2.0-2.5", students: 0 },
-    { range: "2.5-3.0", students: 0 },
-    { range: "3.0-3.5", students: 0 },
-    { range: "3.5-4.0", students: 0 },
-  ]);
-
+  const [meritRawScores, setMeritRawScores] = useState<ChartItem[]>([]);
+  const [meritCGPA, setMeritCGPA] = useState<ChartItem[]>([]);
   const [examPerformanceData, setExamPerformanceData] = useState<ExamPerformanceItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -91,7 +77,7 @@ export default function DashboardPage() {
         try {
           const data = await api.get("/api/analytics/dashboard");
           setAssignedClasses(data.assigned_classes || []);
-          if (data.assigned_classes && data.assigned_classes.length > 0) {
+          if (data.assigned_classes && data.assigned_classes.length > 0 && data.assigned_classes[0]) {
             setSelectedClassId(data.assigned_classes[0].id);
           }
           if (data.risk_clusters) {
@@ -144,27 +130,97 @@ export default function DashboardPage() {
             .in('class_id', classIds)
             .eq('status', 'needs_review');
           setAssessmentDropCount(intCount || 0);
-        }
 
-        setMeritRawScores([
-          { range: "0-100", students: 12 },
-          { range: "101-200", students: 28 },
-          { range: "201-300", students: 45 },
-          { range: "301-400", students: 18 },
-          { range: "401-500", students: 7 }
-        ]);
-        setMeritCGPA([
-          { range: "< 2.0", students: 3 },
-          { range: "2.0-2.5", students: 8 },
-          { range: "2.5-3.0", students: 22 },
-          { range: "3.0-3.5", students: 54 },
-          { range: "3.5-4.0", students: 23 }
-        ]);
-        setExamPerformanceData([
-          { subject: "PHYS101", midterm: 78, finals: 82 },
-          { subject: "MATH101", midterm: 72, finals: 79 },
-          { subject: "CHEM101", midterm: 85, finals: 88 }
-        ]);
+          // Real Merit Scores
+          const { data: enrollmentsWithStudents } = await supabase
+            .from('enrollments')
+            .select('student_id, profiles:student_id (id, role, total_merit_score)')
+            .in('class_id', classIds);
+
+          if (enrollmentsWithStudents && enrollmentsWithStudents.length > 0) {
+            const seen = new Set();
+            const rawBuckets: { [key: string]: number } = {
+              "0-100": 0,
+              "101-200": 0,
+              "201-300": 0,
+              "301-400": 0,
+              "401-500": 0
+            };
+            let hasAnyStudent = false;
+
+            for (const item of enrollmentsWithStudents) {
+              const prof = item.profiles as any;
+              if (prof && !seen.has(prof.id)) {
+                seen.add(prof.id);
+                hasAnyStudent = true;
+                const score = Number(prof.total_merit_score || 0);
+                if (score <= 100) rawBuckets["0-100"] = (rawBuckets["0-100"] || 0) + 1;
+                else if (score <= 200) rawBuckets["101-200"] = (rawBuckets["101-200"] || 0) + 1;
+                else if (score <= 300) rawBuckets["201-300"] = (rawBuckets["201-300"] || 0) + 1;
+                else if (score <= 400) rawBuckets["301-400"] = (rawBuckets["301-400"] || 0) + 1;
+                else rawBuckets["401-500"] = (rawBuckets["401-500"] || 0) + 1;
+              }
+            }
+
+            if (hasAnyStudent) {
+              setMeritRawScores(Object.entries(rawBuckets).map(([range, students]) => ({ range, students })));
+            } else {
+              setMeritRawScores([]);
+            }
+          } else {
+            setMeritRawScores([]);
+          }
+
+          // Real Exams Matrix
+          const { data: assessments } = await supabase
+            .from('assessments')
+            .select('id, type, weightage, total_marks, classes:class_id (subjects (name))')
+            .in('class_id', classIds);
+
+          if (assessments && assessments.length > 0) {
+            const assessmentIds = assessments.map((a: any) => a.id);
+            const { data: scores } = await supabase
+              .from('student_scores')
+              .select('assessment_id, score_achieved')
+              .in('assessment_id', assessmentIds);
+
+            if (scores && scores.length > 0) {
+              const subMap: Record<string, { midTotal: number; midCount: number; finTotal: number; finCount: number }> = {};
+              const scoreMap: Record<string, number[]> = {};
+              scores.forEach((s: any) => {
+                if (!scoreMap[s.assessment_id]) scoreMap[s.assessment_id] = [];
+                const arr = scoreMap[s.assessment_id];
+                if (arr) arr.push(Number(s.score_achieved));
+              });
+
+              assessments.forEach((a: any) => {
+                const subName = a.classes?.subjects?.name || "Subject";
+                if (!subMap[subName]) subMap[subName] = { midTotal: 0, midCount: 0, finTotal: 0, finCount: 0 };
+                const scs = scoreMap[a.id] || [];
+                const avg = scs.length > 0 ? scs.reduce((sum, v) => sum + v, 0) / scs.length : 0;
+                if (a.type === 'Midterm') {
+                  subMap[subName].midTotal += avg;
+                  subMap[subName].midCount++;
+                } else if (a.type === 'Final') {
+                  subMap[subName].finTotal += avg;
+                  subMap[subName].finCount++;
+                }
+              });
+
+              setExamPerformanceData(Object.entries(subMap).map(([subject, data]) => ({
+                subject,
+                midterm: data.midCount > 0 ? Math.round(data.midTotal / data.midCount) : 0,
+                finals: data.finCount > 0 ? Math.round(data.finTotal / data.finCount) : 0
+              })));
+            } else {
+              setExamPerformanceData([]);
+            }
+          } else {
+            setExamPerformanceData([]);
+          }
+
+          setMeritCGPA([]);
+        }
       } catch (err) {
         console.error("Failed to load dashboard analytics:", err);
       } finally {
@@ -191,7 +247,7 @@ export default function DashboardPage() {
 
         // Direct Supabase fallback for class trajectory
         const { data: sessions } = await supabase
-          .from('sessions')
+          .from('attendance_sessions')
           .select('id, opened_at, attendance_records (id, status)')
           .eq('class_id', selectedClassId)
           .order('opened_at', { ascending: true })
@@ -200,24 +256,20 @@ export default function DashboardPage() {
         if (sessions && sessions.length > 0) {
           const points = sessions.map((s: any, idx: number) => {
             const totalRecs = (s.attendance_records || []).length;
-            const present = (s.attendance_records || []).filter((r: any) => r.status === 'present' || r.status === 'late').length;
-            const rate = totalRecs > 0 ? Math.round((present / totalRecs) * 100) : 85;
+            const present = (s.attendance_records || []).filter((r: any) => {
+              const st = (r.status || '').toLowerCase();
+              return st === 'present' || st === 'late';
+            }).length;
+            const rate = totalRecs > 0 ? Math.round((present / totalRecs) * 100) : 0;
             return {
               week: `Wk ${idx + 1}`,
               attendance: rate,
-              assessment: Math.min(100, Math.max(50, rate - 5 + Math.round(Math.random() * 10)))
+              assessment: rate
             };
           });
           setTrajectoryData(points);
         } else {
-          setTrajectoryData([
-            { week: "Wk 1", attendance: 95, assessment: 80 },
-            { week: "Wk 2", attendance: 92, assessment: 82 },
-            { week: "Wk 3", attendance: 88, assessment: 79 },
-            { week: "Wk 4", attendance: 90, assessment: 84 },
-            { week: "Wk 5", attendance: 86, assessment: 81 },
-            { week: "Wk 6", attendance: 91, assessment: 85 }
-          ]);
+          setTrajectoryData([]);
         }
       } catch (err) {
         console.error("Failed to load trajectory:", err);
