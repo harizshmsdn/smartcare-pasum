@@ -75,7 +75,7 @@ export default function StudentSettingsPage() {
         <div className="flex items-center gap-2 mb-1.5">
           <span className="w-1.5 h-1.5 bg-emerald-400 rounded-none" />
           <span className="text-xs text-emerald-400 uppercase tracking-wider font-semibold">
-            PASUM // STUDENT SETTINGS
+            STUDENT SETTINGS
           </span>
         </div>
         <h2 className="text-3xl font-bold tracking-tight uppercase text-white">
@@ -106,7 +106,7 @@ export default function StudentSettingsPage() {
                 <p className="text-[11px] text-slate-400">Manage real-time push updates and attendance warning alerts</p>
               </div>
             </div>
-            <span className="text-[10px] text-emerald-400 font-bold">01 // ALERTS</span>
+            <span className="text-[10px] text-emerald-400 font-bold uppercase">ALERTS</span>
           </div>
 
           <div className="flex items-center justify-between p-3.5 border border-white/10 bg-black/20">
@@ -140,7 +140,7 @@ export default function StudentSettingsPage() {
                 <p className="text-[11px] text-slate-400">Configure language mappings for interfaces and logs</p>
               </div>
             </div>
-            <span className="text-[10px] text-emerald-400 font-bold">02 // LOCALE</span>
+            <span className="text-[10px] text-emerald-400 font-bold uppercase">LOCALE</span>
           </div>
 
           <div>
@@ -170,7 +170,7 @@ export default function StudentSettingsPage() {
                 <p className="text-[11px] text-slate-400">Biometrics and hardware tokens used during active lectures</p>
               </div>
             </div>
-            <span className="text-[10px] text-emerald-400 font-bold">03 // HARDWARE</span>
+            <span className="text-[10px] text-emerald-400 font-bold uppercase">HARDWARE</span>
           </div>
 
           <div className="space-y-3">

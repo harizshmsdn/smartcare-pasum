@@ -109,7 +109,7 @@ export default function AdminDashboardPage() {
       <div className="shrink-0 mb-4 flex justify-between items-end border-b border-white/10 pb-3">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs uppercase tracking-widest text-emerald-400 font-bold">PASUM // ADMIN CONSOLE</span>
+            <span className="text-xs uppercase tracking-widest text-emerald-400 font-bold">ADMIN CONSOLE</span>
           </div>
           <h2 className="text-2xl lg:text-3xl font-bold tracking-tight text-white">System Performance & Insights</h2>
           <p className="text-xs lg:text-sm text-white/60 mt-0.5">Live platform telemetry powered by Supabase database metrics.</p>
@@ -126,10 +126,7 @@ export default function AdminDashboardPage() {
         {/* Bento Cell 1: Platform Overview (Col span 2) */}
         <div className="lg:col-span-2 border border-white/15 bg-[#08090c]/80 backdrop-blur-md rounded-none shadow-xl p-5 flex flex-col justify-between">
           <div className="shrink-0 border-b border-white/10 pb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-emerald-400">01.</span>
-              <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">LIVE SYSTEM DIRECTORY STATUS</span>
-            </div>
+            <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">LIVE SYSTEM DIRECTORY STATUS</span>
             <span className="text-[10px] text-emerald-400 border border-emerald-500/30 px-2 py-0.5 uppercase tracking-wider bg-emerald-500/10 font-bold">
               OPERATIONAL
             </span>
@@ -166,10 +163,7 @@ export default function AdminDashboardPage() {
         {/* Bento Cell 2: Site Analytics (Col span 1) */}
         <div className="lg:col-span-1 border border-white/15 bg-[#08090c]/80 backdrop-blur-md rounded-none shadow-xl p-5 flex flex-col justify-between">
           <div className="shrink-0 border-b border-white/10 pb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-indigo-400">02.</span>
-              <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">SITE ANALYTICS</span>
-            </div>
+            <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">SITE ANALYTICS</span>
             <PixelIcon name="users" size={16} className="text-indigo-400" />
           </div>
 
@@ -188,10 +182,7 @@ export default function AdminDashboardPage() {
         {/* Bento Cell 3: Check-In Accuracy (Col span 1) */}
         <div className="lg:col-span-1 border border-white/15 bg-[#08090c]/80 backdrop-blur-md rounded-none shadow-xl p-5 flex flex-col justify-between">
           <div className="shrink-0 border-b border-white/10 pb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-emerald-400">03.</span>
-              <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">CHECK-IN ACCURACY</span>
-            </div>
+            <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">CHECK-IN ACCURACY</span>
             <PixelIcon name="check" size={16} className="text-emerald-400" />
           </div>
 
@@ -204,10 +195,7 @@ export default function AdminDashboardPage() {
         {/* Bento Cell 4: Real Database Check-ins Trajectory Chart (Col span 2) */}
         <div className="lg:col-span-2 border border-white/15 bg-[#08090c]/80 backdrop-blur-md rounded-none shadow-xl p-5 flex flex-col min-h-0">
           <div className="shrink-0 border-b border-white/10 pb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-emerald-400">04.</span>
-              <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">PLATFORM CHECK-IN ACTIVITY</span>
-            </div>
+            <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">PLATFORM CHECK-IN ACTIVITY</span>
             <PixelIcon name="chart" size={16} className="text-emerald-400" />
           </div>
 
@@ -247,10 +235,7 @@ export default function AdminDashboardPage() {
         {/* Bento Cell 5: Database Schema Metrics (Col span 1) */}
         <div className="lg:col-span-1 border border-white/15 bg-[#08090c]/80 backdrop-blur-md rounded-none shadow-xl p-5 flex flex-col justify-between">
           <div className="shrink-0 border-b border-white/10 pb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-400">05.</span>
-              <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">SCHEMA METRICS</span>
-            </div>
+            <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">SCHEMA METRICS</span>
             <PixelIcon name="dashboard" size={16} className="text-slate-400" />
           </div>
 
@@ -281,10 +266,7 @@ export default function AdminDashboardPage() {
         {/* Bento Cell 6: Pending Merit Claims (Col span 1) */}
         <div className="lg:col-span-1 border border-white/15 bg-[#08090c]/80 backdrop-blur-md rounded-none shadow-xl p-5 flex flex-col">
           <div className="shrink-0 border-b border-white/10 pb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-amber-400">06.</span>
-              <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">PENDING MERIT CLAIMS</span>
-            </div>
+            <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">PENDING MERIT CLAIMS</span>
             <PixelIcon name="award" size={16} className="text-amber-400" />
           </div>
 
@@ -319,10 +301,7 @@ export default function AdminDashboardPage() {
           <div className="h-full opacity-40 grayscale pointer-events-none select-none">
             <div className="border border-white/15 bg-[#08090c]/80 backdrop-blur-md rounded-none shadow-xl p-5 flex flex-col h-full">
               <div className="shrink-0 border-b border-white/10 pb-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-rose-400">07.</span>
-                  <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">SUPPORT & INTERVENTIONS</span>
-                </div>
+                <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">SUPPORT & INTERVENTIONS</span>
                 <span className="text-[10px] border border-white/20 px-2 py-0.5 text-white/60 font-semibold">
                   DISABLED
                 </span>

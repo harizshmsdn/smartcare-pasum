@@ -1,8 +1,36 @@
 // apps/web/middleware.ts
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { checkRateLimit } from './lib/rate-limiter'
 
 export async function middleware(request: NextRequest) {
+    // Enforce global edge IP rate limit
+    const forwarded = request.headers.get('x-forwarded-for')
+    const ip = (forwarded ? forwarded.split(',')[0]?.trim() : null) || '127.0.0.1'
+    const edgeLimit = checkRateLimit(`edge:${ip}`, 120, 60)
+    if (!edgeLimit.allowed) {
+        return new NextResponse('Too many requests. Please wait before retrying.', {
+            status: 429,
+            headers: {
+                'Retry-After': String(edgeLimit.retryAfter),
+                'X-RateLimit-Limit': '120',
+                'X-RateLimit-Remaining': '0',
+                'X-RateLimit-Reset': String(edgeLimit.retryAfter),
+            },
+        })
+    }
+
+    // Enforce strict rate limit on login entry route
+    if (request.nextUrl.pathname.startsWith('/login')) {
+        const loginEdgeLimit = checkRateLimit(`edge_login:${ip}`, 15, 60)
+        if (!loginEdgeLimit.allowed) {
+            return new NextResponse('Too many login attempts. Please wait before retrying.', {
+                status: 429,
+                headers: { 'Retry-After': String(loginEdgeLimit.retryAfter) },
+            })
+        }
+    }
+
     // Create an unmodified response
     let supabaseResponse = NextResponse.next({
         request,

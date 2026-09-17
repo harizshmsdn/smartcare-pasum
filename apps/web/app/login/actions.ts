@@ -2,13 +2,29 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { createClient } from '../../utils/supabase/server'
+import { checkRateLimit } from '../../lib/rate-limiter'
 
 export async function login(formData: FormData) {
     const email = formData.get('email') as string
     const password = formData.get('password') as string
-    const supabase = await createClient()
 
+    // Extract client IP address for rate limiting
+    const headerList = await headers()
+    const forwarded = headerList.get('x-forwarded-for')
+    const ip = (forwarded ? forwarded.split(',')[0]?.trim() : null) || '127.0.0.1'
+
+    // Enforce 5 login attempts per minute per IP and email combination
+    const rateLimit = checkRateLimit(`login:${ip}:${email}`, 5, 60)
+    if (!rateLimit.allowed) {
+        return {
+            error: `Too many login attempts. Please wait ${rateLimit.retryAfter} seconds before trying again.`,
+            code: 'RATE_LIMITED'
+        }
+    }
+
+    const supabase = await createClient()
     const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -27,8 +43,20 @@ export async function login(formData: FormData) {
 export async function signup(formData: FormData) {
     const email = formData.get('email') as string
     const password = formData.get('password') as string
-    const supabase = await createClient()
 
+    // Enforce 3 signups per 10 minutes per IP
+    const headerList = await headers()
+    const forwarded = headerList.get('x-forwarded-for')
+    const ip = (forwarded ? forwarded.split(',')[0]?.trim() : null) || '127.0.0.1'
+    const rateLimit = checkRateLimit(`signup:${ip}`, 3, 600)
+    if (!rateLimit.allowed) {
+        return {
+            error: `Too many registration attempts. Please wait ${rateLimit.retryAfter} seconds.`,
+            code: 'RATE_LIMITED'
+        }
+    }
+
+    const supabase = await createClient()
     const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -50,6 +78,14 @@ export async function changePassword(currentPassword: string, newPassword: strin
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user || !user.email) {
         return { error: "Authentication required. Please log in again." }
+    }
+
+    // Enforce rate limit of 5 password changes per 10 minutes per user
+    const rateLimit = checkRateLimit(`pwd_change:${user.id}`, 5, 600)
+    if (!rateLimit.allowed) {
+        return {
+            error: `Too many password change attempts. Please wait ${rateLimit.retryAfter} seconds.`
+        }
     }
 
     // Validate new password meets complexity policy

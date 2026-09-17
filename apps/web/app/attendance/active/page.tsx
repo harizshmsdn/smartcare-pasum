@@ -279,7 +279,7 @@ export default function ActiveAttendancePage() {
           <div className="flex items-center gap-2 mb-1.5">
             <span className="w-1.5 h-1.5 bg-emerald-400 rounded-none" />
             <span className="text-xs text-emerald-400 uppercase tracking-wider font-semibold">
-              PASUM // LIVE SESSION
+              LIVE SESSION
             </span>
           </div>
           <h2 className="text-3xl font-bold tracking-tight uppercase text-white">
@@ -339,8 +339,7 @@ export default function ActiveAttendancePage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-[#08090c]/80 p-6 rounded-none border border-white/15 shadow-xl flex justify-between items-center backdrop-blur-md">
           <div>
-            <div className="flex items-center gap-1.5 mb-1">
-              <span className="text-[10px] text-emerald-400 font-bold">01.</span>
+            <div className="mb-1">
               <p className="text-xs text-slate-400 uppercase tracking-wider">Present Students</p>
             </div>
             <p className="text-3xl font-bold text-white mt-1">

@@ -2,18 +2,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
-import {
-  BellRing,
-  AlertTriangle,
-  TrendingDown,
-  Clock,
-  CheckCircle2,
-  ArrowRight
-} from "lucide-react";
 import { createClient } from "../../../utils/supabase/client";
 import { studentService } from "../../../lib/services/student";
 import EmptyState from "../../../components/EmptyState";
+import { PixelIcon } from "../../../components/PixelIcon";
 
 interface AlertItem {
   id: string;
@@ -30,7 +22,6 @@ export default function StudentAlertsPage() {
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [filter, setFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
-  const [studentId, setStudentId] = useState("");
 
   const fetchAlerts = async () => {
     setIsLoading(true);
@@ -58,7 +49,6 @@ export default function StudentAlertsPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase]);
 
   const unreadCount = alerts.filter(a => !a.isRead).length;
@@ -89,27 +79,22 @@ export default function StudentAlertsPage() {
 
   if (isLoading) {
     return (
-      <main className="flex-1 p-8 h-screen flex flex-col bg-[#FAF9F6] overflow-hidden">
-        <header className="shrink-0 mb-8 flex justify-between items-end">
+      <main className="flex-1 p-6 lg:p-8 h-screen flex flex-col bg-transparent overflow-hidden text-white">
+        <header className="shrink-0 mb-8 flex justify-between items-end pb-4 border-b border-white/10">
           <div>
-            <div className="w-48 h-8 bg-slate-200 rounded animate-pulse mb-2"></div>
-            <div className="w-32 h-4 bg-slate-200 rounded animate-pulse"></div>
+            <div className="w-48 h-8 bg-white/10 rounded-none animate-pulse mb-2"></div>
+            <div className="w-32 h-4 bg-white/10 rounded-none animate-pulse"></div>
           </div>
         </header>
-        <div className="flex-1 min-h-0 bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
-          <div className="flex border-b border-slate-100 p-4 gap-2 shrink-0">
-            <div className="w-24 h-8 bg-slate-200 rounded-lg animate-pulse"></div>
-            <div className="w-24 h-8 bg-slate-200 rounded-lg animate-pulse"></div>
-            <div className="w-24 h-8 bg-slate-200 rounded-lg animate-pulse"></div>
-          </div>
-          <div className="flex-1 p-4 space-y-3">
+        <div className="flex-1 min-h-0 bg-[#08090c]/80 border border-white/15 rounded-none shadow-xl flex flex-col overflow-hidden">
+          <div className="p-4 space-y-3">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="p-5 rounded-2xl border border-slate-200 bg-slate-50 shadow-sm animate-pulse flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-slate-200 shrink-0"></div>
+              <div key={i} className="p-5 border border-white/10 bg-white/5 animate-pulse flex items-start gap-4">
+                <div className="w-10 h-10 bg-white/10 rounded-none shrink-0"></div>
                 <div className="flex-1">
-                  <div className="w-1/3 h-5 bg-slate-200 rounded mb-2"></div>
-                  <div className="w-3/4 h-4 bg-slate-200 rounded mb-3"></div>
-                  <div className="w-1/4 h-3 bg-slate-200 rounded"></div>
+                  <div className="w-1/3 h-5 bg-white/10 rounded-none mb-2"></div>
+                  <div className="w-3/4 h-4 bg-white/10 rounded-none mb-3"></div>
+                  <div className="w-1/4 h-3 bg-white/10 rounded-none"></div>
                 </div>
               </div>
             ))}
@@ -120,135 +105,122 @@ export default function StudentAlertsPage() {
   }
 
   return (
-    <main className="flex-1 p-8 h-screen flex flex-col bg-[#FAF9F6] overflow-hidden">
-
+    <main className="flex-1 p-6 lg:p-8 h-screen flex flex-col bg-transparent overflow-hidden text-white">
       {/* Header */}
-      <header className="shrink-0 mb-8 flex justify-between items-end">
+      <header className="shrink-0 mb-6 flex justify-between items-end pb-4 border-b border-white/10">
         <div>
-          <h2 className="text-3xl font-semibold text-slate-900 flex items-center gap-3">
-            My Alerts Inbox
+          <h2 className="text-2xl lg:text-3xl font-bold tracking-tight uppercase text-white flex items-center gap-3">
+            Notifications & Alerts
             {unreadCount > 0 && (
-              <span className="bg-red-500 text-white text-sm font-bold px-3 py-1 rounded-full animate-pulse">
-                {unreadCount} New
+              <span className="bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 text-xs font-bold px-2.5 py-0.5 rounded-none">
+                {unreadCount} NEW
               </span>
             )}
           </h2>
-          <p className="text-slate-500 mt-1">Real-time notifications</p>
+          <p className="text-xs text-slate-400 mt-1">Class schedule updates, attendance notices, and academic reminders</p>
         </div>
-        <div className="flex gap-3">
+        <div>
           {unreadCount > 0 && (
             <button
               onClick={markAllAsRead}
-              className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors px-4 py-2 border-none bg-transparent cursor-pointer"
+              className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors px-3 py-1.5 border border-emerald-400/30 bg-emerald-500/10 rounded-none cursor-pointer uppercase tracking-wider"
             >
-              Mark all as read
+              Mark All As Read
             </button>
           )}
         </div>
       </header>
 
       {/* Main Inbox Container */}
-      <div className="flex-1 min-h-0 bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
-
-        {/* Inbox Tabs */}
-        <div className="flex border-b border-slate-100 p-4 gap-2 shrink-0">
+      <div className="flex-1 min-h-0 bg-[#08090c]/80 border border-white/15 rounded-none shadow-xl flex flex-col overflow-hidden backdrop-blur-md">
+        {/* Filter Tabs */}
+        <div className="flex border-b border-white/10 p-3 gap-2 shrink-0">
           <button
             onClick={() => setFilter("all")}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors border-none cursor-pointer ${filter === "all" ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-100 bg-transparent"}`}
+            className={`px-3.5 py-1.5 rounded-none text-xs font-bold uppercase transition-colors cursor-pointer border ${filter === "all" ? "bg-white/15 text-white border-white/30" : "text-slate-400 hover:text-white border-transparent bg-transparent"}`}
           >
             All Alerts
           </button>
           <button
             onClick={() => setFilter("unread")}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors border-none cursor-pointer ${filter === "unread" ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-100 bg-transparent"}`}
+            className={`px-3.5 py-1.5 rounded-none text-xs font-bold uppercase transition-colors cursor-pointer border ${filter === "unread" ? "bg-white/15 text-white border-white/30" : "text-slate-400 hover:text-white border-transparent bg-transparent"}`}
           >
-            Unread
+            Unread ({unreadCount})
           </button>
           <button
             onClick={() => setFilter("critical")}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 cursor-pointer ${filter === "critical" ? "bg-red-50 text-red-700 border border-red-100" : "text-slate-500 hover:bg-slate-100 border border-transparent bg-transparent"}`}
+            className={`px-3.5 py-1.5 rounded-none text-xs font-bold uppercase transition-colors cursor-pointer border ${filter === "critical" ? "bg-red-500/20 text-red-300 border-red-500/40" : "text-slate-400 hover:text-white border-transparent bg-transparent"}`}
           >
             Critical Only
           </button>
         </div>
 
-        {/* Feed List */}
+        {/* Alerts List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {filteredAlerts.length === 0 ? (
             <div className="h-full flex items-center justify-center py-20">
               <EmptyState 
-                icon={CheckCircle2}
-                title="You're all caught up!"
-                description="No pending alerts matching your current filter. You are all good to go!"
+                title="No active alerts"
+                description="You are completely caught up with all academic notifications."
               />
             </div>
           ) : (
             filteredAlerts.map((alert) => (
               <div
                 key={alert.id}
-                className={`relative p-5 rounded-2xl border transition-all ${alert.isRead
-                    ? "bg-white border-slate-100 opacity-70"
-                    : "bg-slate-50 border-slate-200 shadow-sm"
-                  }`}
+                className={`relative p-5 rounded-none border transition-all ${
+                  alert.isRead
+                    ? "bg-[#0c0e14]/60 border-white/10 opacity-75"
+                    : "bg-[#0f121a]/90 border-emerald-500/30 shadow-lg"
+                }`}
               >
                 {/* Unread Indicator */}
                 {!alert.isRead && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-12 bg-blue-500 rounded-r-full"></div>
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-400"></div>
                 )}
 
-                <div className="flex justify-between items-start pl-2">
-                  <div className="flex gap-4">
-                    {/* Dynamic Icon based on alert type */}
-                    <div className={`mt-1 shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${alert.priority === 'critical' ? 'bg-red-100 text-red-600' :
-                        alert.priority === 'high' ? 'bg-orange-100 text-orange-600' :
-                          'bg-slate-200 text-slate-600'
-                      }`}>
-                      {alert.type === 'attendance' ? <BellRing size={18} /> :
-                        alert.type === 'assessment' ? <TrendingDown size={18} /> :
-                          <AlertTriangle size={18} />}
+                <div className="flex justify-between items-start pl-2 gap-4">
+                  <div className="flex gap-4 items-start">
+                    <div className={`mt-0.5 shrink-0 p-2 border rounded-none flex items-center justify-center ${
+                      alert.priority === 'critical' ? 'bg-red-500/15 border-red-500/40 text-red-300' :
+                      alert.priority === 'high' ? 'bg-amber-500/15 border-amber-500/40 text-amber-300' :
+                      'bg-emerald-500/15 border-emerald-400/30 text-emerald-300'
+                    }`}>
+                      <PixelIcon name="bell" size={18} />
                     </div>
 
                     <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className={`text-lg font-bold ${alert.isRead ? 'text-slate-700' : 'text-slate-900'}`}>
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <h4 className="text-sm font-bold text-white uppercase tracking-tight">
                           {alert.course}
                         </h4>
-                        <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-md uppercase border ${
-                          alert.type === 'academic' ? 'bg-blue-50 text-blue-800 border-blue-100' :
-                          alert.type === 'attendance' ? 'bg-orange-50 text-orange-850 border-orange-100' :
-                          'bg-slate-100 text-slate-650 border-slate-200'
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-none uppercase border ${
+                          alert.priority === 'critical' ? 'bg-red-500/20 text-red-300 border-red-500/40' :
+                          alert.priority === 'high' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
+                          'bg-white/5 text-slate-300 border-white/15'
                         }`}>
-                          {alert.type}
+                          {alert.priority}
                         </span>
                       </div>
 
-                      <p className={`text-sm mb-3 max-w-2xl ${alert.isRead ? 'text-slate-500' : 'text-slate-700 font-medium'}`}>
+                      <p className="text-xs text-slate-300 mb-2 max-w-2xl font-normal leading-relaxed">
                         {alert.message}
                       </p>
 
-                      <div className="flex items-center gap-4 text-xs font-medium text-slate-400">
-                        <span className="flex items-center gap-1"><Clock size={14} /> {alert.timestamp}</span>
-                        <span className="uppercase text-[10px] tracking-wide font-semibold text-slate-400/80">Priority: {alert.priority}</span>
+                      <div className="flex items-center gap-4 text-[11px] text-slate-400 font-medium">
+                        <span>{alert.timestamp}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex flex-col items-end gap-2">
-                    <div className="relative group/disabled cursor-not-allowed" title="Disabled Feature">
-                      <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-400 px-3 py-1.5 rounded-lg text-sm font-semibold pointer-events-none grayscale select-none">
-                        View Case <ArrowRight size={14} />
-                      </div>
-                      <div className="pointer-events-none absolute -top-8 right-0 hidden group-hover/disabled:flex items-center px-2 py-0.5 text-[10px] font-semibold text-white bg-slate-800 rounded shadow-md whitespace-nowrap z-50">
-                        Disabled Feature
-                      </div>
-                    </div>
+                  {/* Action */}
+                  <div className="flex flex-col items-end gap-2 shrink-0">
                     {!alert.isRead && (
                       <button
                         onClick={() => markAsRead(alert.id)}
-                        className="text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors px-2 py-1 border-none bg-transparent cursor-pointer"
+                        className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors px-2.5 py-1 border border-emerald-400/30 bg-emerald-500/10 rounded-none cursor-pointer uppercase"
                       >
-                        Mark as read
+                        Mark Read
                       </button>
                     )}
                   </div>
@@ -257,7 +229,6 @@ export default function StudentAlertsPage() {
             ))
           )}
         </div>
-
       </div>
     </main>
   );

@@ -316,7 +316,7 @@ export default function StudentClassesPage() {
           <div className="flex items-center gap-2 mb-1.5">
             <span className="w-1.5 h-1.5 bg-emerald-400 rounded-none" />
             <span className="text-xs text-emerald-400 tracking-wider uppercase font-semibold">
-              PASUM // ENROLLED COURSE DETAILS
+              ENROLLED COURSE DETAILS
             </span>
           </div>
           <h2 className="text-3xl font-bold tracking-tight text-white uppercase">
@@ -377,8 +377,7 @@ export default function StudentClassesPage() {
             <PixelIcon name="trendingUp" size={24} />
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="text-[10px] text-emerald-400 font-bold">01.</span>
+            <div className="mb-0.5">
               <p className="text-xs text-slate-400 uppercase tracking-wider font-medium">Class Performance</p>
             </div>
             <h4 className={`text-2xl font-bold ${
@@ -397,8 +396,7 @@ export default function StudentClassesPage() {
             <PixelIcon name="checkCircle" size={24} />
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="text-[10px] text-emerald-400 font-bold">02.</span>
+            <div className="mb-0.5">
               <p className="text-xs text-slate-400 uppercase tracking-wider font-medium">Attendance Rate</p>
             </div>
             <h4 className={`text-2xl font-bold ${
@@ -417,8 +415,7 @@ export default function StudentClassesPage() {
             <PixelIcon name="calendar" size={24} />
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="text-[10px] text-purple-400 font-bold">03.</span>
+            <div className="mb-0.5">
               <p className="text-xs text-slate-400 uppercase tracking-wider font-medium">Next Lecture</p>
             </div>
             <h4 className="text-sm font-bold text-white truncate leading-snug">
@@ -436,8 +433,7 @@ export default function StudentClassesPage() {
             <PixelIcon name="cases" size={24} />
           </div>
           <div className="min-w-0 opacity-40 grayscale pointer-events-none select-none">
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="text-[10px] text-slate-500 font-bold">04.</span>
+            <div className="mb-0.5">
               <p className="text-xs text-slate-400 uppercase tracking-wider font-medium">Support Cases</p>
             </div>
             <h4 className="text-sm font-bold text-slate-400 leading-none">

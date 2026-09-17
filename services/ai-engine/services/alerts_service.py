@@ -4,6 +4,7 @@ from psycopg2.extras import RealDictCursor
 import uuid
 import json
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 from models.schemas import *
 from core.auth import check_user_auth, check_admin_auth, get_current_user
 from core.database import get_db
@@ -18,6 +19,7 @@ def get_alerts(filter: Optional[str] = "all", user: dict = Depends(get_current_u
             profile = cur.fetchone()
             actual_role = profile["role"] if profile else user_role
 
+            # Query alerts scoped to lecturer, student, or admin
             cur.execute(
                 """
                 SELECT 
@@ -35,10 +37,11 @@ def get_alerts(filter: Optional[str] = "all", user: dict = Depends(get_current_u
                 LEFT JOIN public.profiles p ON a.student_id = p.id
                 LEFT JOIN public.classes c ON a.class_id = c.id
                 LEFT JOIN public.subjects s ON c.subject_id = s.id
-                WHERE a.lecturer_id = %s OR %s = 'admin'
-                ORDER BY a.created_at DESC;
+                WHERE (a.lecturer_id = %s OR a.student_id = %s OR %s = 'admin')
+                ORDER BY a.created_at DESC
+                LIMIT 100;
                 """,
-                (user_id, actual_role)
+                (user_id, user_id, actual_role)
             )
             rows = cur.fetchall() or []
 
@@ -75,7 +78,8 @@ def get_alerts(filter: Optional[str] = "all", user: dict = Depends(get_current_u
                     "priority": r["priority"] or "medium",
                     "message": r["message"] or "",
                     "timestamp": time_str,
-                    "isRead": is_read
+                    "isRead": is_read,
+                    "is_read": is_read
                 })
 
             if filter == "unread":
@@ -95,8 +99,7 @@ def get_alerts(filter: Optional[str] = "all", user: dict = Depends(get_current_u
         raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Alerts Database Error: {str(e)}")
-
+        raise HTTPException(status_code=500, detail="Failed to fetch alerts.")
 
 def mark_alert_read(alert_id: str, user: dict = Depends(get_current_user), db = Depends(get_db)):
     try:
@@ -108,18 +111,19 @@ def mark_alert_read(alert_id: str, user: dict = Depends(get_current_user), db = 
             profile = cur.fetchone()
             actual_role = profile["role"] if profile else user_role
 
+            # Update alert with ownership verification
             cur.execute(
                 """
                 UPDATE public.alerts 
                 SET is_read = true 
-                WHERE id = %s AND (lecturer_id = %s OR %s = 'admin')
+                WHERE id = %s AND (lecturer_id = %s OR student_id = %s OR %s = 'admin')
                 RETURNING id, is_read;
                 """,
-                (alert_id, user_id, actual_role)
+                (alert_id, user_id, user_id, actual_role)
             )
             updated = cur.fetchone()
             if not updated:
-                raise HTTPException(status_code=404, detail="Alert not found or access denied")
+                raise HTTPException(status_code=404, detail="Alert not found or access denied.")
 
             db.commit()
             return {"status": "success", "alert": updated}
@@ -129,8 +133,7 @@ def mark_alert_read(alert_id: str, user: dict = Depends(get_current_user), db = 
         raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Mark Alert Read Error: {str(e)}")
-
+        raise HTTPException(status_code=500, detail="Failed to update alert.")
 
 def mark_all_alerts_read(user: dict = Depends(get_current_user), db = Depends(get_db)):
     try:
@@ -142,13 +145,14 @@ def mark_all_alerts_read(user: dict = Depends(get_current_user), db = Depends(ge
             profile = cur.fetchone()
             actual_role = profile["role"] if profile else user_role
 
+            # Mark all alerts for user as read
             cur.execute(
                 """
                 UPDATE public.alerts 
                 SET is_read = true 
-                WHERE (lecturer_id = %s OR %s = 'admin') AND is_read = false;
+                WHERE (lecturer_id = %s OR student_id = %s OR %s = 'admin') AND is_read = false;
                 """,
-                (user_id, actual_role)
+                (user_id, user_id, actual_role)
             )
             db.commit()
             return {"status": "success", "message": "All alerts marked as read."}
@@ -158,5 +162,4 @@ def mark_all_alerts_read(user: dict = Depends(get_current_user), db = Depends(ge
         raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Mark All Read Error: {str(e)}")
-
+        raise HTTPException(status_code=500, detail="Failed to mark alerts as read.")

@@ -167,53 +167,56 @@ export default function HomePage() {
       };
     });
 
-    // Dynamic schedule filtering by current day
-    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const todayDayOfWeek = days[new Date().getDay()];
-
-    const todayClasses = processedClasses.filter((cls: any) => cls.dayOfWeek === todayDayOfWeek);
-    todayClasses.sort((a: any, b: any) => (a.startTime || "").localeCompare(b.startTime || ""));
-
-    // Fallback: sort all classes by day-of-week index & starting time
+    // Sort all classes chronologically across the week
     const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-    const fallbackClasses = [...processedClasses].sort((a: any, b: any) => {
+    const sortedClasses = [...processedClasses].sort((a: any, b: any) => {
       const dayA = dayOrder.indexOf(a.dayOfWeek || "");
       const dayB = dayOrder.indexOf(b.dayOfWeek || "");
       if (dayA !== dayB) return dayA - dayB;
       return (a.startTime || "").localeCompare(b.startTime || "");
     });
 
-    const displaySchedule = todayClasses.length > 0 ? todayClasses : fallbackClasses;
-    const slicedSchedule = displaySchedule.slice(0, 3);
+    // Auto-focus class that is ongoing or closest upcoming according to current date/time
+    const dayMap: Record<string, number> = {
+      sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6
+    };
+    const now = new Date();
+    const currentDayIdx = now.getDay();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-    // Find index of ongoing or closest upcoming class in the today list
-    const currentTime = new Date().toLocaleTimeString('en-GB', { hour12: false });
-    let activeIdx = 0;
+    let minDeltaMinutes = Infinity;
+    let closestIndex = 0;
 
-    if (todayClasses.length > 0) {
-      const firstUpcomingOrOngoing = todayClasses.findIndex((cls: any) => {
-        const start = cls.startTime || "00:00:00";
-        let end = cls.endTime || "";
-        if (!end) {
-          const startHr = parseInt(start.split(':')[0] || "0", 10);
-          end = `${String((startHr + 2) % 24).padStart(2, '0')}:${start.split(':')[1] || "00"}:00`;
-        }
-        const isOngoing = currentTime >= start && currentTime <= end;
-        const isUpcoming = currentTime < start;
-        return isOngoing || isUpcoming;
-      });
-
-      if (firstUpcomingOrOngoing !== -1) {
-        activeIdx = firstUpcomingOrOngoing;
-      } else {
-        activeIdx = todayClasses.length - 1;
+    sortedClasses.forEach((cls: any, idx: number) => {
+      if (cls.activeSessionId) {
+        minDeltaMinutes = -1;
+        closestIndex = idx;
+        return;
       }
-    }
+      const classDayIdx = dayMap[(cls.dayOfWeek || "Monday").toLowerCase()] ?? 1;
+      const [startH, startM] = (cls.startTime || "10:00").split(':').map(Number);
+      const startMin = (startH || 0) * 60 + (startM || 0);
+      const [endH, endM] = (cls.endTime || "12:00").split(':').map(Number);
+      const endMin = (endH || 0) * 60 + (endM || 0);
 
-    const finalActiveIdx = Math.min(activeIdx, Math.max(0, slicedSchedule.length - 1));
+      let deltaDays = (classDayIdx - currentDayIdx + 7) % 7;
+      if (deltaDays === 0 && currentMinutes >= startMin && currentMinutes <= endMin) {
+        minDeltaMinutes = -1;
+        closestIndex = idx;
+        return;
+      }
+      if (deltaDays === 0 && currentMinutes > endMin) {
+        deltaDays = 7;
+      }
+      const totalMinutesUntil = deltaDays * 1440 + (startMin - currentMinutes);
+      if (totalMinutesUntil < minDeltaMinutes && minDeltaMinutes !== -1) {
+        minDeltaMinutes = totalMinutesUntil;
+        closestIndex = idx;
+      }
+    });
 
-    setScheduleToday(slicedSchedule);
-    setActiveIndex(finalActiveIdx);
+    setScheduleToday(sortedClasses);
+    setActiveIndex(closestIndex);
     setAssignedClasses(processedClasses);
     setHasAnyActiveSession(processedClasses.some((c: any) => !!c.activeSessionId));
     setIsLoading(false);
@@ -265,9 +268,6 @@ export default function HomePage() {
 
         {/* Header Overlay */}
         <div className="absolute top-6 left-8 lg:left-10 z-40">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs uppercase tracking-widest text-emerald-400 font-bold">PASUM</span>
-          </div>
           <h2 className="text-2xl lg:text-3xl font-bold tracking-tight text-white">Welcome back, {lecturerName}</h2>
           <p className="text-xs text-white/60 mt-0.5">{currentDateFormatted}</p>
         </div>
@@ -309,7 +309,7 @@ export default function HomePage() {
 
               let transformClasses = "translate-x-full scale-50 opacity-0 z-0";
               if (isCenter) {
-                 transformClasses = "translate-x-0 scale-100 opacity-100 z-30 blur-none shadow-2xl";
+                transformClasses = "translate-x-0 scale-100 opacity-100 z-30 blur-none shadow-2xl";
               } else if ((isRight && Math.abs(offset) === 1) || (activeIndex === scheduleToday.length - 1 && index === 0)) {
                 transformClasses = "translate-x-[35%] scale-75 opacity-60 z-20 blur-[2px] shadow-lg cursor-pointer hover:opacity-90 hover:blur-none";
               } else if ((isLeft && Math.abs(offset) === 1) || (activeIndex === 0 && index === scheduleToday.length - 1)) {
@@ -470,7 +470,7 @@ export default function HomePage() {
                 ✕
               </button>
               <span className="text-[10px] font-bold tracking-widest uppercase text-emerald-400">
-                01 // SESSION SETUP
+                SESSION SETUP
               </span>
               <h2 className="text-xl font-bold mt-1 text-white">{configuringClass.title}</h2>
               <p className="text-xs text-white/60 mt-0.5">{configuringClass.group} • {configuringClass.location} • {configuringClass.time}</p>

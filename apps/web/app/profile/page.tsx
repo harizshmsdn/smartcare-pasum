@@ -72,9 +72,6 @@ export default function LecturerProfilePage() {
       {/* Header */}
       <header className="mb-6 flex justify-between items-end border-b border-white/10 pb-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs uppercase tracking-widest text-emerald-400 font-bold">PASUM // FACULTY PROFILE</span>
-          </div>
           <h2 className="text-2xl lg:text-3xl font-bold tracking-tight text-white uppercase">My Profile</h2>
           <p className="text-xs text-white/60 mt-0.5">Manage your academic credentials and professional contact details</p>
         </div>
@@ -132,7 +129,6 @@ export default function LecturerProfilePage() {
           <div className="border border-white/15 bg-[#08090c]/80 backdrop-blur-md p-5 rounded-none shadow-xl">
             <div className="border-b border-white/10 pb-3 mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-emerald-400">01.</span>
                 <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">DEPARTMENT & AFFILIATION</span>
               </div>
               <PixelIcon name="building" size={16} className="text-emerald-400" />
@@ -146,7 +142,6 @@ export default function LecturerProfilePage() {
           <div className="border border-white/15 bg-[#08090c]/80 backdrop-blur-md p-5 rounded-none shadow-xl">
             <div className="border-b border-white/10 pb-3 mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-emerald-400">02.</span>
                 <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">ASSIGNED COURSE LOAD (CURRENT SEMESTER)</span>
               </div>
               <PixelIcon name="classes" size={16} className="text-emerald-400" />

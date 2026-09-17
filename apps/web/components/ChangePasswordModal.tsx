@@ -107,7 +107,6 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
             <PixelIcon name="key" size={20} />
           </div>
           <div>
-            <div className="text-[10px] uppercase tracking-widest text-emerald-400 font-bold">01 // SECURITY</div>
             <h3 className="text-xl font-bold text-white">Change Password</h3>
             <p className="text-xs text-white/50 mt-0.5">Update your account credentials</p>
           </div>

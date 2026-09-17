@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 from models.schemas import *
 from core.auth import check_user_auth, check_admin_auth, get_current_user
 from core.database import get_db
+from core.rate_limiter import enforce_daily_quota
 
 def get_student_dashboard_analytics(user: dict = Depends(get_current_user), db = Depends(get_db)):
     try:
@@ -527,6 +528,7 @@ def create_student_merit_claim(req: StudentMeritClaimRequest, user: dict = Depen
         with db.cursor(cursor_factory=RealDictCursor) as cur:
             student_id = user["id"]
             check_user_auth(cur, student_id, "student")
+            enforce_daily_quota(student_id, "merit_claim", 5)
             cur.execute(
                 """
                 INSERT INTO public.merit_claims (student_id, title, category, awarded_points, description, proof_file_url, status)

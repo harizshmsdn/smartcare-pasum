@@ -93,12 +93,12 @@ export default function ClassesPage() {
       };
     });
     setClassesList(formatted);
-    
+
     // Select class from URL or first class
     const urlParams = new URLSearchParams(window.location.search);
     const urlClassId = urlParams.get("classId");
     const targetClass = formatted.find((c: any) => c.id === urlClassId) || formatted[0];
-    
+
     if (targetClass) {
       setSelectedClassId(targetClass.id);
       setSelectedClassName(targetClass.name);
@@ -129,7 +129,7 @@ export default function ClassesPage() {
         const attendanceRaw = e.current_attendance_rate;
         const attendance = attendanceRaw !== "-" ? Number(attendanceRaw) : "-";
         let status = 'good';
-        
+
         if (attendance === "-") {
           status = 'no-data';
         } else if (attendance < 80) {
@@ -206,12 +206,6 @@ export default function ClassesPage() {
       {/* Header & Class Selector */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 pb-6 border-b border-white/10">
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="w-1.5 h-1.5 bg-emerald-400 rounded-none" />
-            <span className="text-xs text-emerald-400 tracking-wider uppercase font-semibold">
-              PASUM // COHORT MANAGEMENT
-            </span>
-          </div>
           <h2 className="text-3xl font-bold tracking-tight text-white uppercase">
             Class Roster
           </h2>
@@ -281,9 +275,8 @@ export default function ClassesPage() {
                       setIsDropdownOpen(false);
                       window.history.pushState(null, '', `/classes?classId=${cls.id}`);
                     }}
-                    className={`w-full text-left px-4 py-3 hover:bg-white/10 transition-colors border-b border-white/10 last:border-b-0 ${
-                      selectedClassId === cls.id ? 'bg-emerald-600/20 text-emerald-300 font-semibold' : 'text-slate-300'
-                    }`}
+                    className={`w-full text-left px-4 py-3 hover:bg-white/10 transition-colors border-b border-white/10 last:border-b-0 ${selectedClassId === cls.id ? 'bg-emerald-600/20 text-emerald-300 font-semibold' : 'text-slate-300'
+                      }`}
                   >
                     {cls.name}
                   </button>
@@ -381,26 +374,23 @@ export default function ClassesPage() {
           <div className="flex gap-2 w-full md:w-auto text-xs">
             <button
               onClick={() => setActiveTab("all")}
-              className={`px-3.5 py-2 rounded-none transition-colors border ${
-                activeTab === "all"
-                  ? "bg-white/15 border-white/40 text-white font-bold"
-                  : "bg-transparent border-white/10 text-slate-400 hover:bg-white/5"
-              }`}
+              className={`px-3.5 py-2 rounded-none transition-colors border ${activeTab === "all"
+                ? "bg-white/15 border-white/40 text-white font-bold"
+                : "bg-transparent border-white/10 text-slate-400 hover:bg-white/5"
+                }`}
             >
               ALL STUDENTS ({students.length})
             </button>
             <button
               onClick={() => setActiveTab("alerts")}
-              className={`px-3.5 py-2 rounded-none transition-colors flex items-center gap-2 border ${
-                activeTab === "alerts"
-                  ? "bg-rose-500/20 border-rose-400/50 text-rose-300 font-bold"
-                  : "bg-transparent border-white/10 text-slate-400 hover:bg-white/5"
-              }`}
+              className={`px-3.5 py-2 rounded-none transition-colors flex items-center gap-2 border ${activeTab === "alerts"
+                ? "bg-rose-500/20 border-rose-400/50 text-rose-300 font-bold"
+                : "bg-transparent border-white/10 text-slate-400 hover:bg-white/5"
+                }`}
             >
               ALERTS ONLY
-              <span className={`px-1.5 py-0.5 rounded-none text-[10px] font-bold ${
-                activeTab === "alerts" ? "bg-rose-500/30 text-rose-200" : "bg-white/10 text-slate-400"
-              }`}>
+              <span className={`px-1.5 py-0.5 rounded-none text-[10px] font-bold ${activeTab === "alerts" ? "bg-rose-500/30 text-rose-200" : "bg-white/10 text-slate-400"
+                }`}>
                 {alertsCount}
               </span>
             </button>
@@ -479,26 +469,24 @@ export default function ClassesPage() {
                       )}
                     </td>
                     <td className="p-3.5">
-                      <span className={`font-bold ${
-                        typeof student.attendance === 'number' && student.attendance < 80
-                          ? "text-rose-400"
-                          : "text-white"
-                      }`}>
+                      <span className={`font-bold ${typeof student.attendance === 'number' && student.attendance < 80
+                        ? "text-rose-400"
+                        : "text-white"
+                        }`}>
                         {student.attendance}{student.attendance !== "-" ? "%" : ""}
                       </span>
                     </td>
                     <td className="p-3.5">
-                      <span className={`font-bold ${
-                        typeof student.latestScore === 'number' && student.latestScore < 50
-                          ? "text-rose-400"
-                          : "text-white"
-                      }`}>
+                      <span className={`font-bold ${typeof student.latestScore === 'number' && student.latestScore < 50
+                        ? "text-rose-400"
+                        : "text-white"
+                        }`}>
                         {student.latestScore}{student.latestScore !== "-" ? "%" : ""}
                       </span>
                     </td>
                     <td className="p-3.5 text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        <a 
+                        <a
                           href={student.email ? `mailto:${student.email}` : '#'}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -532,7 +520,7 @@ export default function ClassesPage() {
               ) : (
                 <tr>
                   <td colSpan={5} className="p-8">
-                    <EmptyState 
+                    <EmptyState
                       icon="profile"
                       title={students.length === 0 ? "No Students Enrolled" : "No Matches Found"}
                       description={students.length === 0 ? "There are no students currently enrolled in this class." : "No students found matching your filters."}
@@ -609,11 +597,10 @@ export default function ClassesPage() {
                       setFaceIdRequired(true);
                       setLocationRequired(true);
                     }}
-                    className={`flex flex-col p-4 rounded-none border cursor-pointer transition-all ${
-                      !onlineMode
-                        ? "border-emerald-400 bg-emerald-500/10 shadow-lg shadow-emerald-900/20"
-                        : "border-white/10 hover:border-white/20 bg-black/20"
-                    }`}
+                    className={`flex flex-col p-4 rounded-none border cursor-pointer transition-all ${!onlineMode
+                      ? "border-emerald-400 bg-emerald-500/10 shadow-lg shadow-emerald-900/20"
+                      : "border-white/10 hover:border-white/20 bg-black/20"
+                      }`}
                   >
                     <div className="flex justify-between items-start mb-2">
                       <div className="p-2 bg-emerald-500/10 border border-emerald-400/30 text-emerald-300 rounded-none">
@@ -636,11 +623,10 @@ export default function ClassesPage() {
                       setFaceIdRequired(false);
                       setLocationRequired(false);
                     }}
-                    className={`flex flex-col p-4 rounded-none border cursor-pointer transition-all ${
-                      onlineMode
-                        ? "border-emerald-400 bg-emerald-500/10 shadow-lg shadow-emerald-900/20"
-                        : "border-white/10 hover:border-white/20 bg-black/20"
-                    }`}
+                    className={`flex flex-col p-4 rounded-none border cursor-pointer transition-all ${onlineMode
+                      ? "border-emerald-400 bg-emerald-500/10 shadow-lg shadow-emerald-900/20"
+                      : "border-white/10 hover:border-white/20 bg-black/20"
+                      }`}
                   >
                     <div className="flex justify-between items-start mb-2">
                       <div className="p-2 bg-purple-500/10 border border-purple-400/30 text-purple-300 rounded-none">
@@ -669,15 +655,13 @@ export default function ClassesPage() {
                       setIsReplacement(false);
                       setCustomDateTime("");
                     }}
-                    className={`flex items-center gap-3 p-3.5 rounded-none border cursor-pointer transition-all ${
-                      !isReplacement
-                        ? "border-emerald-400 bg-emerald-500/10"
-                        : "border-white/10 hover:border-white/20 bg-black/20"
-                    }`}
+                    className={`flex items-center gap-3 p-3.5 rounded-none border cursor-pointer transition-all ${!isReplacement
+                      ? "border-emerald-400 bg-emerald-500/10"
+                      : "border-white/10 hover:border-white/20 bg-black/20"
+                      }`}
                   >
-                    <div className={`w-3.5 h-3.5 rounded-none border flex items-center justify-center ${
-                      !isReplacement ? 'border-emerald-400 bg-emerald-400' : 'border-white/30'
-                    }`} />
+                    <div className={`w-3.5 h-3.5 rounded-none border flex items-center justify-center ${!isReplacement ? 'border-emerald-400 bg-emerald-400' : 'border-white/30'
+                      }`} />
                     <div>
                       <div className="font-bold text-white text-xs">REGULAR CLASS (NOW)</div>
                       <div className="text-[10px] text-slate-400">Start check-in immediately</div>
@@ -692,15 +676,13 @@ export default function ClassesPage() {
                       const localISOTime = new Date(localNow.getTime() - offsetMs).toISOString().slice(0, 16);
                       setCustomDateTime(localISOTime);
                     }}
-                    className={`flex items-center gap-3 p-3.5 rounded-none border cursor-pointer transition-all ${
-                      isReplacement
-                        ? "border-emerald-400 bg-emerald-500/10"
-                        : "border-white/10 hover:border-white/20 bg-black/20"
-                    }`}
+                    className={`flex items-center gap-3 p-3.5 rounded-none border cursor-pointer transition-all ${isReplacement
+                      ? "border-emerald-400 bg-emerald-500/10"
+                      : "border-white/10 hover:border-white/20 bg-black/20"
+                      }`}
                   >
-                    <div className={`w-3.5 h-3.5 rounded-none border flex items-center justify-center ${
-                      isReplacement ? 'border-emerald-400 bg-emerald-400' : 'border-white/30'
-                    }`} />
+                    <div className={`w-3.5 h-3.5 rounded-none border flex items-center justify-center ${isReplacement ? 'border-emerald-400 bg-emerald-400' : 'border-white/30'
+                      }`} />
                     <div>
                       <div className="font-bold text-white text-xs">REPLACEMENT CLASS</div>
                       <div className="text-[10px] text-slate-400">Specify timestamp</div>
@@ -738,9 +720,8 @@ export default function ClassesPage() {
 
                 <div className="space-y-3">
                   {/* Face ID Switch */}
-                  <div className={`flex items-center justify-between p-3 rounded-none border ${
-                    onlineMode ? 'bg-black/10 border-white/5 opacity-50' : 'border-white/10 bg-black/20'
-                  }`}>
+                  <div className={`flex items-center justify-between p-3 rounded-none border ${onlineMode ? 'bg-black/10 border-white/5 opacity-50' : 'border-white/10 bg-black/20'
+                    }`}>
                     <div className="flex gap-3 items-center">
                       <PixelIcon name="scan" size={18} className={faceIdRequired ? 'text-emerald-400' : 'text-slate-500'} />
                       <div>
@@ -752,20 +733,18 @@ export default function ClassesPage() {
                       type="button"
                       disabled={onlineMode}
                       onClick={() => setFaceIdRequired(!faceIdRequired)}
-                      className={`px-3 py-1 text-[10px] font-bold rounded-none border transition-colors ${
-                        faceIdRequired
-                          ? "bg-emerald-600/30 border-emerald-400 text-emerald-300"
-                          : "bg-white/5 border-white/15 text-slate-500"
-                      }`}
+                      className={`px-3 py-1 text-[10px] font-bold rounded-none border transition-colors ${faceIdRequired
+                        ? "bg-emerald-600/30 border-emerald-400 text-emerald-300"
+                        : "bg-white/5 border-white/15 text-slate-500"
+                        }`}
                     >
                       {faceIdRequired ? "ENABLED" : "DISABLED"}
                     </button>
                   </div>
 
                   {/* Location Switch */}
-                  <div className={`flex items-center justify-between p-3 rounded-none border ${
-                    onlineMode ? 'bg-black/10 border-white/5 opacity-50' : 'border-white/10 bg-black/20'
-                  }`}>
+                  <div className={`flex items-center justify-between p-3 rounded-none border ${onlineMode ? 'bg-black/10 border-white/5 opacity-50' : 'border-white/10 bg-black/20'
+                    }`}>
                     <div className="flex gap-3 items-center">
                       <PixelIcon name="pin" size={18} className={locationRequired ? 'text-emerald-400' : 'text-slate-500'} />
                       <div>
@@ -777,11 +756,10 @@ export default function ClassesPage() {
                       type="button"
                       disabled={onlineMode}
                       onClick={() => setLocationRequired(!locationRequired)}
-                      className={`px-3 py-1 text-[10px] font-bold rounded-none border transition-colors ${
-                        locationRequired
-                          ? "bg-emerald-600/30 border-emerald-400 text-emerald-300"
-                          : "bg-white/5 border-white/15 text-slate-500"
-                      }`}
+                      className={`px-3 py-1 text-[10px] font-bold rounded-none border transition-colors ${locationRequired
+                        ? "bg-emerald-600/30 border-emerald-400 text-emerald-300"
+                        : "bg-white/5 border-white/15 text-slate-500"
+                        }`}
                     >
                       {locationRequired ? "ENABLED" : "DISABLED"}
                     </button>

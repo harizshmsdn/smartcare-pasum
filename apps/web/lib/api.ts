@@ -84,20 +84,32 @@ export async function apiClient<T = any>(
     config.body = typeof body === 'string' ? body : JSON.stringify(body);
   }
 
-  const response = await fetch(url, config);
+  // Execute request with backoff retry on HTTP 429
+  let response: Response | null = null;
+  const maxRetries = 2;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    response = await fetch(url, config);
+    if (response.status === 429 && attempt < maxRetries) {
+      const retryAfterHeader = response.headers.get('retry-after');
+      const waitMs = retryAfterHeader ? Math.min(Number(retryAfterHeader) * 1000, 4000) : 1000 * Math.pow(2, attempt);
+      await new Promise((r) => setTimeout(r, waitMs));
+      continue;
+    }
+    break;
+  }
 
-  if (!response.ok) {
+  if (!response || !response.ok) {
     let errorDetail: any = null;
     try {
-      errorDetail = await response.json();
+      errorDetail = response ? await response.json() : null;
     } catch {
-      errorDetail = await response.text();
+      errorDetail = response ? await response.text() : null;
     }
     const message = (errorDetail && typeof errorDetail === 'object' && errorDetail.detail)
       ? errorDetail.detail
-      : `API Request failed with status ${response.status}`;
+      : `API Request failed with status ${response?.status || 'network_error'}`;
     
-    throw new ApiError(message, response.status, errorDetail);
+    throw new ApiError(message, response?.status || 500, errorDetail);
   }
 
   // Parse JSON if content exists

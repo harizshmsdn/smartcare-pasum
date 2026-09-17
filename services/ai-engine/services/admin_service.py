@@ -454,7 +454,7 @@ def update_admin_settings(req: AdminSettingsUpdateRequest, user: dict = Depends(
             check_admin_auth(user, cur)
             ensure_system_settings_table(cur)
             
-            data = req.dict()
+            data = req.model_dump()
             for key, value in data.items():
                 cur.execute("""
                     INSERT INTO public.system_settings (key, value, updated_at)

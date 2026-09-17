@@ -119,7 +119,7 @@ export default function StudentProfilePage() {
       <header className="mb-6 flex justify-between items-end border-b border-white/10 pb-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs uppercase tracking-widest text-emerald-400 font-bold">PASUM // STUDENT PROFILE</span>
+            <span className="text-xs uppercase tracking-widest text-emerald-400 font-bold">STUDENT PROFILE</span>
           </div>
           <h2 className="text-2xl lg:text-3xl font-bold tracking-tight text-white uppercase">Student Profile</h2>
           <p className="text-xs text-white/60 mt-0.5">Manage your academic records, enrolled streams, and contact details</p>
@@ -258,10 +258,7 @@ export default function StudentProfilePage() {
           {/* Academic Stream Information */}
           <div className="border border-white/15 bg-[#08090c]/80 backdrop-blur-md p-5 rounded-none shadow-xl">
             <div className="border-b border-white/10 pb-3 mb-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-emerald-400">01.</span>
-                <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">REGISTERED ACADEMIC STREAM</span>
-              </div>
+              <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">REGISTERED ACADEMIC STREAM</span>
               <PixelIcon name="graduation" size={16} className="text-emerald-400" />
             </div>
             <p className="text-xs text-white/80 leading-relaxed border border-white/10 bg-black/40 p-3.5 rounded-none">
@@ -272,10 +269,7 @@ export default function StudentProfilePage() {
           {/* Enrolled Courses */}
           <div className="border border-white/15 bg-[#08090c]/80 backdrop-blur-md p-5 rounded-none shadow-xl">
             <div className="border-b border-white/10 pb-3 mb-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-emerald-400">02.</span>
-                <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">ENROLLED COURSE LOAD (CURRENT SEMESTER)</span>
-              </div>
+              <span className="text-xs uppercase tracking-wider text-white/90 font-semibold">ENROLLED COURSE LOAD (CURRENT SEMESTER)</span>
               <PixelIcon name="classes" size={16} className="text-emerald-400" />
             </div>
 

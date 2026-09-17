@@ -83,18 +83,6 @@ export default function LoginPage() {
                         </div>
                     )}
 
-                    {/* Card Header */}
-                    <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs text-emerald-400 font-bold">01</span>
-                            <span className="text-xs uppercase tracking-wider text-white/80 font-medium">
-                                // AUTHENTICATION
-                            </span>
-                        </div>
-                        <span className="text-[10px] border border-white/15 px-2 py-0.5 text-white/60 bg-white/5 font-semibold">
-                            PORTAL
-                        </span>
-                    </div>
 
                     {/* Title */}
                     <div className="space-y-1">
@@ -102,7 +90,7 @@ export default function LoginPage() {
                             Sign in to <span className="font-black">tigha.</span>
                         </h2>
                         <p className="text-white/50 text-xs">
-                            Enter your PASUM credentials to continue
+                            Enter your siswamail credentials to continue
                         </p>
                     </div>
 
@@ -297,9 +285,6 @@ export default function LoginPage() {
                         <div className="space-y-6 transition-opacity duration-300">
                             {/* Title & IPA */}
                             <div className="border border-white/15 bg-[#08090c]/70 backdrop-blur-md p-8 rounded-none space-y-4">
-                                <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                                    <span className="text-xs text-emerald-400 font-bold tracking-wider">00 // PLATFORM</span>
-                                </div>
                                 <h1 className="text-6xl sm:text-7xl font-black tracking-tighter text-white font-sans">
                                     tigha<span className="text-emerald-400">.</span>
                                 </h1>
@@ -312,25 +297,11 @@ export default function LoginPage() {
                                     An EdTech system to keep students locked in and ahead of the curve.
                                 </p>
                             </div>
-
-                            {/* Bento Feature Cards */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="border border-white/15 bg-[#08090c]/70 backdrop-blur-md p-5 rounded-none space-y-2">
-                                    <span className="text-emerald-400 font-bold text-xs">01</span>
-                                    <h4 className="text-white font-bold text-sm">3-Factor Attendance</h4>
-                                    <p className="text-white/50 text-xs leading-relaxed">Face ID, GPS geofencing & dynamic QR code validation.</p>
-                                </div>
-                                <div className="border border-white/15 bg-[#08090c]/70 backdrop-blur-md p-5 rounded-none space-y-2">
-                                    <span className="text-emerald-400 font-bold text-xs">02</span>
-                                    <h4 className="text-white font-bold text-sm">Realtime Analytics</h4>
-                                    <p className="text-white/50 text-xs leading-relaxed">Early alert flags, continuous assessment matrices, and trajectories.</p>
-                                </div>
-                            </div>
                         </div>
                     ) : (
                         <div className="border border-white/15 bg-[#08090c]/70 backdrop-blur-md p-8 rounded-none space-y-6 transition-opacity duration-300">
                             <div className="border-b border-white/10 pb-3">
-                                <span className="text-xs text-emerald-400 font-bold tracking-wider">02 // CREATORS</span>
+                                <span className="text-xs text-emerald-400 font-bold tracking-wider">CREATORS</span>
                             </div>
                             <div className="space-y-4">
                                 <div className="border-l-2 border-[#c8d4ff] pl-4 py-1">

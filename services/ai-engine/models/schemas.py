@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 
 class SessionStartRequest(BaseModel):
@@ -28,8 +28,9 @@ class StudentMeritClaimRequest(BaseModel):
     proof_file_url: str
     awarded_points: float = 10.0
 
-    @validator('title', 'category', 'description', 'proof_file_url')
-    def check_non_empty(cls, v):
+    @field_validator('title', 'category', 'description', 'proof_file_url')
+    @classmethod
+    def check_non_empty(cls, v: str) -> str:
         if not v or not v.strip() or v.strip() == 'https://':
             raise ValueError('Field cannot be empty or default placeholder')
         return v.strip()
@@ -42,8 +43,9 @@ class InterventionCreateRequest(BaseModel):
     priority: str
     schedule_advising: bool = False
 
-    @validator('student_id', 'class_id', 'issue_description', 'status', 'priority')
-    def check_fields_non_empty(cls, v):
+    @field_validator('student_id', 'class_id', 'issue_description', 'status', 'priority')
+    @classmethod
+    def check_fields_non_empty(cls, v: str) -> str:
         if not v or not v.strip():
             raise ValueError('Fields cannot be empty')
         return v.strip()
@@ -57,8 +59,9 @@ class AdminUserCreateRequest(BaseModel):
     phone_number: Optional[str] = None
     office_location: Optional[str] = None
 
-    @validator('full_name', 'email', 'role', 'institutional_id', 'affiliation')
-    def check_mandatory(cls, v):
+    @field_validator('full_name', 'email', 'role', 'institutional_id', 'affiliation')
+    @classmethod
+    def check_mandatory(cls, v: str) -> str:
         if not v or not v.strip():
             raise ValueError('Mandatory field cannot be empty')
         return v.strip()
@@ -115,4 +118,11 @@ class AdminSettingsUpdateRequest(BaseModel):
     default_user_password: str = Field(default="password123", min_length=6)
     session_timeout_hours: int = Field(default=12, ge=1, le=168)
     enable_audit_logs: bool = True
+
+class StudentSettingsUpdateRequest(BaseModel):
+    language: str = Field(default="en", max_length=10)
+    notifications_enabled: bool = True
+
+class LecturerInterventionUpdateRequest(BaseModel):
+    status: str = Field(max_length=50)
 

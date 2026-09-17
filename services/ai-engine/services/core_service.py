@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from models.schemas import SessionStartRequest, AssessmentCreateRequest, ScoreSaveRequest
 from core.auth import get_current_user
 from core.database import get_db
+from core.rate_limiter import enforce_daily_quota
 
 def generate_complex_pin(conn) -> str:
     """Generates a secure 6-digit alphanumeric PIN, avoiding UX confusing chars (O, 0, I, 1)."""
@@ -35,6 +36,9 @@ def start_session(req: SessionStartRequest, user: dict = Depends(get_current_use
             user_role = profile["role"] if profile else "student"
             if user_role not in ["lecturer", "admin"]:
                 raise HTTPException(status_code=403, detail="Access denied: Only lecturers or admins can open class sessions.")
+
+            # Enforce daily quota for attendance sessions
+            enforce_daily_quota(user["id"], "start_session", 25)
 
             # If user is a lecturer, verify they own the class
             if user_role == "lecturer":

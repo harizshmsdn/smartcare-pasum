@@ -74,7 +74,7 @@ export default function AdminSettingsPage() {
         <div className="flex items-center gap-2 mb-1.5">
           <span className="w-1.5 h-1.5 bg-emerald-400 rounded-none" />
           <span className="text-xs text-emerald-400 uppercase tracking-wider font-semibold">
-            PASUM // ADMIN CONTROL PANEL
+            ADMIN CONTROL PANEL
           </span>
         </div>
         <h2 className="text-3xl font-bold tracking-tight uppercase text-white">
@@ -117,7 +117,7 @@ export default function AdminSettingsPage() {
                     Academic & Attendance Triggers
                   </h3>
                 </div>
-                <span className="text-[10px] text-emerald-400 font-bold">01 // POLICY</span>
+                <span className="text-[10px] text-emerald-400 font-bold uppercase">POLICY</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -243,7 +243,7 @@ export default function AdminSettingsPage() {
                     Automated Workflows & Maintenance
                   </h3>
                 </div>
-                <span className="text-[10px] text-emerald-400 font-bold">02 // WORKFLOWS</span>
+                <span className="text-[10px] text-emerald-400 font-bold uppercase">WORKFLOWS</span>
               </div>
 
               <div className="space-y-4">
@@ -309,7 +309,7 @@ export default function AdminSettingsPage() {
                     Security & Account Provisioning Defaults
                   </h3>
                 </div>
-                <span className="text-[10px] text-emerald-400 font-bold">03 // SECURITY</span>
+                <span className="text-[10px] text-emerald-400 font-bold uppercase">SECURITY</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

@@ -175,7 +175,7 @@ export default function ClassAssessmentsPage() {
           <div className="flex items-center gap-2 mb-1.5">
             <span className="w-1.5 h-1.5 bg-emerald-400 rounded-none" />
             <span className="text-xs text-emerald-400 uppercase tracking-wider font-semibold">
-              PASUM // GRADING & EXAMS
+              GRADING & EXAMS
             </span>
           </div>
           <h2 className="text-3xl font-bold tracking-tight uppercase flex items-center gap-3">
@@ -212,9 +212,8 @@ export default function ClassAssessmentsPage() {
                     setSelectedClassName(cls.name);
                     setIsDropdownOpen(false);
                   }}
-                  className={`w-full text-left px-4 py-3 hover:bg-white/10 transition-colors border-b border-white/10 last:border-b-0 cursor-pointer ${
-                    selectedClassId === cls.id ? 'bg-emerald-600/20 text-emerald-300 font-bold' : 'text-slate-300'
-                  }`}
+                  className={`w-full text-left px-4 py-3 hover:bg-white/10 transition-colors border-b border-white/10 last:border-b-0 cursor-pointer ${selectedClassId === cls.id ? 'bg-emerald-600/20 text-emerald-300 font-bold' : 'text-slate-300'
+                    }`}
                 >
                   {cls.name}
                 </button>
@@ -232,7 +231,6 @@ export default function ClassAssessmentsPage() {
           </div>
           <div>
             <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="text-[10px] text-emerald-400 font-bold">01.</span>
               <p className="text-xs text-slate-400 uppercase tracking-wider">Set Assessments</p>
             </div>
             <p className="text-2xl font-bold text-white leading-tight">{assessments.length}</p>
@@ -245,7 +243,6 @@ export default function ClassAssessmentsPage() {
           </div>
           <div>
             <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="text-[10px] text-indigo-400 font-bold">02.</span>
               <p className="text-xs text-slate-400 uppercase tracking-wider">Total Weightage</p>
             </div>
             <p className="text-2xl font-bold text-white leading-tight">{totalWeightage}%</p>
@@ -254,11 +251,10 @@ export default function ClassAssessmentsPage() {
 
         <div className="bg-[#08090c]/80 p-5 rounded-none border border-white/15 shadow-xl flex items-center gap-4 backdrop-blur-md">
           <div className="p-3 bg-emerald-500/10 border border-emerald-400/20 text-emerald-400 rounded-none shrink-0">
-            <PixelIcon name="profile" size={24} />
+            <PixelIcon name="graduation" size={24} />
           </div>
           <div>
             <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="text-[10px] text-emerald-400 font-bold">03.</span>
               <p className="text-xs text-slate-400 uppercase tracking-wider">Enrolled Roster</p>
             </div>
             <p className="text-2xl font-bold text-white leading-tight">{rosterScores.length}</p>
@@ -271,7 +267,6 @@ export default function ClassAssessmentsPage() {
           </div>
           <div>
             <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="text-[10px] text-amber-400 font-bold">04.</span>
               <p className="text-xs text-slate-400 uppercase tracking-wider">Class Exam Avg</p>
             </div>
             <p className="text-2xl font-bold text-white leading-tight">
@@ -288,41 +283,36 @@ export default function ClassAssessmentsPage() {
           <div className="flex gap-2">
             <button
               onClick={() => setActiveTab("matrix")}
-              className={`px-3.5 py-2 rounded-none transition-all cursor-pointer border flex items-center gap-2 ${
-                activeTab === "matrix"
-                  ? "bg-white/15 border-white/40 text-white font-bold"
-                  : "text-slate-400 border-white/10 hover:bg-white/5 bg-transparent"
-              }`}
+              className={`px-3.5 py-2 rounded-none transition-all cursor-pointer border flex items-center gap-2 ${activeTab === "matrix"
+                ? "bg-white/15 border-white/40 text-white font-bold"
+                : "text-slate-400 border-white/10 hover:bg-white/5 bg-transparent"
+                }`}
             >
               <span>OVERALL MARKS MATRIX</span>
-              <span className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded-none text-[10px] font-bold ${
-                activeTab === "matrix" ? "bg-emerald-400 text-black" : "bg-white/10 text-slate-400"
-              }`}>
+              <span className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded-none text-[10px] font-bold ${activeTab === "matrix" ? "bg-emerald-400 text-black" : "bg-white/10 text-slate-400"
+                }`}>
                 {rosterScores.length}
               </span>
             </button>
             <button
               onClick={() => setActiveTab("list")}
-              className={`px-3.5 py-2 rounded-none transition-all cursor-pointer border flex items-center gap-2 ${
-                activeTab === "list"
-                  ? "bg-white/15 border-white/40 text-white font-bold"
-                  : "text-slate-400 border-white/10 hover:bg-white/5 bg-transparent"
-              }`}
+              className={`px-3.5 py-2 rounded-none transition-all cursor-pointer border flex items-center gap-2 ${activeTab === "list"
+                ? "bg-white/15 border-white/40 text-white font-bold"
+                : "text-slate-400 border-white/10 hover:bg-white/5 bg-transparent"
+                }`}
             >
               <span>SET ASSESSMENTS</span>
-              <span className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded-none text-[10px] font-bold ${
-                activeTab === "list" ? "bg-emerald-400 text-black" : "bg-white/10 text-slate-400"
-              }`}>
+              <span className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded-none text-[10px] font-bold ${activeTab === "list" ? "bg-emerald-400 text-black" : "bg-white/10 text-slate-400"
+                }`}>
                 {assessments.length}
               </span>
             </button>
             <button
               onClick={() => setActiveTab("create")}
-              className={`px-3.5 py-2 rounded-none transition-all cursor-pointer border flex items-center gap-1.5 ${
-                activeTab === "create"
-                  ? "bg-white/15 border-white/40 text-white font-bold"
-                  : "text-slate-400 border-white/10 hover:bg-white/5 bg-transparent"
-              }`}
+              className={`px-3.5 py-2 rounded-none transition-all cursor-pointer border flex items-center gap-1.5 ${activeTab === "create"
+                ? "bg-white/15 border-white/40 text-white font-bold"
+                : "text-slate-400 border-white/10 hover:bg-white/5 bg-transparent"
+                }`}
             >
               <span>+ NEW ASSESSMENT</span>
             </button>

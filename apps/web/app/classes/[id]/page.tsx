@@ -229,8 +229,7 @@ export default function ProfilePage() {
           {/* Core Metrics (3 Cards) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div className="bg-[#08090c]/80 p-5 rounded-none border border-white/15 shadow-xl backdrop-blur-md">
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-[10px] text-blue-400 font-bold">01.</span>
+              <div className="mb-1">
                 <p className="text-xs text-slate-400 uppercase tracking-wider">Attendance</p>
               </div>
               <p className={`text-3xl font-bold mt-1 ${
@@ -244,8 +243,7 @@ export default function ProfilePage() {
             </div>
             
             <div className="bg-[#08090c]/80 p-5 rounded-none border border-white/15 shadow-xl backdrop-blur-md">
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-[10px] text-purple-400 font-bold">02.</span>
+              <div className="mb-1">
                 <p className="text-xs text-slate-400 uppercase tracking-wider">Latest Score</p>
               </div>
               <p className="text-3xl font-bold text-white mt-1">
@@ -254,8 +252,7 @@ export default function ProfilePage() {
             </div>
             
             <div className="bg-[#08090c]/80 p-5 rounded-none border border-white/15 shadow-xl backdrop-blur-md">
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-[10px] text-amber-400 font-bold">03.</span>
+              <div className="mb-1">
                 <p className="text-xs text-slate-400 uppercase tracking-wider">Risk Level</p>
               </div>
               <p className="text-xl font-bold text-white uppercase mt-2">
