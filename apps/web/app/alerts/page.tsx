@@ -207,6 +207,7 @@ export default function AlertsPage() {
           {filteredAlerts.length === 0 ? (
             <div className="h-full flex items-center justify-center py-20">
               <EmptyState 
+                icon="check"
                 title="All caught up"
                 description="No active alerts matching your current filter."
               />

@@ -202,6 +202,7 @@ export default function StudentAlertsPage() {
           {filteredAlerts.length === 0 ? (
             <div className="h-full flex items-center justify-center py-20">
               <EmptyState 
+                icon="check"
                 title="No active alerts"
                 description="You are completely caught up with all academic notifications."
               />

@@ -511,7 +511,19 @@ export default function ClassAssessmentsPage() {
               {activeTab === "list" && (
                 <div className="space-y-4 max-w-4xl mx-auto">
                   {assessments.length === 0 ? (
-                    <p className="text-center text-slate-400 py-12 text-xs">No assessments configured for this class.</p>
+                    <div className="text-center py-16 bg-[#08090c] rounded-none border border-white/15 shadow-xl max-w-md mx-auto p-8">
+                      <PixelIcon name="book" size={40} className="mx-auto text-slate-500 mb-3" />
+                      <h3 className="text-lg font-bold text-white uppercase">No assessments set yet</h3>
+                      <p className="text-slate-400 text-xs mb-6 mt-1">
+                        Create your first quiz, lab report, midterm, or final exam for this class to start recording marks.
+                      </p>
+                      <button
+                        onClick={() => setActiveTab("create")}
+                        className="px-5 py-2.5 bg-emerald-600 text-white rounded-none font-bold text-xs hover:bg-emerald-500 transition-all border border-emerald-400 cursor-pointer uppercase"
+                      >
+                        + CONFIGURE FIRST ASSESSMENT
+                      </button>
+                    </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {assessments.map((a) => (
@@ -554,98 +566,100 @@ export default function ClassAssessmentsPage() {
               )}
 
               {/* TAB 3: CREATE NEW ASSESSMENT FORM */}
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  try {
-                    await api.post(`/api/classes/${selectedClassId}/assessments`, {
-                      title: newTitle,
-                      type: newType,
-                      weightage: parseFloat(newWeightage),
-                      total_marks: parseInt(newTotalMarks, 10)
-                    });
+              {activeTab === "create" && (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    try {
+                      await api.post(`/api/classes/${selectedClassId}/assessments`, {
+                        title: newTitle,
+                        type: newType,
+                        weightage: parseFloat(newWeightage),
+                        total_marks: parseInt(newTotalMarks, 10)
+                      });
 
-                    setNewTitle("");
-                    setActiveTab("matrix");
-                    if (selectedClassId) fetchClassAssessmentsData(selectedClassId);
-                  } catch (err: any) {
-                    alert("Failed to create assessment: " + (err.detail || err.message || "Error"));
-                  }
-                }}
-                className="bg-[#08090c] p-6 rounded-none border border-white/20 shadow-2xl max-w-md mx-auto space-y-5 text-xs"
-              >
-                <div className="pb-3 border-b border-white/10">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="w-1.5 h-1.5 bg-emerald-400 rounded-none" />
-                    <span className="text-[10px] text-emerald-400 uppercase tracking-wider font-bold">
-                      ASSESSMENT CONFIGURATION
-                    </span>
-                  </div>
-                  <h4 className="font-bold text-white text-base">Configure New Assessment</h4>
-                  <p className="text-[11px] text-slate-400 mt-0.5">Set up quizzes, lab reports, or major exams</p>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">
-                    Assessment Title
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Quiz 2 / Lab Report 1 / Midterm Exam"
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                    className="w-full bg-black/40 border border-white/20 rounded-none px-3 py-2 text-xs text-white focus:border-emerald-400 focus:outline-none"
-                  />
-                </div>
-
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Type</label>
-                    <select
-                      value={newType}
-                      onChange={(e) => setNewType(e.target.value)}
-                      className="w-full bg-black/40 border border-white/20 rounded-none px-2 py-2 text-xs text-white focus:border-emerald-400 focus:outline-none"
-                    >
-                      <option value="Continuous" className="bg-[#08090c]">Continuous</option>
-                      <option value="Midterm" className="bg-[#08090c]">Midterm</option>
-                      <option value="Final" className="bg-[#08090c]">Final</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Weight (%)</label>
-                    <input
-                      type="number"
-                      required
-                      min="1"
-                      max="100"
-                      value={newWeightage}
-                      onChange={(e) => setNewWeightage(e.target.value)}
-                      className="w-full bg-black/40 border border-white/20 rounded-none px-2 py-2 text-xs text-white focus:border-emerald-400 focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Max Marks</label>
-                    <input
-                      type="number"
-                      required
-                      min="1"
-                      value={newTotalMarks}
-                      onChange={(e) => setNewTotalMarks(e.target.value)}
-                      className="w-full bg-black/40 border border-white/20 rounded-none px-2 py-2 text-xs text-white focus:border-emerald-400 focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full mt-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-none border border-emerald-400 shadow-lg shadow-emerald-900/30 transition-all cursor-pointer uppercase text-xs"
+                      setNewTitle("");
+                      setActiveTab("matrix");
+                      if (selectedClassId) fetchClassAssessmentsData(selectedClassId);
+                    } catch (err: any) {
+                      alert("Failed to create assessment: " + (err.detail || err.message || "Error"));
+                    }
+                  }}
+                  className="bg-[#08090c] p-6 rounded-none border border-white/20 shadow-2xl max-w-md mx-auto space-y-5 text-xs"
                 >
-                  SAVE ASSESSMENT
-                </button>
-              </form>
+                  <div className="pb-3 border-b border-white/10">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="w-1.5 h-1.5 bg-emerald-400 rounded-none" />
+                      <span className="text-[10px] text-emerald-400 uppercase tracking-wider font-bold">
+                        ASSESSMENT CONFIGURATION
+                      </span>
+                    </div>
+                    <h4 className="font-bold text-white text-base">Configure New Assessment</h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5">Set up quizzes, lab reports, or major exams</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">
+                      Assessment Title
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Quiz 2 / Lab Report 1 / Midterm Exam"
+                      value={newTitle}
+                      onChange={(e) => setNewTitle(e.target.value)}
+                      className="w-full bg-black/40 border border-white/20 rounded-none px-3 py-2 text-xs text-white focus:border-emerald-400 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Type</label>
+                      <select
+                        value={newType}
+                        onChange={(e) => setNewType(e.target.value)}
+                        className="w-full bg-black/40 border border-white/20 rounded-none px-2 py-2 text-xs text-white focus:border-emerald-400 focus:outline-none"
+                      >
+                        <option value="Continuous" className="bg-[#08090c]">Continuous</option>
+                        <option value="Midterm" className="bg-[#08090c]">Midterm</option>
+                        <option value="Final" className="bg-[#08090c]">Final</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Weight (%)</label>
+                      <input
+                        type="number"
+                        required
+                        min="1"
+                        max="100"
+                        value={newWeightage}
+                        onChange={(e) => setNewWeightage(e.target.value)}
+                        className="w-full bg-black/40 border border-white/20 rounded-none px-2 py-2 text-xs text-white focus:border-emerald-400 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Max Marks</label>
+                      <input
+                        type="number"
+                        required
+                        min="1"
+                        value={newTotalMarks}
+                        onChange={(e) => setNewTotalMarks(e.target.value)}
+                        className="w-full bg-black/40 border border-white/20 rounded-none px-2 py-2 text-xs text-white focus:border-emerald-400 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full mt-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-none border border-emerald-400 shadow-lg shadow-emerald-900/30 transition-all cursor-pointer uppercase text-xs"
+                  >
+                    SAVE ASSESSMENT
+                  </button>
+                </form>
+              )}
             </>
           )}
         </div>

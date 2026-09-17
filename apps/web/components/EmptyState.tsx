@@ -8,22 +8,29 @@ interface EmptyStateProps {
   action?: React.ReactNode;
 }
 
-export default function EmptyState({ icon: Icon, title, description, action }: EmptyStateProps) {
+// Seamless empty state presentation with no nested card borders
+export default function EmptyState({ icon: Icon, title, description, action, className = "" }: EmptyStateProps & { className?: string }) {
   return (
-    <div className="border border-white/15 bg-[#08090c]/80 backdrop-blur-md rounded-none p-10 text-center shadow-2xl flex flex-col items-center justify-center py-16 w-full mx-auto text-white">
-      <div className="border border-white/10 bg-white/5 p-4 rounded-none text-white/50 mb-4">
+    <div className={`flex flex-col items-center justify-center p-8 text-center w-full mx-auto text-white/40 ${className}`}>
+      <div className="text-white/30 mb-2.5">
         {Icon ? (
-          typeof Icon === 'function' ? <Icon size={36} /> : Icon
+          typeof Icon === 'function' ? (
+            <Icon size={32} />
+          ) : typeof Icon === 'string' ? (
+            <PixelIcon name={Icon} size={32} />
+          ) : (
+            Icon
+          )
         ) : (
-          <PixelIcon name="classes" size={36} />
+          <PixelIcon name="classes" size={32} />
         )}
       </div>
-      <h3 className="font-mono text-lg font-bold uppercase tracking-wider text-white">{title}</h3>
-      <p className="font-mono text-xs text-white/50 mt-1 max-w-md">
+      <h3 className="font-mono text-xs uppercase tracking-wider text-white/70 font-bold">{title}</h3>
+      <p className="font-mono text-[11px] text-white/40 mt-1 max-w-md">
         {description}
       </p>
       {action && (
-        <div className="mt-6">
+        <div className="mt-5">
           {action}
         </div>
       )}

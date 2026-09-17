@@ -37,7 +37,7 @@ export default function ProfilePage() {
 
   const [studentProfile, setStudentProfile] = useState<any>(null);
   const [attendanceRate, setAttendanceRate] = useState<number | null>(null);
-  const [latestScore, setLatestScore] = useState<number>(0);
+  const [latestScore, setLatestScore] = useState<number | null>(null);
   const [className, setClassName] = useState("Physics 101 (Group A)");
   const [enrolledClasses, setEnrolledClasses] = useState<{ class_id: string; class_name: string }[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>(fromClassId || "");
@@ -88,7 +88,7 @@ export default function ProfilePage() {
           setLatestScore(
             data.enrollment?.latest_score !== undefined && data.enrollment?.latest_score !== null
               ? Number(data.enrollment.latest_score)
-              : 0
+              : null
           );
           setClassName(data.enrollment?.class_name || "PASUM Class");
           setEnrolledClasses(data.enrolled_classes || []);
@@ -133,40 +133,123 @@ export default function ProfilePage() {
         }));
         setEnrolledClasses(mappedEnrolled);
 
-        const targetEnrollment: any = (enrollments || []).find((e: any) => e.class_id === selectedClassId) || (enrollments || [])[0];
+        const targetClassId = selectedClassId || (enrollments && enrollments.length > 0 && enrollments[0] ? enrollments[0].class_id : "");
+        const targetEnrollment: any = (enrollments || []).find((e: any) => e.class_id === targetClassId) || (enrollments || [])[0];
+
         if (targetEnrollment) {
-          setAttendanceRate(Number(targetEnrollment.current_attendance_rate || 85));
-          setLatestScore(78);
           setClassName(`${targetEnrollment.classes?.subjects?.code || 'SUB'} - ${targetEnrollment.classes?.subjects?.name || 'Class'} (${targetEnrollment.classes?.group_code || 'A'})`);
-          if (!selectedClassId) {
+          if (!selectedClassId && targetEnrollment.class_id) {
             setSelectedClassId(targetEnrollment.class_id);
           }
         }
 
-        setChartData([
-          { week: "Wk 1", attendance: 100, assessment: 85 },
-          { week: "Wk 2", attendance: 100, assessment: 82 },
-          { week: "Wk 3", attendance: 85, assessment: 79 },
-          { week: "Wk 4", attendance: 90, assessment: 84 },
-          { week: "Wk 5", attendance: 80, assessment: 78 }
-        ]);
+        if (targetClassId) {
+          // Fetch attendance sessions for class
+          const { data: sessions } = await supabase
+            .from('attendance_sessions')
+            .select('id, created_at')
+            .eq('class_id', targetClassId)
+            .order('created_at', { ascending: true });
 
-        setActivitiesList([
-          {
-            id: "act-1",
-            title: "Lecture Attendance Logged",
-            description: "Verified via Face ID & GPS geofence check",
-            timestamp: "Just now",
-            icon: "check"
-          },
-          {
-            id: "act-2",
-            title: "Assessment Submitted",
-            description: "Continuous Quiz 1 submitted and marked",
-            timestamp: "Yesterday",
-            icon: "book"
+          const sessionIds = (sessions || []).map((s: any) => s.id);
+          let realAttendanceRate: number | null = null;
+          let attRecords: any[] = [];
+
+          if (sessionIds.length > 0) {
+            const { data: records } = await supabase
+              .from('attendance_records')
+              .select('id, status, session_id, timestamp, created_at')
+              .in('session_id', sessionIds)
+              .eq('student_id', studentId)
+              .order('created_at', { ascending: false });
+
+            attRecords = records || [];
+            const attendedCount = attRecords.filter((r: any) => 
+              r.status === 'Present' || r.status === 'Late' || r.status === 'Excused'
+            ).length;
+            realAttendanceRate = Math.round((attendedCount / sessionIds.length) * 100);
           }
-        ]);
+          setAttendanceRate(realAttendanceRate);
+
+          // Fetch assessments and scores for class
+          const { data: assessList } = await supabase
+            .from('assessments')
+            .select('id, title, type, weightage, total_marks, created_at')
+            .eq('class_id', targetClassId)
+            .order('created_at', { ascending: true });
+
+          const assessIds = (assessList || []).map((a: any) => a.id);
+          let realLatestScore: number | null = null;
+          let studentScoreRecords: any[] = [];
+
+          if (assessIds.length > 0) {
+            const { data: scores } = await supabase
+              .from('student_scores')
+              .select('id, assessment_id, score_achieved, created_at')
+              .in('assessment_id', assessIds)
+              .eq('student_id', studentId)
+              .order('created_at', { ascending: false });
+
+            studentScoreRecords = scores || [];
+            if (studentScoreRecords.length > 0) {
+              const latest = studentScoreRecords[0];
+              const matchingAssess = (assessList || []).find((a: any) => a.id === latest.assessment_id);
+              const maxMarks = matchingAssess?.total_marks || 100;
+              if (maxMarks > 0 && latest.score_achieved !== null && latest.score_achieved !== undefined) {
+                realLatestScore = Math.round((Number(latest.score_achieved) / maxMarks) * 100);
+              }
+            }
+          }
+          setLatestScore(realLatestScore);
+
+          // Build performance trajectory if records exist
+          if (sessionIds.length === 0 && assessIds.length === 0) {
+            setChartData([]);
+          } else {
+            const trajectoryPoints: any[] = [];
+            (assessList || []).forEach((assess: any, idx: number) => {
+              const sc = studentScoreRecords.find((s: any) => s.assessment_id === assess.id);
+              if (sc && assess.total_marks > 0) {
+                const scorePct = Math.round((Number(sc.score_achieved) / assess.total_marks) * 100);
+                trajectoryPoints.push({
+                  week: assess.title.length > 10 ? `A${idx + 1}` : assess.title,
+                  score: scorePct,
+                  attendance: realAttendanceRate ?? 0
+                });
+              }
+            });
+            setChartData(trajectoryPoints);
+          }
+
+          // Build activities list from real logs
+          const activities: any[] = [];
+          attRecords.slice(0, 5).forEach((rec: any) => {
+            activities.push({
+              id: `att-${rec.id}`,
+              title: `Lecture Attendance: ${rec.status}`,
+              description: `Status verified as ${rec.status}`,
+              timestamp: rec.timestamp || rec.created_at || "Recent",
+              icon: rec.status === "Present" ? "check" : "clock"
+            });
+          });
+          studentScoreRecords.slice(0, 5).forEach((sc: any) => {
+            const matchingAssess = (assessList || []).find((a: any) => a.id === sc.assessment_id);
+            activities.push({
+              id: `score-${sc.id}`,
+              title: `Assessment Score Recorded`,
+              description: `${matchingAssess?.title || "Assessment"}: ${sc.score_achieved} marks`,
+              timestamp: sc.created_at || "Recent",
+              icon: "book"
+            });
+          });
+          activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+          setActivitiesList(activities);
+        } else {
+          setAttendanceRate(null);
+          setLatestScore(null);
+          setChartData([]);
+          setActivitiesList([]);
+        }
       } catch (err) {
         console.error("Failed to load student data:", err);
       } finally {
@@ -309,7 +392,7 @@ export default function ProfilePage() {
                 attendanceRate < 90 ? 'text-amber-400' :
                 'text-emerald-400'
               }`}>
-                {attendanceRate !== null ? `${Math.round(attendanceRate)}%` : '-'}
+                {attendanceRate !== null ? `${Math.round(attendanceRate)}%` : '—'}
               </p>
             </div>
             
@@ -317,8 +400,8 @@ export default function ProfilePage() {
               <div className="mb-1">
                 <p className="text-xs text-slate-400 uppercase tracking-wider">Latest Score</p>
               </div>
-              <p className="text-3xl font-bold text-white mt-1">
-                {latestScore}%
+              <p className={`text-3xl font-bold mt-1 ${latestScore !== null ? 'text-white' : 'text-slate-500'}`}>
+                {latestScore !== null ? `${Math.round(latestScore)}%` : '—'}
               </p>
             </div>
             
@@ -326,7 +409,7 @@ export default function ProfilePage() {
               <div className="mb-1">
                 <p className="text-xs text-slate-400 uppercase tracking-wider">Risk Level</p>
               </div>
-              <p className="text-xl font-bold text-white uppercase mt-2">
+              <p className={`text-xl font-bold uppercase mt-2 ${riskStatus === 'no-data' ? 'text-slate-500' : 'text-white'}`}>
                 {riskStatus === "critical" ? "Critical Risk" : riskStatus === "at-risk" ? "Moderate" : riskStatus === "good" ? "On Track" : "No Data"}
               </p>
             </div>

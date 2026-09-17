@@ -77,14 +77,15 @@ export default function StudentHomePage() {
       const assignedClasses = (enrollments || []).map((e: any) => {
         const cls = e.classes;
         const sub = cls?.subjects;
+        const hasAtt = e.current_attendance_rate !== null && e.current_attendance_rate !== undefined && e.current_attendance_rate !== "-";
         return {
           id: cls?.id || e.class_id,
           title: sub?.name || "Class",
           group: cls?.group_code || "Group A",
           location: cls?.location || "PASUM Campus",
-          attendance: e.current_attendance_rate || 0,
-          latestScore: 0,
-          riskStatus: "Good",
+          attendance: hasAtt ? Number(e.current_attendance_rate) : null,
+          latestScore: null,
+          riskStatus: hasAtt ? (Number(e.current_attendance_rate) < 80 ? "Critical" : Number(e.current_attendance_rate) < 90 ? "At Risk" : "Good") : "No Data",
           type: cls?.type || "Lecture",
           dayOfWeek: cls?.day_of_week || "Monday",
           startTime: cls?.start_time || "10:00:00",
@@ -307,14 +308,18 @@ export default function StudentHomePage() {
                         <div className="text-white/60 text-[10px] font-bold uppercase mb-1">
                           Attendance
                         </div>
-                        <div className="text-xl font-bold text-emerald-400">{cls.attendance}%</div>
+                        <div className={`text-xl font-bold ${cls.attendance !== null ? 'text-emerald-400' : 'text-slate-400'}`}>
+                          {cls.attendance !== null ? `${cls.attendance}%` : "—"}
+                        </div>
                       </div>
 
                       <div className="bg-white/5 p-3 rounded-none border border-white/10">
                         <div className="text-white/60 text-[10px] font-bold uppercase mb-1">
                           Latest Score
                         </div>
-                        <div className="text-xl font-bold text-emerald-400">{cls.latestScore}%</div>
+                        <div className={`text-xl font-bold ${cls.latestScore !== null ? 'text-emerald-400' : 'text-slate-400'}`}>
+                          {cls.latestScore !== null ? `${cls.latestScore}%` : "—"}
+                        </div>
                       </div>
 
                       <div className="bg-white/5 p-3 rounded-none border border-white/10">
@@ -388,8 +393,8 @@ export default function StudentHomePage() {
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-slate-400">Attendance</span>
-                        <span className={`font-bold ${item.attendance < 80 ? 'text-red-400' : 'text-emerald-400'}`}>
-                          {item.attendance}%
+                        <span className={`font-bold ${item.attendance === null ? 'text-slate-400' : item.attendance < 80 ? 'text-red-400' : 'text-emerald-400'}`}>
+                          {item.attendance !== null ? `${item.attendance}%` : "—"}
                         </span>
                       </div>
                     </div>

@@ -41,9 +41,9 @@ export default function StudentClassesPage() {
 
   // States for Class/Lecturer data
   const [lecturerInfo, setLecturerInfo] = useState<any>(null);
-  const [attendanceRate, setAttendanceRate] = useState(0);
+  const [attendanceRate, setAttendanceRate] = useState<number | null>(null);
   const [classScheduleText, setClassScheduleText] = useState("Wednesday • 10:00 AM");
-  const [performanceNumeric, setPerformanceNumeric] = useState(0);
+  const [performanceNumeric, setPerformanceNumeric] = useState<number | null>(null);
 
   // Detailed lists and pagination
   const [attendanceLog, setAttendanceLog] = useState<AttendanceLogItem[]>([]);
@@ -191,7 +191,7 @@ export default function StudentClassesPage() {
       // Calculate attendance rate from real session count and student check-ins
       const totalSessions = sessions?.length || 0;
       const hasAttendance = totalSessions > 0 && hasStudentAttRecords;
-      const attRate = hasAttendance ? Math.round((attendedCnt / totalSessions) * 100) : 0;
+      const attRate = hasAttendance ? Math.round((attendedCnt / totalSessions) * 100) : (totalSessions === 0 ? null : 0);
 
       const { data: assessList } = await supabase
         .from('assessments')
@@ -224,16 +224,16 @@ export default function StudentClassesPage() {
       });
 
       const hasAssessments = scoreCnt > 0;
-      let performanceNumeric = 0;
-      if (hasAttendance && hasAssessments) {
+      let performanceNumeric: number | null = null;
+      if (hasAttendance && hasAssessments && attRate !== null) {
         const caAvg = scoreSum / scoreCnt;
         performanceNumeric = Math.round((attRate * 0.6) + (caAvg * 0.4));
       } else if (hasAssessments) {
         performanceNumeric = Math.round(scoreSum / scoreCnt);
-      } else if (hasAttendance) {
+      } else if (hasAttendance && attRate !== null) {
         performanceNumeric = Math.round(attRate);
       } else {
-        performanceNumeric = 0;
+        performanceNumeric = null;
       }
 
       const lecturerProfile = classData?.profiles as any;
@@ -381,11 +381,12 @@ export default function StudentClassesPage() {
               <p className="text-xs text-slate-400 uppercase tracking-wider font-medium">Class Performance</p>
             </div>
             <h4 className={`text-2xl font-bold ${
+              performanceNumeric === null ? 'text-slate-400' :
               performanceNumeric < 80 ? 'text-rose-400' :
               performanceNumeric < 90 ? 'text-amber-400' :
               'text-emerald-400'
             }`}>
-              {performanceNumeric}%
+              {performanceNumeric !== null ? `${performanceNumeric}%` : "—"}
             </h4>
           </div>
         </div>
@@ -400,11 +401,12 @@ export default function StudentClassesPage() {
               <p className="text-xs text-slate-400 uppercase tracking-wider font-medium">Attendance Rate</p>
             </div>
             <h4 className={`text-2xl font-bold ${
+              attendanceRate === null ? 'text-slate-400' :
               attendanceRate < 80 ? 'text-rose-400' :
               attendanceRate < 90 ? 'text-amber-400' :
               'text-emerald-400'
             }`}>
-              {attendanceRate}%
+              {attendanceRate !== null ? `${attendanceRate}%` : "—"}
             </h4>
           </div>
         </div>

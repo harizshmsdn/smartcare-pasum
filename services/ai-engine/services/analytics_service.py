@@ -359,6 +359,14 @@ def get_student_analytics(student_id: str, class_id: Optional[str] = None, user:
             att_rate = float(enrollment["current_attendance_rate"]) if enrollment and enrollment["current_attendance_rate"] is not None else None
             class_label = f"{enrollment['subject_code']} ({enrollment['group_code']})" if enrollment else "PASUM General"
 
+            # Determine resolved class
+            resolved_class_id = str(enrollment["class_id"]) if enrollment else None
+            if resolved_class_id:
+                cur.execute("SELECT COUNT(*) as session_count FROM public.attendance_sessions WHERE class_id = %s;", (resolved_class_id,))
+                ses_res = cur.fetchone()
+                if not ses_res or ses_res["session_count"] == 0:
+                    att_rate = None
+
             # Determine risk status based on attendance
             if att_rate is None:
                 risk_status = "no-data"
@@ -425,7 +433,6 @@ def get_student_analytics(student_id: str, class_id: Optional[str] = None, user:
             ]
 
             # Fetch Latest Assessment Score
-            resolved_class_id = str(enrollment["class_id"]) if enrollment else None
             if resolved_class_id:
                 cur.execute(
                     """
@@ -449,7 +456,7 @@ def get_student_analytics(student_id: str, class_id: Optional[str] = None, user:
                     (student_id,)
                 )
             latest_row = cur.fetchone()
-            latest_score = int(latest_row["latest_score"]) if latest_row and latest_row["latest_score"] is not None else 0
+            latest_score = int(latest_row["latest_score"]) if latest_row and latest_row["latest_score"] is not None else None
 
             # Fetch Assessment Scores for Trajectory
             if resolved_class_id:

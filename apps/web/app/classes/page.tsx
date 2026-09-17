@@ -25,6 +25,10 @@ interface StudentListItem {
 interface ClassItem {
   id: string;
   name: string;
+  schedule?: string;
+  activeSessionId?: string | null;
+  attendance_sessions?: any[];
+  assessments?: any[];
 }
 
 export default function ClassesPage() {
@@ -91,6 +95,10 @@ export default function ClassesPage() {
             id,
             closed_at,
             opened_at
+          ),
+          assessments (
+            id,
+            title
           )
         `)
         .eq('lecturer_id', user.id);
@@ -130,7 +138,9 @@ export default function ClassesPage() {
         id: c.id,
         name: `${c.subjects?.code} - ${c.subjects?.name} (${c.group_code})`,
         schedule: scheduleStr,
-        activeSessionId: c.active_session?.id || null
+        activeSessionId: c.active_session?.id || null,
+        attendance_sessions: c.attendance_sessions || [],
+        assessments: c.assessments || []
       };
     });
     setClassesList(formatted);
@@ -189,10 +199,15 @@ export default function ClassesPage() {
     setHasAnyActiveSession(classesList.some((c: any) => !!c.activeSessionId));
 
     if (rosterEnrollments) {
+      const hasSessions = (currentClass?.attendance_sessions?.length || 0) > 0;
+      const hasAssessments = (currentClass?.assessments?.length || 0) > 0;
+
       const formattedStudents = rosterEnrollments.map((e: any) => {
         const profile = e.profiles;
         const attendanceRaw = e.current_attendance_rate;
-        const attendance = attendanceRaw !== "-" ? Number(attendanceRaw) : "-";
+        const attendance = hasSessions && attendanceRaw !== "-" && attendanceRaw !== null && attendanceRaw !== undefined
+          ? Number(attendanceRaw)
+          : "-";
         let status = 'good';
 
         if (attendance === "-") {
@@ -203,6 +218,10 @@ export default function ClassesPage() {
           status = 'at-risk';
         }
 
+        const latestScore = hasAssessments && typeof e.latest_score === 'number'
+          ? e.latest_score
+          : (hasAssessments && e.latest_score !== undefined && e.latest_score !== null && e.latest_score !== "-" ? Number(e.latest_score) : "-");
+
         return {
           id: profile?.id || '',
           matricId: profile?.institutional_id || '',
@@ -210,7 +229,7 @@ export default function ClassesPage() {
           email: profile?.email || '',
           status,
           attendance,
-          latestScore: typeof e.latest_score === 'number' ? e.latest_score : (e.latest_score !== undefined && e.latest_score !== null && e.latest_score !== "-" ? Number(e.latest_score) : 0),
+          latestScore,
           lastSeen: attendance === "-" ? "-" : (attendance < 80 ? '3 days ago' : 'Today')
         };
       });
@@ -534,18 +553,24 @@ export default function ClassesPage() {
                       )}
                     </td>
                     <td className="p-3.5">
-                      <span className={`font-bold ${typeof student.attendance === 'number' && student.attendance < 80
-                        ? "text-rose-400"
-                        : "text-white"
-                        }`}>
+                      <span className={`font-bold ${
+                        student.attendance === "-"
+                          ? "text-slate-500"
+                          : typeof student.attendance === 'number' && student.attendance < 80
+                          ? "text-rose-400"
+                          : "text-white"
+                      }`}>
                         {student.attendance}{student.attendance !== "-" ? "%" : ""}
                       </span>
                     </td>
                     <td className="p-3.5">
-                      <span className={`font-bold ${typeof student.latestScore === 'number' && student.latestScore < 50
-                        ? "text-rose-400"
-                        : "text-white"
-                        }`}>
+                      <span className={`font-bold ${
+                        student.latestScore === "-"
+                          ? "text-slate-500"
+                          : typeof student.latestScore === 'number' && student.latestScore < 50
+                          ? "text-rose-400"
+                          : "text-white"
+                      }`}>
                         {student.latestScore}{student.latestScore !== "-" ? "%" : ""}
                       </span>
                     </td>
